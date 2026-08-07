@@ -838,12 +838,12 @@
     <script>
     const MAX_DURACAO = 43200;
     let campanhasCache = [];
-    let token = localStorage.getItem('adminToken');
+    let token = null; // NÃO salva no localStorage!
     let isLoggedIn = false;
 
     // ========== VERIFICADOR DE SESSÃO ==========
     function verificarSessao() {
-        if (!isLoggedIn) {
+        if (!isLoggedIn || !token) {
             document.getElementById('loginAdmin').style.display = 'block';
             document.getElementById('painelAdmin').style.display = 'none';
             document.getElementById('adminStatus').style.display = 'none';
@@ -875,46 +875,10 @@
             });
         });
 
-        // Verifica se já está logado
-        if (token) {
-            verificarToken(token);
-        } else {
-            document.getElementById('loginAdmin').style.display = 'block';
-            document.getElementById('painelAdmin').style.display = 'none';
-        }
+        // NUNCA restaura token do localStorage - sempre pede login
+        document.getElementById('loginAdmin').style.display = 'block';
+        document.getElementById('painelAdmin').style.display = 'none';
     });
-
-    async function verificarToken(t) {
-        try {
-            const res = await fetch('/api/admin/verificar', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ senha: t })
-            });
-            const data = await res.json();
-            if (data.sucesso) {
-                isLoggedIn = true;
-                document.getElementById('loginAdmin').style.display = 'none';
-                document.getElementById('painelAdmin').style.display = 'block';
-                document.getElementById('adminStatus').style.display = 'inline-block';
-                carregarCampanhas();
-                configurarSlugAutomatico();
-                configurarPreviewImagem();
-            } else {
-                localStorage.removeItem('adminToken');
-                token = null;
-                isLoggedIn = false;
-                document.getElementById('loginAdmin').style.display = 'block';
-                document.getElementById('painelAdmin').style.display = 'none';
-            }
-        } catch(e) {
-            localStorage.removeItem('adminToken');
-            token = null;
-            isLoggedIn = false;
-            document.getElementById('loginAdmin').style.display = 'block';
-            document.getElementById('painelAdmin').style.display = 'none';
-        }
-    }
 
     async function fazerLogin(e) {
         e.preventDefault();
@@ -931,7 +895,7 @@
             if (data.sucesso) {
                 token = senha;
                 isLoggedIn = true;
-                localStorage.setItem('adminToken', senha);
+                // NÃO salva no localStorage!
                 document.getElementById('loginAdmin').style.display = 'none';
                 document.getElementById('painelAdmin').style.display = 'block';
                 document.getElementById('adminStatus').style.display = 'inline-block';
@@ -948,7 +912,6 @@
 
     function fazerLogout() {
         if (confirm('Deseja realmente sair?')) {
-            localStorage.removeItem('adminToken');
             token = null;
             isLoggedIn = false;
             document.getElementById('loginAdmin').style.display = 'block';
@@ -1212,8 +1175,8 @@
             })
             .then(res => {
                 if (res.status === 401) {
-                    localStorage.removeItem('adminToken');
                     isLoggedIn = false;
+                    token = null;
                     document.getElementById('loginAdmin').style.display = 'block';
                     document.getElementById('painelAdmin').style.display = 'none';
                     document.getElementById('adminStatus').style.display = 'none';
@@ -1270,7 +1233,6 @@
         return erros;
     }
 
-    // ========== FUNÇÃO CORRIGIDA PARA CRIAR CAMPANHA ==========
     async function criarCampanha(e) {
         e.preventDefault();
         if (!verificarSessao()) return;
@@ -1281,7 +1243,6 @@
         btn.innerHTML = '<span class="loading-spinner"></span> Criando...';
 
         try {
-            // Pega os valores dos campos
             const nome = document.getElementById('campNome').value.trim();
             const slug = document.getElementById('campSlug').value.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
             const descricao = document.getElementById('campDesc').value.trim();
@@ -1294,7 +1255,6 @@
             let duracao = parseInt(document.getElementById('campDuracao').value) || 43200;
             const influencer = document.getElementById('campInfluencer').value.trim() || 'Não informado';
 
-            // Validações
             if (!nome) { mostrarMsg('⚠️ Nome do leilão é obrigatório', 'erro'); btn.disabled = false; btn.innerHTML = originalText; return; }
             if (!slug) { mostrarMsg('⚠️ Slug é obrigatório', 'erro'); btn.disabled = false; btn.innerHTML = originalText; return; }
             if (!item_nome) { mostrarMsg('⚠️ Nome do item é obrigatório', 'erro'); btn.disabled = false; btn.innerHTML = originalText; return; }
@@ -1303,7 +1263,6 @@
 
             const metasInternas = getMetasInternas('metasInternasContainer');
 
-            // Monta o FormData para enviar (inclui arquivo)
             const formData = new FormData();
             formData.append('nome', nome);
             formData.append('slug', slug);
@@ -1318,7 +1277,6 @@
             formData.append('influencer', influencer);
             formData.append('metas_internas', JSON.stringify(metasInternas));
 
-            // Adiciona o arquivo de imagem se existir
             const fileInput = document.getElementById('premioImagem');
             if (fileInput.files && fileInput.files.length > 0) {
                 formData.append('premio_imagem', fileInput.files[0]);
@@ -1570,12 +1528,16 @@
         }
     }
 
+    // Bloqueia acesso sem login
     setInterval(() => {
         const tab = document.getElementById('tabCampanhas');
-        if (!tab.classList.contains('hidden') && isLoggedIn) {
-            carregarCampanhas();
+        if (!tab.classList.contains('hidden')) {
+            if (!verificarSessao()) {
+                document.getElementById('tabCampanhas').classList.add('hidden');
+                document.getElementById('tabNova').classList.remove('active');
+            }
         }
-    }, 30000);
+    }, 5000);
 
     document.querySelectorAll('.modal-overlay').forEach(el => {
         el.addEventListener('click', (e) => {
