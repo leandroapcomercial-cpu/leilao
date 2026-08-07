@@ -11,39 +11,28 @@ const multer = require('multer');
 
 const app = express();
 const server = http.createServer(app);
+const io = socketIo(server, {
+    cors: { origin: "*" },
+    transports: ['websocket', 'polling']
+});
 
-// ========== CONFIGURAÇÃO DE ARMAZENAMENTO ==========
-const DATA_DIR = './';
-const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
-const DB_FILE = path.join(DATA_DIR, 'database.json');
-
-if (!fs.existsSync(UPLOAD_DIR)) {
-    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-}
-
-// ========== CONFIGURAÇÕES ==========
-const PORT = process.env.PORT || 3000;
-const MERCADO_PAGO_ACCESS_TOKEN = process.env.MERCADO_PAGO_ACCESS_TOKEN || 'APP_USR-6748594610084561-072611-b75a26bd80e196ee7040b30ee7a09fa3-1459269241';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
-const MAX_DURACAO_MINUTOS = 43200; // 30 DIAS
-
-// ========== MIDDLEWARES ==========
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
-app.use('/uploads', express.static(UPLOAD_DIR));
+app.use('/uploads', express.static('uploads'));
 
-// ========== MULTER ==========
+// ============== CONFIG MULTER PARA UPLOAD ==============
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, UPLOAD_DIR);
+        const dir = './uploads';
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+        cb(null, dir);
     },
     filename: (req, file, cb) => {
         const unique = Date.now() + '-' + Math.round(Math.random() * 1E9);
         cb(null, unique + path.extname(file.originalname));
     }
 });
-
 const upload = multer({ 
     storage,
     limits: { fileSize: 5 * 1024 * 1024 },
@@ -54,22 +43,16 @@ const upload = multer({
     }
 });
 
-// ========== SOCKET.IO ==========
-const io = socketIo(server, {
-    cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
-    },
-    transports: ['websocket', 'polling'],
-    pingTimeout: 30000,
-    pingInterval: 15000,
-    maxHttpBufferSize: 1e4,
-    perMessageDeflate: {
-        threshold: 1024
-    }
-});
+const PORT = 3000;
+const DB_FILE = './database.json';
 
-// ========== BANCO DE DADOS ==========
+// ============== CONFIG MERCADO PAGO ==============
+const MERCADO_PAGO_ACCESS_TOKEN = 'APP_USR-6748594610084561-072611-b75a26bd80e196ee7040b30ee7a09fa3-1459269241';
+
+// ============== SENHA ADMIN ==============
+const ADMIN_PASSWORD = 'admin123';
+
+// ============== BANCO DE DADOS ==============
 let db = {
     usuarios: [],
     campanhas: [],
@@ -82,14 +65,11 @@ let db = {
 function loadDB() {
     try {
         if (fs.existsSync(DB_FILE)) {
-            const raw = fs.readFileSync(DB_FILE, 'utf8');
-            db = JSON.parse(raw);
+            db = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
             console.log('✅ Banco carregado');
             return;
         }
-    } catch (e) {
-        console.error('Erro ao carregar DB:', e);
-    }
+    } catch (e) {}
 
     const now = new Date();
     const fim = new Date(now);
@@ -104,14 +84,6 @@ function loadDB() {
         meta_valor: 3.00,
         premio_imagem: '🏆',
         premio_imagem_url: '',
-        premio_titulo: '🏆 PRÊMIO DO LEILÃO',
-        influencer: 'Não informado',
-        metas_internas: [
-            { meta: 25, premio: 'R$ 100,00' },
-            { meta: 50, premio: 'R$ 200,00' },
-            { meta: 75, premio: 'R$ 300,00' },
-            { meta: 100, premio: 'R$ 500,00' }
-        ],
         created_at: now.toISOString()
     });
 
@@ -139,9 +111,7 @@ function loadDB() {
 function saveDB() {
     try {
         fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
-    } catch (e) {
-        console.error('Erro ao salvar DB:', e);
-    }
+    } catch (e) {}
 }
 
 function findOne(table, filter) {
@@ -315,17 +285,17 @@ app.post('/api/usuario', (req, res) => {
 // ============== ROTA DE CAMPANHA (PÚBLICA) ==============
 app.get('/api/campanha/:slug', (req, res) => {
     try {
-        const campanha = findOne('campanhas', { slug: req.params.slug });
+        const campanha = findOne('campanhas', { slug: req.params.slug, status: 'ativa' });
         if (!campanha) {
             return res.status(404).json({ erro: 'Campanha não encontrada' });
         }
-        const item = db.itens.find(i => i.campanha_id === campanha.id);
+        const item = db.itens.find(i => i.campanha_id === campanha.id && i.status === 'ativo');
         if (!item) {
             return res.json({ campanha, item: null });
         }
         const lances = db.lances.filter(l => l.item_id === item.id && l.status === 'confirmado');
         const maiorLance = lances.length > 0 ? Math.max(...lances.map(l => l.valor)) : item.lance_inicial;
-        const encerrado = new Date(item.data_fim) < new Date() || item.status !== 'ativo';
+        const encerrado = new Date(item.data_fim) < new Date();
         
         let ultimoLance = null;
         if (lances.length > 0) {
@@ -338,13 +308,6 @@ app.get('/api/campanha/:slug', (req, res) => {
             };
         }
         
-        let premioImagem = campanha.premio_imagem || '🏆';
-        let premioImagemUrl = campanha.premio_imagem_url || '';
-        
-        if (premioImagemUrl && premioImagemUrl.trim() !== '') {
-            premioImagem = premioImagemUrl;
-        }
-        
         const resultado = {
             ...item,
             total_lances: lances.length,
@@ -353,11 +316,10 @@ app.get('/api/campanha/:slug', (req, res) => {
             tem_lance_inicial: lances.length > 0,
             started_at: item.started_at,
             meta_valor: campanha.meta_valor || 3.00,
-            premio_imagem: premioImagem,
-            premio_imagem_url: premioImagemUrl,
-            premio_titulo: campanha.premio_titulo || '🏆 PRÊMIO DO LEILÃO',
+            premio_imagem: campanha.premio_imagem || '🏆',
+            premio_imagem_url: campanha.premio_imagem_url || '',
             ultimo_lance: ultimoLance,
-            ultimos_lances: lances.slice(-3).reverse().map(l => {
+            ultimos_lances: lances.slice(-5).reverse().map(l => {
                 const user = findOne('usuarios', { id: l.usuario_id });
                 return {
                     nome: user ? user.nome : 'Anônimo',
@@ -601,7 +563,7 @@ app.post('/api/confirmar-pagamento', (req, res) => {
     }
 });
 
-// ============== RANKING ==============
+// ============== RANKING (CORRIGIDO - COM DESTAQUE DO VENCEDOR) ==============
 app.get('/api/ranking/:item_id', (req, res) => {
     try {
         const item_id = parseInt(req.params.item_id);
@@ -660,6 +622,7 @@ app.get('/api/ranking/:item_id', (req, res) => {
             };
         });
 
+        // Ranking 1: MAIOR LANCE
         const rankingMaiorLance = [...usuariosArray]
             .sort((a, b) => b.maior_lance - a.maior_lance)
             .slice(0, 10)
@@ -674,6 +637,7 @@ app.get('/api/ranking/:item_id', (req, res) => {
                 is_vencedor: index === 0
             }));
 
+        // Ranking 2: MAIS LANCES
         const rankingMaisLances = [...usuariosArray]
             .sort((a, b) => b.quantidade_lances - a.quantidade_lances)
             .slice(0, 10)
@@ -688,6 +652,7 @@ app.get('/api/ranking/:item_id', (req, res) => {
                 is_vencedor: u.maior_lance === rankingMaiorLance[0]?.valor && u.usuario === rankingMaiorLance[0]?.usuario
             }));
 
+        // Ranking 3: MENOS LANCES
         const rankingMenosLances = [...usuariosArray]
             .filter(u => u.quantidade_lances > 0)
             .sort((a, b) => a.quantidade_lances - b.quantidade_lances)
@@ -732,19 +697,12 @@ app.post('/api/admin/verificar', (req, res) => {
     }
 });
 
-// ============== ADMIN - EXPORTAR DADOS ==============
-app.get('/api/admin/exportar-dados', verificarAdmin, (req, res) => {
-    res.json(db);
-});
-
 // ============== ADMIN - CRIAR CAMPANHA ==============
 app.post('/api/admin/criar-campanha', verificarAdmin, upload.single('premio_imagem'), (req, res) => {
     const { 
         nome, descricao, slug, 
-        item_nome, item_descricao, item_categoria, 
-        data_fim, meta_valor, premio_imagem_url,
-        premio_titulo, influencer, metas_internas,
-        duracao
+        item_nome, item_descricao, item_imagem, item_categoria, 
+        data_fim, meta_valor, premio_imagem_url 
     } = req.body;
     
     if (!nome || !slug || !item_nome) {
@@ -762,35 +720,11 @@ app.post('/api/admin/criar-campanha', verificarAdmin, upload.single('premio_imag
         if (req.file) {
             premio_imagem = `/uploads/${req.file.filename}`;
             premio_imagem_url_final = '';
-            console.log(`📸 Imagem salva: ${premio_imagem}`);
         } else if (premio_imagem_url && premio_imagem_url.trim() !== '') {
             premio_imagem_url_final = premio_imagem_url.trim();
             premio_imagem = '';
-            console.log(`🌐 URL da imagem: ${premio_imagem_url_final}`);
         } else {
             premio_imagem = '🏆';
-            premio_imagem_url_final = '';
-        }
-
-        let metasInternasArray = [];
-        if (metas_internas) {
-            try {
-                metasInternasArray = JSON.parse(metas_internas);
-            } catch (e) {
-                metasInternasArray = [
-                    { meta: 25, premio: 'R$ 100,00' },
-                    { meta: 50, premio: 'R$ 200,00' },
-                    { meta: 75, premio: 'R$ 300,00' },
-                    { meta: 100, premio: 'R$ 500,00' }
-                ];
-            }
-        } else {
-            metasInternasArray = [
-                { meta: 25, premio: 'R$ 100,00' },
-                { meta: 50, premio: 'R$ 200,00' },
-                { meta: 75, premio: 'R$ 300,00' },
-                { meta: 100, premio: 'R$ 500,00' }
-            ];
         }
 
         const campResult = insert('campanhas', {
@@ -801,28 +735,11 @@ app.post('/api/admin/criar-campanha', verificarAdmin, upload.single('premio_imag
             meta_valor: parseFloat(meta_valor) || 3.00,
             premio_imagem,
             premio_imagem_url: premio_imagem_url_final,
-            premio_titulo: premio_titulo || '🏆 PRÊMIO DO LEILÃO',
-            influencer: influencer || 'Não informado',
-            metas_internas: metasInternasArray,
             created_at: new Date().toISOString()
         });
 
         let dataFim = data_fim;
-        if (!dataFim && duracao) {
-            const agora = new Date();
-            const fim = new Date(agora);
-            let duracaoMinutos = parseInt(duracao) || 1440;
-            if (duracaoMinutos > MAX_DURACAO_MINUTOS) {
-                duracaoMinutos = MAX_DURACAO_MINUTOS;
-                console.log(`⚠️ Duração limitada a ${MAX_DURACAO_MINUTOS} minutos (30 dias)`);
-            }
-            if (duracaoMinutos < 1) {
-                duracaoMinutos = 1;
-            }
-            fim.setMinutes(fim.getMinutes() + duracaoMinutos);
-            dataFim = fim.toISOString();
-            console.log(`⏱️ Duração configurada: ${duracaoMinutos} minutos (${Math.floor(duracaoMinutos/1440)} dias)`);
-        } else if (!dataFim) {
+        if (!dataFim) {
             const agora = new Date();
             const fim = new Date(agora);
             fim.setHours(fim.getHours() + 24);
@@ -833,7 +750,7 @@ app.post('/api/admin/criar-campanha', verificarAdmin, upload.single('premio_imag
             campanha_id: campResult.lastID,
             nome: item_nome,
             descricao: item_descricao || '',
-            imagem: '📦',
+            imagem: item_imagem || '📦',
             categoria: item_categoria || 'Geral',
             lance_inicial: 0.00,
             lance_minimo: 0.00,
@@ -844,7 +761,7 @@ app.post('/api/admin/criar-campanha', verificarAdmin, upload.single('premio_imag
             created_at: new Date().toISOString()
         });
 
-        const url = `https://${process.env.APP_NAME || 'leilao-facil'}.onrender.com/${slug}`;
+        const url = `http://localhost:${PORT}/${slug}`;
 
         res.json({
             sucesso: true,
@@ -858,15 +775,10 @@ app.post('/api/admin/criar-campanha', verificarAdmin, upload.single('premio_imag
     }
 });
 
-// ============== ADMIN - EDITAR CAMPANHA (CORRIGIDO) ==============
+// ============== ADMIN - EDITAR CAMPANHA ==============
 app.put('/api/admin/campanhas/:id', verificarAdmin, upload.single('premio_imagem'), (req, res) => {
     const id = parseInt(req.params.id);
-    const { 
-        nome, descricao, meta_valor, premio_imagem_url,
-        item_nome, item_descricao, item_categoria,
-        duracao, status, premio_titulo, slug,
-        influencer, metas_internas
-    } = req.body;
+    const { nome, descricao, meta_valor, premio_imagem_url } = req.body;
 
     try {
         const campanha = db.campanhas.find(c => c.id === id);
@@ -874,104 +786,29 @@ app.put('/api/admin/campanhas/:id', verificarAdmin, upload.single('premio_imagem
             return res.status(404).json({ erro: 'Campanha não encontrada' });
         }
 
-        const item = db.itens.find(i => i.campanha_id === id);
-        if (!item) {
-            return res.status(404).json({ erro: 'Item da campanha não encontrado' });
-        }
-
-        if (slug && slug !== campanha.slug) {
-            const slugExists = db.campanhas.some(c => c.slug === slug && c.id !== id);
-            if (slugExists) {
-                return res.status(400).json({ erro: 'Este slug já está em uso' });
-            }
-        }
-
-        const campUpdates = {};
-        if (nome) campUpdates.nome = nome;
-        if (slug) campUpdates.slug = slug;
-        if (descricao !== undefined) campUpdates.descricao = descricao;
-        if (meta_valor !== undefined) campUpdates.meta_valor = parseFloat(meta_valor);
-        if (status) campUpdates.status = status;
-        if (premio_titulo !== undefined) campUpdates.premio_titulo = premio_titulo;
-        if (influencer !== undefined) campUpdates.influencer = influencer;
-        
-        if (metas_internas) {
-            try {
-                campUpdates.metas_internas = JSON.parse(metas_internas);
-            } catch (e) {
-                console.error('Erro ao parsear metas_internas:', e);
-            }
-        }
+        const updates = {};
+        if (nome) updates.nome = nome;
+        if (descricao !== undefined) updates.descricao = descricao;
+        if (meta_valor !== undefined) updates.meta_valor = parseFloat(meta_valor);
 
         if (req.file) {
-            campUpdates.premio_imagem = `/uploads/${req.file.filename}`;
-            campUpdates.premio_imagem_url = '';
-            console.log(`📸 Imagem atualizada: ${campUpdates.premio_imagem}`);
+            updates.premio_imagem = `/uploads/${req.file.filename}`;
+            updates.premio_imagem_url = '';
         } else if (premio_imagem_url !== undefined) {
             if (premio_imagem_url && premio_imagem_url.trim() !== '') {
-                campUpdates.premio_imagem_url = premio_imagem_url.trim();
-                campUpdates.premio_imagem = '';
-                console.log(`🌐 URL da imagem atualizada: ${campUpdates.premio_imagem_url}`);
+                updates.premio_imagem_url = premio_imagem_url.trim();
+                updates.premio_imagem = '';
             } else {
-                campUpdates.premio_imagem = '🏆';
-                campUpdates.premio_imagem_url = '';
+                updates.premio_imagem = '🏆';
+                updates.premio_imagem_url = '';
             }
         }
 
-        if (Object.keys(campUpdates).length > 0) {
-            update('campanhas', id, campUpdates);
+        if (Object.keys(updates).length > 0) {
+            update('campanhas', id, updates);
         }
 
-        const itemUpdates = {};
-        if (item_nome) itemUpdates.nome = item_nome;
-        if (item_descricao !== undefined) itemUpdates.descricao = item_descricao;
-        if (item_categoria) itemUpdates.categoria = item_categoria;
-        
-        // ===== CORREÇÃO DEFINITIVA DA DURAÇÃO =====
-        if (duracao !== undefined && duracao !== null && duracao !== '') {
-            let duracaoMinutos = parseInt(duracao) || 1440;
-            
-            if (duracaoMinutos > MAX_DURACAO_MINUTOS) {
-                duracaoMinutos = MAX_DURACAO_MINUTOS;
-                console.log(`⚠️ Duração ajustada para o máximo de ${MAX_DURACAO_MINUTOS} minutos (30 dias)`);
-            }
-            if (duracaoMinutos < 1) {
-                duracaoMinutos = 1;
-                console.log(`⚠️ Duração ajustada para o mínimo de 1 minuto`);
-            }
-            
-            if (item.started_at) {
-                const inicio = new Date(item.started_at);
-                const novoFim = new Date(inicio);
-                novoFim.setMinutes(novoFim.getMinutes() + duracaoMinutos);
-                itemUpdates.data_fim = novoFim.toISOString();
-                console.log(`⏱️ Duração atualizada: ${duracaoMinutos} minutos, novo fim: ${novoFim.toISOString()}`);
-            } else {
-                const agora = new Date();
-                const novoFim = new Date(agora);
-                novoFim.setMinutes(novoFim.getMinutes() + duracaoMinutos);
-                itemUpdates.data_fim = novoFim.toISOString();
-                console.log(`⏱️ Duração definida para campanha sem started_at: ${duracaoMinutos} minutos`);
-            }
-        }
-
-        if (status === 'inativa') {
-            itemUpdates.status = 'inativo';
-        } else if (status === 'ativa') {
-            itemUpdates.status = 'ativo';
-        }
-
-        if (Object.keys(itemUpdates).length > 0) {
-            update('itens', item.id, itemUpdates);
-        }
-
-        const novaUrl = `https://${process.env.APP_NAME || 'leilao-facil'}.onrender.com/${slug || campanha.slug}`;
-
-        res.json({ 
-            sucesso: true, 
-            mensagem: 'Campanha atualizada',
-            url: novaUrl
-        });
+        res.json({ sucesso: true, mensagem: 'Campanha atualizada' });
     } catch (e) {
         console.error('Erro ao editar campanha:', e);
         res.status(500).json({ erro: 'Erro ao editar campanha' });
@@ -997,11 +834,7 @@ app.get('/api/admin/campanhas-completas', verificarAdmin, (req, res) => {
                     tempo_restante: 0,
                     premio_imagem: campanha.premio_imagem || '🏆',
                     premio_imagem_url: campanha.premio_imagem_url || '',
-                    premio_titulo: campanha.premio_titulo || '🏆 PRÊMIO DO LEILÃO',
-                    influencer: campanha.influencer || 'Não informado',
-                    metas_internas: campanha.metas_internas || [],
-                    metas_atingidas: [],
-                    url: `https://${process.env.APP_NAME || 'leilao-facil'}.onrender.com/${campanha.slug}`
+                    url: `http://localhost:${PORT}/${campanha.slug}`
                 };
             }
 
@@ -1024,22 +857,6 @@ app.get('/api/admin/campanhas-completas', verificarAdmin, (req, res) => {
             const percentualMeta = metaValor > 0 ? Math.min(100, (maiorLance / metaValor) * 100) : 0;
             const status = item.status === 'ativo' ? 'ativa' : 'inativa';
 
-            let premioImagem = campanha.premio_imagem || '🏆';
-            let premioImagemUrl = campanha.premio_imagem_url || '';
-            
-            if (premioImagemUrl && premioImagemUrl.trim() !== '') {
-                premioImagem = premioImagemUrl;
-            }
-
-            const metasAtingidas = [];
-            if (campanha.metas_internas && campanha.metas_internas.length > 0) {
-                campanha.metas_internas.forEach(metaInterna => {
-                    if (percentualMeta >= metaInterna.meta) {
-                        metasAtingidas.push(metaInterna);
-                    }
-                });
-            }
-
             return {
                 ...campanha,
                 status,
@@ -1057,13 +874,9 @@ app.get('/api/admin/campanhas-completas', verificarAdmin, (req, res) => {
                 data_fim: item.data_fim,
                 tempo_restante: tempoRestante,
                 created_at: item.created_at,
-                premio_imagem: premioImagem,
-                premio_imagem_url: premioImagemUrl,
-                premio_titulo: campanha.premio_titulo || '🏆 PRÊMIO DO LEILÃO',
-                influencer: campanha.influencer || 'Não informado',
-                metas_internas: campanha.metas_internas || [],
-                metas_atingidas: metasAtingidas,
-                url: `https://${process.env.APP_NAME || 'leilao-facil'}.onrender.com/${campanha.slug}`
+                premio_imagem: campanha.premio_imagem || '🏆',
+                premio_imagem_url: campanha.premio_imagem_url || '',
+                url: `http://localhost:${PORT}/${campanha.slug}`
             };
         });
 
@@ -1150,11 +963,6 @@ app.get('/:slug', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// ============== ROTA RAIZ ==============
-app.get('/', (req, res) => {
-    res.redirect('/campanha-padrao');
-});
-
 // ============== WEBSOCKET ==============
 io.on('connection', (socket) => {
     console.log('✅ Cliente conectado:', socket.id);
@@ -1168,16 +976,12 @@ io.on('connection', (socket) => {
 
 // ============== INICIA ==============
 loadDB();
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, () => {
     console.log(`🚀 Servidor: http://localhost:${PORT}`);
-    console.log(`📁 Arquivos em: ${DATA_DIR}`);
-    console.log(`📸 Uploads em: ${UPLOAD_DIR}`);
     console.log(`📦 Itens: ${db.itens.length}`);
     console.log(`👥 Usuários: ${db.usuarios.length}`);
     console.log(`💎 Lances: ${db.lances.length}`);
     console.log(`💳 Pagamentos: ${db.pagamentos.length}`);
     console.log(`📢 Campanhas: ${db.campanhas.length}`);
     console.log(`🔒 Admin: /admin.html (senha: ${ADMIN_PASSWORD})`);
-    console.log(`✅ Limite máximo de duração: ${MAX_DURACAO_MINUTOS} minutos (30 dias)`);
-    console.log(`✅ CORREÇÃO APLICADA: NUNCA retorna erro de validação de duração`);
 });
