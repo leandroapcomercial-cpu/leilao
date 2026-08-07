@@ -1,2 +1,0 @@
-# leilao
-Leilão de Centavos.
