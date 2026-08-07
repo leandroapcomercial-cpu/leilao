@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leilão Express</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; color: #fff; min-height: 100vh; }
+
+        .header {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            padding: 20px;
+            border-bottom: 2px solid #e94560;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .header h1 { font-size: 28px; color: #e94560; }
+        .header h1 span { color: #fff; }
+        .user-info { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+        .badge { background: #e94560; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: bold; }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; transition: all 0.3s; }
+        .btn-primary { background: #e94560; color: #fff; }
+        .btn-primary:hover { background: #c73652; transform: scale(1.05); }
+        .btn-secondary { background: #1a1a2e; color: #fff; border: 1px solid #e94560; }
+        .btn-secondary:hover { background: #e94560; }
+        .btn-success { background: #2ecc71; color: #fff; }
+        .btn-success:hover { background: #27ae60; }
+        .btn-danger { background: #e74c3c; color: #fff; }
+        .btn-danger:hover { background: #c0392b; }
+
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+        .filtros {
+            display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 30px;
+            background: #1a1a2e; padding: 20px; border-radius: 12px;
+        }
+        .filtros input, .filtros select {
+            flex: 1; min-width: 150px; padding: 12px; border-radius: 8px;
+            border: 1px solid #333; background: #0a0a0a; color: #fff; font-size: 14px;
+        }
+        .filtros input:focus, .filtros select:focus { outline: none; border-color: #e94560; }
+
+        .items-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px; margin-bottom: 30px;
+        }
+        .item-card {
+            background: #1a1a2e; border-radius: 12px; overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s; border: 1px solid #333; cursor: pointer;
+        }
+        .item-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(233,69,96,0.2); border-color: #e94560; }
+        .item-card .imagem { width: 100%; height: 200px; background: #0a0a0a; display: flex; align-items: center; justify-content: center; font-size: 60px; color: #e94560; border-bottom: 1px solid #333; }
+        .item-card .imagem img { width: 100%; height: 100%; object-fit: cover; }
+        .item-card .info { padding: 20px; }
+        .item-card .info h3 { font-size: 18px; margin-bottom: 10px; }
+        .item-card .info p { color: #aaa; font-size: 14px; margin-bottom: 10px; }
+        .item-card .info .preco { font-size: 24px; font-weight: bold; color: #2ecc71; }
+        .item-card .info .preco span { font-size: 14px; color: #aaa; }
+        .item-card .info .tempo { color: #e94560; font-size: 14px; margin-top: 10px; }
+
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; padding: 20px;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: #1a1a2e; border-radius: 16px; max-width: 800px; width: 100%;
+            max-height: 90vh; overflow-y: auto; padding: 30px; border: 1px solid #333; position: relative;
+        }
+        .modal .close { position: absolute; top: 15px; right: 20px; font-size: 30px; color: #aaa; cursor: pointer; background: none; border: none; }
+        .modal .close:hover { color: #e94560; }
+        .modal h2 { color: #e94560; margin-bottom: 20px; font-size: 26px; }
+        .modal .detalhe { margin-bottom: 15px; padding: 12px; background: #0a0a0a; border-radius: 8px; }
+        .modal .detalhe strong { color: #e94560; }
+        .modal .lance-form { margin: 20px 0; display: flex; gap: 15px; flex-wrap: wrap; align-items: center; }
+        .modal .lance-form input { flex: 1; min-width: 150px; padding: 14px; border-radius: 8px; border: 1px solid #333; background: #0a0a0a; color: #fff; font-size: 18px; }
+        .modal .lance-form input:focus { outline: none; border-color: #e94560; }
+        .modal .lance-form .btn { padding: 14px 30px; font-size: 16px; }
+
+        .pix-area { background: #0a0a0a; border-radius: 12px; padding: 25px; margin-top: 20px; text-align: center; border: 1px solid #2ecc71; display: none; }
+        .pix-area.active { display: block; }
+        .pix-area img { max-width: 200px; margin: 15px auto; display: block; background: #fff; padding: 10px; border-radius: 8px; }
+        .pix-area .pix-link { word-break: break-all; background: #1a1a2e; padding: 10px; border-radius: 8px; font-size: 12px; color: #2ecc71; margin-top: 10px; }
+
+        .ranking-section { background: #1a1a2e; border-radius: 12px; padding: 20px; margin-top: 30px; border: 1px solid #333; }
+        .ranking-section h2 { color: #e94560; margin-bottom: 20px; font-size: 22px; }
+        .ranking-tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .ranking-tabs button { padding: 10px 20px; border: none; border-radius: 8px; background: #0a0a0a; color: #aaa; cursor: pointer; transition: all 0.3s; }
+        .ranking-tabs button.active { background: #e94560; color: #fff; }
+        .ranking-tabs button:hover { background: #c73652; color: #fff; }
+        .ranking-list { display: grid; gap: 10px; }
+        .ranking-item { display: grid; grid-template-columns: 40px 1fr auto auto; gap: 15px; padding: 12px 15px; background: #0a0a0a; border-radius: 8px; align-items: center; }
+        .ranking-item .pos { font-weight: bold; color: #e94560; font-size: 18px; }
+        .ranking-item .nome { color: #fff; font-weight: 500; }
+        .ranking-item .valor { color: #2ecc71; font-weight: bold; }
+        .ranking-item .extra { color: #aaa; font-size: 13px; }
+
+        @media (max-width: 768px) {
+            .header { flex-direction: column; text-align: center; }
+            .user-info { justify-content: center; }
+            .items-grid { grid-template-columns: 1fr; }
+            .modal { padding: 20px; margin: 10px; }
+            .ranking-item { grid-template-columns: 30px 1fr; font-size: 14px; }
+            .ranking-item .extra { grid-column: 1 / -1; text-align: center; }
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: #e94560; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>⚡ <span>Leilão</span> Express</h1>
+        <div class="user-info" id="userInfo">
+            <span id="userName">👤 Convidado</span>
+            <span class="badge" id="userCredits">💰 R$ 0</span>
+            <button class="btn btn-secondary" id="btnLogin" onclick="abrirLogin()">Entrar</button>
+            <button class="btn btn-primary" id="btnAdmin" style="display:none;" onclick="window.location.href='/admin.html'">Admin</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="filtros">
+            <input type="text" id="searchInput" placeholder="🔍 Buscar item..." oninput="filtrarItems()">
+            <select id="categoriaFilter" onchange="filtrarItems()">
+                <option value="">Todas categorias</option>
+                <option value="Eletrônicos">Eletrônicos</option>
+                <option value="Veículos">Veículos</option>
+                <option value="Imóveis">Imóveis</option>
+                <option value="Colecionáveis">Colecionáveis</option>
+                <option value="Moda">Moda</option>
+                <option value="Geral">Geral</option>
+            </select>
+            <select id="orderFilter" onchange="filtrarItems()">
+                <option value="recentes">Mais Recentes</option>
+                <option value="preco_menor">Menor Preço</option>
+                <option value="preco_maior">Maior Preço</option>
+                <option value="terminando">Terminando</option>
+            </select>
+        </div>
+
+        <div class="items-grid" id="itemsGrid">
+            <p style="grid-column:1/-1; text-align:center; color:#aaa; padding:40px;">Carregando itens...</p>
+        </div>
+
+        <div class="ranking-section">
+            <h2>🏆 Rankings</h2>
+            <div class="ranking-tabs">
+                <button class="active" onclick="carregarRanking('compradores')">Maiores Compradores</button>
+                <button onclick="carregarRanking('vendedores')">Maiores Vendedores</button>
+                <button onclick="carregarRanking('ativos')">Mais Ativos</button>
+            </div>
+            <div class="ranking-list" id="rankingList">
+                <p style="color:#aaa; text-align:center;">Carregando rankings...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Item -->
+    <div class="modal-overlay" id="modalItem">
+        <div class="modal">
+            <button class="close" onclick="fecharModal()">✕</button>
+            <h2 id="modalTitle">Item</h2>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <!-- Modal Login -->
+    <div class="modal-overlay" id="modalLogin">
+        <div class="modal" style="max-width:450px;">
+            <button class="close" onclick="fecharLogin()">✕</button>
+            <h2 style="text-align:center;">🔐 Entrar</h2>
+            <form id="loginForm" onsubmit="fazerLogin(event)">
+                <input type="email" id="loginEmail" placeholder="Email" required style="width:100%; padding:14px; margin:10px 0; border-radius:8px; border:1px solid #333; background:#0a0a0a; color:#fff;">
+                <input type="password" id="loginSenha" placeholder="Senha" required style="width:100%; padding:14px; margin:10px 0; border-radius:8px; border:1px solid #333; background:#0a0a0a; color:#fff;">
+                <button type="submit" class="btn btn-primary" style="width:100%; padding:14px;">Entrar</button>
+            </form>
+            <p style="text-align:center; margin-top:15px; color:#aaa;">Não tem conta? <a href="#" onclick="abrirRegistro()" style="color:#e94560;">Registre-se</a></p>
+        </div>
+    </div>
+
+    <!-- Modal Registro -->
+    <div class="modal-overlay" id="modalRegistro">
+        <div class="modal" style="max-width:450px;">
+            <button class="close" onclick="fecharRegistro()">✕</button>
+            <h2 style="text-align:center;">📝 Cadastrar</h2>
+            <form id="registroForm" onsubmit="fazerRegistro(event)">
+                <input type="text" id="regNome" placeholder="Nome completo" required style="width:100%; padding:14px; margin:10px 0; border-radius:8px; border:1px solid #333; background:#0a0a0a; color:#fff;">
+                <input type="email" id="regEmail" placeholder="Email" required style="width:100%; padding:14px; margin:10px 0; border-radius:8px; border:1px solid #333; background:#0a0a0a; color:#fff;">
+                <input type="password" id="regSenha" placeholder="Senha (mínimo 6)" required minlength="6" style="width:100%; padding:14px; margin:10px 0; border-radius:8px; border:1px solid #333; background:#0a0a0a; color:#fff;">
+                <button type="submit" class="btn btn-success" style="width:100%; padding:14px;">Cadastrar</button>
+            </form>
+            <p style="text-align:center; margin-top:15px; color:#aaa;">Já tem conta? <a href="#" onclick="abrirLogin()" style="color:#e94560;">Faça login</a></p>
+        </div>
+    </div>
+
+    <!-- Modal Pagamento -->
+    <div class="modal-overlay" id="modalPagamento">
+        <div class="modal" style="max-width:500px;">
+            <button class="close" onclick="fecharPagamento()">✕</button>
+            <h2 style="text-align:center;">💰 Pagamento PIX</h2>
+            <div id="pagamentoContent" style="text-align:center;">
+                <div class="pix-area active">
+                    <p style="font-size:20px; color:#2ecc71;">✅ Lance confirmado!</p>
+                    <p style="color:#aaa;">Efetue o pagamento via PIX para validar seu lance</p>
+                    <div id="qrCodeContainer"></div>
+                    <p style="font-size:24px; font-weight:bold; color:#2ecc71;" id="pixValor">R$ 0,00</p>
+                    <div class="pix-link" id="pixLinkContainer"></div>
+                    <button class="btn btn-success" onclick="copiarPix()">📋 Copiar Link PIX</button>
+                    <p style="color:#aaa; font-size:12px; margin-top:15px;">⏱️ Pagamento confirmado em até 5 minutos</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+    <script>
+        const API_URL = window.location.origin;
+        let socket = null;
+        let token = localStorage.getItem('token');
+        let usuarioAtual = null;
+        let itens = [];
+        let itemSelecionado = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            conectarWebSocket();
+            carregarItens();
+            carregarRanking('compradores');
+            if (token) verificarToken();
+        });
+
+        function conectarWebSocket() {
+            try {
+                socket = io();
+                socket.on('connect', () => console.log('✅ WebSocket conectado'));
+                socket.on('novo_lance', (data) => {
+                    if (itemSelecionado && itemSelecionado.id === data.item_id) {
+                        carregarDetalhesItem(data.item_id);
+                    }
+                    setTimeout(() => carregarItens(), 1000);
+                });
+            } catch (err) { console.error('WebSocket erro:', err); }
+        }
+
+        function verificarToken() {
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                usuarioAtual = payload;
+                atualizarInterface();
+                if (payload.tipo === 'admin') document.getElementById('btnAdmin').style.display = 'inline-block';
+            } catch (err) { localStorage.removeItem('token'); token = null; }
+        }
+
+        function atualizarInterface() {
+            if (usuarioAtual) {
+                document.getElementById('userName').textContent = `👤 ${usuarioAtual.nome}`;
+                document.getElementById('userCredits').textContent = `💰 R$ ${(usuarioAtual.creditos || 0).toFixed(2)}`;
+                document.getElementById('btnLogin').textContent = 'Sair';
+                document.getElementById('btnLogin').onclick = fazerLogout;
+            } else {
+                document.getElementById('userName').textContent = '👤 Convidado';
+                document.getElementById('userCredits').textContent = '💰 R$ 0';
+                document.getElementById('btnLogin').textContent = 'Entrar';
+                document.getElementById('btnLogin').onclick = abrirLogin;
+                document.getElementById('btnAdmin').style.display = 'none';
+            }
+        }
+
+        function abrirLogin() { if (usuarioAtual) return fazerLogout(); document.getElementById('modalLogin').classList.add('active'); }
+        function fecharLogin() { document.getElementById('modalLogin').classList.remove('active'); }
+        function abrirRegistro() { fecharLogin(); document.getElementById('modalRegistro').classList.add('active'); }
+        function fecharRegistro() { document.getElementById('modalRegistro').classList.remove('active'); }
+
+        async function fazerLogin(event) {
+            event.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const senha = document.getElementById('loginSenha').value;
+            try {
+                const res = await fetch(`${API_URL}/api/login`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, senha })
+                });
+                const data = await res.json();
+                if (data.sucesso) {
+                    token = data.token; localStorage.setItem('token', token);
+                    usuarioAtual = data.usuario; atualizarInterface();
+                    fecharLogin(); carregarItens();
+                    alert('✅ Login realizado!');
+                } else alert('❌ ' + (data.erro || 'Credenciais inválidas'));
+            } catch (err) { alert('❌ Erro ao fazer login'); }
+        }
+
+        async function fazerRegistro(event) {
+            event.preventDefault();
+            const nome = document.getElementById('regNome').value;
+            const email = document.getElementById('regEmail').value;
+            const senha = document.getElementById('regSenha').value;
+            try {
+                const res = await fetch(`${API_URL}/api/register`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nome, email, senha })
+                });
+                const data = await res.json();
+                if (data.sucesso) {
+                    alert('✅ Cadastro realizado! Faça login.');
+                    fecharRegistro(); abrirLogin();
+                    document.getElementById('loginEmail').value = email;
+                } else alert('❌ ' + (data.erro || 'Erro ao cadastrar'));
+            } catch (err) { alert('❌ Erro ao cadastrar'); }
+        }
+
+        function fazerLogout() {
+            localStorage.removeItem('token');
+            token = null; usuarioAtual = null;
+            atualizarInterface(); carregarItens();
+            alert('👋 Até logo!');
+        }
+
+        async function carregarItens() {
+            try {
+                const res = await fetch(`${API_URL}/api/itens`);
+                itens = await res.json();
+                renderizarItens(itens);
+            } catch (err) {
+                document.getElementById('itemsGrid').innerHTML = `
+                    <p style="grid-column:1/-1; text-align:center; color:#e94560; padding:40px;">❌ Erro ao carregar itens</p>
+                `;
+            }
+        }
+
+        function renderizarItens(lista) {
+            const grid = document.getElementById('itemsGrid');
+            if (!lista || lista.length === 0) {
+                grid.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:#aaa; padding:40px;">🏷️ Nenhum item disponível</p>`;
+                return;
+            }
+            grid.innerHTML = lista.map(item => {
+                const tempo = calcularTempo(item.data_fim);
+                const img = item.imagem || '📦';
+                const lance = item.lance_atual || item.lance_inicial;
+                const total = item.total_lances || 0;
+                return `
+                    <div class="item-card" onclick="abrirItem(${item.id})">
+                        <div class="imagem">${img.startsWith('http') ? `<img src="${img}">` : img}</div>
+                        <div class="info">
+                            <h3>${item.nome}</h3>
+                            <p>${item.descricao ? item.descricao.substring(0,60)+'...' : 'Sem descrição'}</p>
+                            <div class="preco">R$ ${lance.toFixed(2)} <span>| ${total} lances</span></div>
+                            <div class="tempo">⏱️ ${tempo}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function calcularTempo(dataFim) {
+            const fim = new Date(dataFim), agora = new Date();
+            const diff = fim - agora;
+            if (diff <= 0) return '⏰ Encerrado';
+            const dias = Math.floor(diff / (86400000));
+            const horas = Math.floor((diff % 86400000) / 3600000);
+            const mins = Math.floor((diff % 3600000) / 60000);
+            if (dias > 0) return `${dias}d ${horas}h`;
+            if (horas > 0) return `${horas}h ${mins}m`;
+            return `${mins}m`;
+        }
+
+        function filtrarItems() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const cat = document.getElementById('categoriaFilter').value;
+            const order = document.getElementById('orderFilter').value;
+            let filtrados = itens.filter(i => {
+                const match = i.nome.toLowerCase().includes(search) || (i.descricao && i.descricao.toLowerCase().includes(search));
+                const matchCat = !cat || i.categoria === cat;
+                return match && matchCat;
+            });
+            switch(order) {
+                case 'preco_menor': filtrados.sort((a,b) => (a.lance_atual||a.lance_inicial) - (b.lance_atual||b.lance_inicial)); break;
+                case 'preco_maior': filtrados.sort((a,b) => (b.lance_atual||b.lance_inicial) - (a.lance_atual||a.lance_inicial)); break;
+                case 'terminando': filtrados.sort((a,b) => new Date(a.data_fim) - new Date(b.data_fim)); break;
+                default: filtrados.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+            }
+            renderizarItens(filtrados);
+        }
+
+        async function abrirItem(id) {
+            try {
+                const res = await fetch(`${API_URL}/api/itens/${id}`);
+                const data = await res.json();
+                itemSelecionado = data;
+                document.getElementById('modalTitle').textContent = `📦 ${data.nome}`;
+                const lancesHtml = data.lances && data.lances.length > 0 ?
+                    data.lances.slice(0,10).map(l => `
+                        <div style="display:flex;justify-content:space-between;padding:8px;background:#0a0a0a;border-radius:4px;margin:5px 0;">
+                            <span>👤 ${l.usuario_nome || 'Anônimo'}</span>
+                            <span style="color:#2ecc71;">R$ ${l.valor.toFixed(2)}</span>
+                            <span style="color:#aaa;font-size:12px;">${new Date(l.data_hora).toLocaleString()}</span>
+                        </div>
+                    `).join('') : '<p style="color:#aaa;text-align:center;">Nenhum lance ainda</p>';
+                const maior = data.lances && data.lances.length > 0 ? data.lances[0].valor : data.lance_inicial;
+                const inc = data.incremento_minimo || 1;
+                const sugerido = maior + inc;
+                document.getElementById('modalContent').innerHTML = `
+                    <div class="detalhe"><strong>Descrição:</strong> ${data.descricao || 'Sem descrição'}</div>
+                    <div class="detalhe"><strong>Categoria:</strong> ${data.categoria || 'Geral'}</div>
+                    <div class="detalhe"><strong>Lance Inicial:</strong> R$ ${data.lance_inicial.toFixed(2)}</div>
+                    <div class="detalhe"><strong>Maior Lance:</strong> <span style="color:#2ecc71;font-size:20px;">R$ ${maior.toFixed(2)}</span></div>
+                    <div class="detalhe"><strong>Incremento:</strong> R$ ${inc.toFixed(2)}</div>
+                    <div class="detalhe"><strong>⏱️ Encerra em:</strong> ${calcularTempo(data.data_fim)}</div>
+                    ${data.status === 'ativo' && new Date(data.data_fim) > new Date() ? `
+                        <div class="lance-form">
+                            <input type="number" id="lanceValor" step="0.01" min="${sugerido}" value="${sugerido.toFixed(2)}">
+                            <button class="btn btn-primary" onclick="darLance()">🚀 Dar Lance</button>
+                        </div>
+                    ` : `<div style="text-align:center;padding:20px;background:#0a0a0a;border-radius:8px;color:#e94560;">⛔ Leilão encerrado</div>`}
+                    <hr style="border-color:#333;margin:20px 0;">
+                    <h3 style="color:#e94560;">📊 Últimos Lances</h3>
+                    <div style="max-height:300px;overflow-y:auto;">${lancesHtml}</div>
+                `;
+                document.getElementById('modalItem').classList.add('active');
+                if (socket) socket.emit('join_item', data.id);
+            } catch (err) { alert('❌ Erro ao carregar item'); }
+        }
+
+        function fecharModal() { document.getElementById('modalItem').classList.remove('active'); itemSelecionado = null; }
+
+        async function darLance() {
+            if (!token) { alert('⚠️ Faça login!'); abrirLogin(); return; }
+            if (!itemSelecionado) return;
+            const valor = parseFloat(document.getElementById('lanceValor').value);
+            if (!valor || valor <= 0) { alert('⚠️ Digite um valor válido'); return; }
+            const btn = document.querySelector('.lance-form .btn-primary');
+            btn.disabled = true; btn.textContent = '⏳ Processando...';
+            try {
+                const res = await fetch(`${API_URL}/api/lances`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ item_id: itemSelecionado.id, valor })
+                });
+                const data = await res.json();
+                if (data.sucesso) {
+                    mostrarPagamento(data.pagamento);
+                    setTimeout(() => carregarDetalhesItem(itemSelecionado.id), 2000);
+                    setTimeout(() => carregarItens(), 1000);
+                } else alert('❌ ' + (data.erro || 'Erro no lance'));
+            } catch (err) { alert('❌ Erro ao processar'); }
+            finally { btn.disabled = false; btn.textContent = '🚀 Dar Lance'; }
+        }
+
+        async function carregarDetalhesItem(id) {
+            try {
+                const res = await fetch(`${API_URL}/api/itens/${id}`);
+                const data = await res.json();
+                itemSelecionado = data;
+                if (document.getElementById('modalItem').classList.contains('active')) abrirItem(id);
+            } catch (err) { console.error(err); }
+        }
+
+        function mostrarPagamento(pag) {
+            document.getElementById('qrCodeContainer').innerHTML = pag.qr_code ? 
+                `<img src="${pag.qr_code}" alt="QR Code PIX">` : '<p style="color:#aaa;">QR indisponível</p>';
+            document.getElementById('pixLinkContainer').textContent = pag.pix_link || 'Link indisponível';
+            document.getElementById('pixValor').textContent = `R$ ${pag.valor.toFixed(2)}`;
+            document.getElementById('modalPagamento').classList.add('active');
+        }
+
+        function fecharPagamento() { document.getElementById('modalPagamento').classList.remove('active'); }
+
+        function copiarPix() {
+            const link = document.getElementById('pixLinkContainer').textContent;
+            if (link && link !== 'Link indisponível') {
+                navigator.clipboard.writeText(link).then(() => alert('✅ Link PIX copiado!'))
+                .catch(() => { const input = document.createElement('input'); input.value = link; document.body.appendChild(input); input.select(); document.execCommand('copy'); document.body.removeChild(input); alert('✅ Link PIX copiado!'); });
+            }
+        }
+
+        async function carregarRanking(tipo) {
+            try {
+                const res = await fetch(`${API_URL}/api/rankings`);
+                const data = await res.json();
+                document.querySelectorAll('.ranking-tabs button').forEach(b => b.classList.remove('active'));
+                const idx = tipo === 'compradores' ? 0 : tipo === 'vendedores' ? 1 : 2;
+                const btns = document.querySelectorAll('.ranking-tabs button');
+                if (btns[idx]) btns[idx].classList.add('active');
+                let lista = tipo === 'compradores' ? data.maiores_compradores : tipo === 'vendedores' ? data.maiores_vendedores : data.mais_ativos;
+                const container = document.getElementById('rankingList');
+                if (!lista || lista.length === 0) {
+                    container.innerHTML = '<p style="color:#aaa;text-align:center;">Nenhum dado disponível</p>';
+                    return;
+                }
+                container.innerHTML = lista.map((item, i) => {
+                    const pos = i + 1;
+                    const medalha = pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : `#${pos}`;
+                    const valor = tipo === 'compradores' ? item.total_gasto : tipo === 'vendedores' ? item.total_vendas : item.total_lances;
+                    const extra = tipo === 'compradores' ? `${item.total_lances || 0} lances` :
+                                  tipo === 'vendedores' ? `${item.total_itens || 0} itens` :
+                                  `${item.total_movimentado ? 'R$ '+item.total_movimentado.toFixed(2) : ''}`;
+                    return `
+                        <div class="ranking-item">
+                            <span class="pos">${medalha}</span>
+                            <span class="nome">${item.nome}</span>
+                            <span class="valor">${tipo === 'compradores' || tipo === 'vendedores' ? 'R$ ' : ''}${valor ? valor.toFixed(2) : '0.00'}</span>
+                            <span class="extra">${extra}</span>
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) { console.error(err); }
+        }
+
+        document.querySelectorAll('.modal-overlay').forEach(o => {
+            o.addEventListener('click', (e) => { if (e.target === o) o.classList.remove('active'); });
+        });
+
+        setInterval(() => {
+            if (document.getElementById('modalItem').classList.contains('active') && itemSelecionado) {
+                carregarDetalhesItem(itemSelecionado.id);
+            }
+            carregarItens();
+        }, 30000);
+
+        console.log('🚀 Leilão Express iniciado!');
+    </script>
+</body>
+</html>

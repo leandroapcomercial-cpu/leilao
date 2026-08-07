@@ -30,21 +30,7 @@ const MAX_DURACAO_MINUTOS = 43200; // 30 DIAS
 // ========== MIDDLEWARES ==========
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
-app.use((req, res, next) => {
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-    next();
-});
-app.use(express.static('public', {
-    etag: false,
-    lastModified: false,
-    setHeaders: (res, path) => {
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-    }
-}));
+app.use(express.static('public'));
 app.use('/uploads', express.static(UPLOAD_DIR));
 
 // ========== MULTER ==========
@@ -882,9 +868,6 @@ app.put('/api/admin/campanhas/:id', verificarAdmin, upload.single('premio_imagem
         influencer, metas_internas
     } = req.body;
 
-    console.log(`📝 [EDITAR] Requisição recebida para campanha ${id}`);
-    console.log(`📝 [EDITAR] Body completo:`, JSON.stringify(req.body, null, 2));
-
     try {
         const campanha = db.campanhas.find(c => c.id === id);
         if (!campanha) {
@@ -986,9 +969,8 @@ app.put('/api/admin/campanhas/:id', verificarAdmin, upload.single('premio_imagem
 
         res.json({ 
             sucesso: true, 
-            mensagem: 'Campanha atualizada com sucesso',
-            url: novaUrl,
-            duracao_aplicada: itemUpdates.data_fim ? true : false
+            mensagem: 'Campanha atualizada',
+            url: novaUrl
         });
     } catch (e) {
         console.error('Erro ao editar campanha:', e);

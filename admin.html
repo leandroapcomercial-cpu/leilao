@@ -599,9 +599,6 @@
             .dashboard { grid-template-columns:1fr; }
         }
     </style>
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
 </head>
 <body>
     <header class="header">
@@ -772,7 +769,7 @@
                     </div>
                     <div class="form-group">
                         <label>Duração do Leilão (minutos)</label>
-                        <input type="text" id="campDuracao" inputmode="numeric" pattern="[0-9]*" value="1440" placeholder="1440" novalidate>
+                        <input type="number" id="campDuracao" min="1" value="1440" placeholder="1440">
                         <small style="color:#6B7280;font-size:11px;">Tempo total do leilão em minutos (1440 = 24h, máximo 43200 = 30 dias)</small>
                     </div>
                     <button type="submit" class="btn btn-success" style="width:100%;">✅ Criar Leilão</button>
@@ -784,12 +781,11 @@
         </div>
     </div>
 
-    <!-- MODAL EDITAR - VERSÃO BLINDADA CONTRA VALIDAÇÃO HTML5 -->
+    <!-- MODAL EDITAR -->
     <div class="modal-overlay" id="modalEditar">
         <div class="modal">
             <button class="close" onclick="fecharModalEditar()">✕</button>
             <h2>✏️ Editar Leilão</h2>
-            <!-- FORMULÁRIO COM novalidate para DESATIVAR validação HTML5 -->
             <form onsubmit="salvarEdicao(event)" enctype="multipart/form-data" novalidate>
                 <input type="hidden" id="editCampanhaId">
                 
@@ -871,22 +867,38 @@
                     <small style="color:#6B7280;font-size:11px;">Valor necessário para atingir a premiação</small>
                 </div>
                 
-                <!-- ===== CAMPO DE DURAÇÃO BLINDADO ===== -->
-                <!-- USAMOS type="text" EM VEZ DE type="number" para EVITAR validação HTML5 -->
+                <!-- CAMPO DE DURAÇÃO CORRIGIDO - SEM VALIDAÇÃO HTML5 -->
                 <div class="form-group">
                     <label>Duração Total (minutos)</label>
                     <input type="text" id="editDuracao" 
                            inputmode="numeric" 
-                           value="1440"
-                           autocomplete="off"
-                           autocorrect="off"
-                           autocapitalize="off"
-                           spellcheck="false"
-                           data-lpignore="true"
-                           style="-webkit-appearance:none; appearance:none;"
-                           onkeydown="return (event.key >= '0' && event.key <= '9') || event.key === 'Backspace' || event.key === 'Delete' || event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'Tab' || event.key === 'Enter'"
-                           oninput="this.value = this.value.replace(/[^0-9]/g, ''); editarAtualizarTempo();"
-                           onblur="editarAtualizarTempo();">
+                           pattern="[0-9]*" 
+                           required
+                           oninput="this.value = this.value.replace(/[^0-9]/g, ''); 
+                                    if(this.value && parseInt(this.value) > 43200) { 
+                                        this.value = '43200'; 
+                                        document.getElementById('editTempoInfo').textContent = '⏱️ Duração: 30d 0h (máximo)';
+                                        this.setCustomValidity('');
+                                    } else if(this.value && parseInt(this.value) < 1) {
+                                        this.value = '1';
+                                    } else {
+                                        this.setCustomValidity('');
+                                    }
+                                    if(this.value) {
+                                        const val = parseInt(this.value) || 0;
+                                        document.getElementById('editTempoInfo').textContent = '⏱️ Duração: ' + formatarDuracao(val);
+                                    }"
+                           oninvalid="this.setCustomValidity('');"
+                           onblur="if(this.value) { 
+                                    let val = parseInt(this.value) || 1440;
+                                    if(val > 43200) { this.value = '43200'; }
+                                    if(val < 1) { this.value = '1'; }
+                                    this.setCustomValidity('');
+                                    document.getElementById('editTempoInfo').textContent = '⏱️ Duração: ' + formatarDuracao(parseInt(this.value) || 0);
+                                  } else {
+                                    this.value = '1440';
+                                    document.getElementById('editTempoInfo').textContent = '⏱️ Duração: 24h (padrão)';
+                                  }">
                     <small style="color:#6B7280;font-size:11px;">Tempo total do leilão em minutos (1440 = 24h, máximo 43200 = 30 dias)</small>
                     <div class="tempo-info" id="editTempoInfo">⏱️ Duração: 24h (padrão)</div>
                 </div>
@@ -915,7 +927,6 @@
 
         // ===== BLOQUEIA COMPLETAMENTE A VALIDAÇÃO HTML5 =====
         document.addEventListener('DOMContentLoaded', function() {
-            // Remove qualquer validação de todos os inputs
             document.querySelectorAll('input').forEach(function(input) {
                 input.removeAttribute('max');
                 input.removeAttribute('min');
@@ -933,6 +944,17 @@
                 verificarToken(token);
             }
         });
+
+        function formatarDuracao(minutos) {
+            if (minutos <= 0) return '0 minutos';
+            if (minutos < 60) return `${minutos} minutos`;
+            const h = Math.floor(minutos / 60);
+            const m = minutos % 60;
+            if (h < 24) return `${h}h ${m > 0 ? m + 'm' : ''}`;
+            const d = Math.floor(h / 24);
+            const rh = h % 24;
+            return `${d}d ${rh}h${m > 0 ? ' ' + m + 'm' : ''}`;
+        }
 
         async function verificarToken(token) {
             try {
@@ -1127,17 +1149,6 @@
             return `${m}m`;
         }
 
-        function formatarDuracao(minutos) {
-            if (minutos <= 0) return '0 minutos';
-            if (minutos < 60) return `${minutos} minutos`;
-            const h = Math.floor(minutos / 60);
-            const m = minutos % 60;
-            if (h < 24) return `${h}h ${m > 0 ? m + 'm' : ''}`;
-            const d = Math.floor(h / 24);
-            const rh = h % 24;
-            return `${d}d ${rh}h${m > 0 ? ' ' + m + 'm' : ''}`;
-        }
-
         function adicionarMeta(containerId, porcentagem, premio) {
             const container = document.getElementById(containerId);
             const row = document.createElement('div');
@@ -1148,10 +1159,6 @@
                 <button type="button" class="btn btn-danger btn-sm" onclick="removerMeta(this)" style="padding:4px 10px;">✕</button>
             `;
             container.appendChild(row);
-        }
-
-        function adicionarMetaCriacao() {
-            adicionarMeta('metasInternasContainer');
         }
 
         function adicionarMetaEdicao() {
@@ -1421,7 +1428,6 @@
             if (isNaN(dados.meta_valor) || dados.meta_valor <= 0) {
                 erros.push('Meta deve ser um valor maior que 0');
             }
-            // NUNCA MAIS VALIDA DURAÇÃO AQUI
             return erros;
         }
 
@@ -1569,7 +1575,6 @@
                 adicionarMeta('editMetasInternasContainer', 100, 'R$ 500,00');
             }
             
-            // Calcula a duração atual
             let duracaoAtual = 1440;
             if (campanha.data_fim && campanha.started_at) {
                 const inicio = new Date(campanha.started_at);
@@ -1587,8 +1592,8 @@
                 }
             }
             
-            document.getElementById('editDuracao').value = duracaoAtual.toString();
-            document.getElementById('editTempoInfo').textContent = '⏱️ Duração: ' + formatarDuracao(duracaoAtual);
+            document.getElementById('editDuracao').value = duracaoAtual;
+            document.getElementById('editTempoInfo').textContent = `⏱️ Duração: ${formatarDuracao(duracaoAtual)}`;
             
             document.getElementById('editPremioImagemUrl').value = campanha.premio_imagem_url || '';
             
@@ -1641,8 +1646,7 @@
             const item_descricao = document.getElementById('editItemDesc').value.trim();
             const item_categoria = document.getElementById('editItemCategoria').value;
             
-            // Pega a duração do campo text (já validado pelo oninput)
-            let duracao = parseInt(document.getElementById('editDuracao').value.replace(/[^0-9]/g, '')) || 1440;
+            let duracao = parseInt(document.getElementById('editDuracao').value) || 1440;
             if (duracao > MAX_DURACAO) {
                 duracao = MAX_DURACAO;
                 document.getElementById('editDuracao').value = MAX_DURACAO;
@@ -1802,55 +1806,6 @@
                 mostrarMsg('✅ Backup exportado com sucesso!', 'sucesso');
             })
             .catch(() => mostrarMsg('❌ Erro ao exportar dados', 'erro'));
-        }
-
-        // ===== BLOQUEIO ADICIONAL PARA O CAMPO DE DURAÇÃO =====
-        document.addEventListener('DOMContentLoaded', function() {
-            const duracaoInput = document.getElementById('editDuracao');
-            if (duracaoInput) {
-                // Remove qualquer validação residual
-                duracaoInput.setCustomValidity('');
-                duracaoInput.removeAttribute('max');
-                duracaoInput.removeAttribute('min');
-                
-                // Força a remoção da validação em qualquer evento
-                duracaoInput.addEventListener('invalid', function(e) {
-                    e.preventDefault();
-                    this.setCustomValidity('');
-                });
-            }
-        });
-
-        // Remove qualquer validação HTML5 nativa do campo de duração
-        document.getElementById('editDuracao')?.addEventListener('invalid', function(e) {
-            e.preventDefault();
-            this.setCustomValidity('');
-        });
-
-        document.getElementById('campDuracao')?.addEventListener('invalid', function(e) {
-            e.preventDefault();
-            this.setCustomValidity('');
-        });
-
-        // ===== FUNÇÃO PARA ATUALIZAR TEMPO NO MODAL DE EDIÇÃO =====
-        function editarAtualizarTempo() {
-            const input = document.getElementById('editDuracao');
-            const info = document.getElementById('editTempoInfo');
-            if (!input || !info) return;
-
-            let val = parseInt(input.value.replace(/[^0-9]/g, '')) || 1440;
-
-            if (val > 43200) {
-                val = 43200;
-                input.value = '43200';
-            } else if (val < 1) {
-                val = 1;
-                input.value = '1';
-            } else {
-                input.value = val.toString();
-            }
-
-            info.textContent = '⏱️ Duração: ' + formatarDuracao(val);
         }
 
         setInterval(() => {
