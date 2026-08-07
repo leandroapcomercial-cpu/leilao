@@ -2,1824 +2,681 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Leilão Fácil</title>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
-        body { 
-            font-family:-apple-system,'Segoe UI',Roboto,sans-serif; 
-            background:#F8F9FA; 
-            color:#1A2B4C; 
-            -webkit-font-smoothing:antialiased;
-            min-height:100vh;
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
         }
-        .header {
-            background:#FFFFFF;
-            padding:12px 20px;
-            border-bottom:3px solid #0066FF;
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            flex-wrap:wrap;
-            gap:10px;
-            box-shadow:0 2px 8px rgba(0,0,0,0.04);
-            position:sticky;
-            top:0;
-            z-index:100;
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
         }
-        .header h1 { font-size:20px; color:#0066FF; }
-        .header h1 span { color:#1A2B4C; }
-        .header .btn-voltar { 
-            padding:6px 16px; 
-            border:1px solid #0066FF; 
-            border-radius:8px; 
-            background:transparent; 
-            color:#0066FF; 
-            cursor:pointer; 
-            font-weight:600;
-            transition:all 0.3s;
-            text-decoration:none;
-            font-size:13px;
+        h1 { color: #1a1a2e; font-size: 24px; margin-bottom: 8px; }
+        .sub { color: #666; margin-bottom: 24px; }
+        .login-box {
+            max-width: 400px;
+            margin: 40px auto;
+            padding: 30px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            border: 1px solid #e0e0e0;
         }
-        .header .btn-voltar:hover { background:#0066FF; color:#fff; }
-        .header .user-info {
-            display:flex;
-            align-items:center;
-            gap:10px;
+        .login-box h2 { text-align: center; color: #1a1a2e; margin-bottom: 8px; }
+        .login-box .sub { text-align: center; color: #888; margin-bottom: 20px; }
+        .login-box input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 12px;
         }
-        .header .user-info .admin-badge {
-            background:#0066FF;
-            color:#fff;
-            padding:4px 12px;
-            border-radius:12px;
-            font-size:12px;
-            font-weight:600;
+        .login-box input:focus { border-color: #0066FF; outline: none; }
+        .login-box .btn {
+            width: 100%;
+            padding: 12px;
+            background: #0066FF;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
         }
-        .header .user-info .btn-sair {
-            padding:4px 12px;
-            border:1px solid #DC2626;
-            border-radius:6px;
-            background:transparent;
-            color:#DC2626;
-            cursor:pointer;
-            font-size:12px;
-            font-weight:600;
-            transition:all 0.3s;
-        }
-        .header .user-info .btn-sair:hover { background:#DC2626; color:#fff; }
-        .header #adminStatus {
-            font-size:12px;
-            padding:4px 12px;
-            border-radius:4px;
-        }
-        .container { max-width:1200px; margin:0 auto; padding:16px; }
+        .login-box .btn:hover { background: #0052CC; }
+        .login-box .erro { color: #dc2626; text-align: center; margin-top: 12px; display: none; }
+        .hidden { display: none !important; }
         .btn {
-            padding:8px 20px;
-            border:none;
-            border-radius:8px;
-            font-size:13px;
-            font-weight:600;
-            cursor:pointer;
-            transition:all 0.3s;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
         }
-        .btn-primary { background:#0066FF; color:#fff; }
-        .btn-primary:hover { background:#0052CC; }
-        .btn-secondary { background:#E9ECEF; color:#1A2B4C; border:1px solid #DEE2E6; }
-        .btn-secondary:hover { background:#DEE2E6; }
-        .btn-success { background:#10B981; color:#fff; }
-        .btn-success:hover { background:#059669; }
-        .btn-danger { background:#DC2626; color:#fff; }
-        .btn-danger:hover { background:#B91C1C; }
-        .btn-warning { background:#FF8C00; color:#fff; }
-        .btn-warning:hover { background:#E67E00; }
-        .btn-sm { padding:4px 12px; font-size:12px; }
-        .btn-outline { background:transparent; border:1px solid #0066FF; color:#0066FF; }
-        .btn-outline:hover { background:#0066FF; color:#fff; }
+        .btn-primary { background: #0066FF; color: #fff; }
+        .btn-primary:hover { background: #0052CC; }
+        .btn-success { background: #10B981; color: #fff; }
+        .btn-success:hover { background: #059669; }
+        .btn-danger { background: #DC2626; color: #fff; }
+        .btn-danger:hover { background: #B91C1C; }
+        .btn-warning { background: #FF8C00; color: #fff; }
+        .btn-warning:hover { background: #E67E00; }
+        .btn-secondary { background: #e5e7eb; color: #1a1a2e; }
+        .btn-secondary:hover { background: #d1d5db; }
+        .btn-sm { padding: 4px 12px; font-size: 12px; }
         .tabs {
-            display:flex;
-            gap:8px;
-            flex-wrap:wrap;
-            margin-bottom:16px;
-            justify-content:center;
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
         }
         .tabs button {
-            padding:10px 24px;
-            border:none;
-            border-radius:8px;
-            background:#F3F4F6;
-            color:#6B7280;
-            cursor:pointer;
-            transition:all 0.3s;
-            font-weight:600;
-            font-size:14px;
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            background: #e5e7eb;
+            color: #666;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
         }
-        .tabs button.active { background:#0066FF; color:#fff; }
-        .tabs button:hover:not(.active) { background:#E5E7EB; }
-        .table-container {
-            background:#FFFFFF;
-            border-radius:12px;
-            padding:16px;
-            box-shadow:0 2px 8px rgba(0,0,0,0.04);
-            overflow-x:auto;
-            border:1px solid #E5E7EB;
-        }
-        table { width:100%; border-collapse:collapse; font-size:14px; }
-        th { 
-            text-align:left; 
-            padding:10px; 
-            color:#0066FF; 
-            border-bottom:2px solid #F3F4F6; 
-            font-size:13px;
-        }
-        td { padding:10px; border-bottom:1px solid #F3F4F6; font-size:13px; }
-        tr:hover td { background:#F8F9FA; }
-        .status-ativo { color:#10B981; font-weight:600; }
-        .status-inativo { color:#DC2626; font-weight:600; }
+        .tabs button.active { background: #0066FF; color: #fff; }
+        .tabs button:hover:not(.active) { background: #d1d5db; }
         .admin-form {
-            background:#FFFFFF;
-            padding:24px;
-            border-radius:12px;
-            box-shadow:0 2px 8px rgba(0,0,0,0.04);
-            border:1px solid #E5E7EB;
-            display:none;
-            max-width:700px;
-            margin:0 auto;
+            background: #f8f9fa;
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            max-width: 700px;
+            margin: 0 auto;
+            display: none;
         }
-        .admin-form.active { display:block; }
-        .admin-form h3 { color:#0066FF; margin-bottom:16px; text-align:center; font-size:18px; }
-        .admin-form h4 { 
-            color:#1A2B4C; 
-            margin:16px 0 12px 0; 
-            text-align:center; 
-            font-size:15px;
-            padding-top:12px;
-            border-top:1px solid #E5E7EB;
+        .admin-form.active { display: block; }
+        .admin-form h3 { color: #0066FF; margin-bottom: 16px; text-align: center; }
+        .admin-form h4 { color: #1a1a2e; margin: 16px 0 12px; text-align: center; border-top: 1px solid #e5e7eb; padding-top: 16px; }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-weight: 600; font-size: 13px; color: #1a1a2e; margin-bottom: 4px; }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border 0.3s;
         }
-        .form-group { margin-bottom:14px; }
-        .form-group label { 
-            display:block; 
-            margin-bottom:4px; 
-            color:#1A2B4C; 
-            font-size:13px; 
-            font-weight:500; 
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            border-color: #0066FF;
+            outline: none;
         }
-        .form-group input, 
-        .form-group select, 
-        .form-group textarea { 
-            width:100%; 
-            padding:10px 12px; 
-            border-radius:8px; 
-            border:2px solid #E5E7EB; 
-            font-size:14px; 
-            transition:border .3s; 
-            background:#fff; 
-            -webkit-appearance:none; 
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .msg {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin: 8px 0;
+            text-align: center;
+            font-weight: 500;
         }
-        .form-group input:focus, 
-        .form-group select:focus { outline:none; border-color:#0066FF; }
-        .form-group input[type="file"] { padding:8px; border:2px dashed #E5E7EB; cursor:pointer; }
-        .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-        .hidden { display:none !important; }
-        .msg { 
-            padding:10px 14px; 
-            border-radius:8px; 
-            margin:8px auto; 
-            max-width:600px; 
-            text-align:center; 
-            font-size:14px; 
+        .msg.sucesso { background: #d1fae5; color: #065f46; }
+        .msg.erro { background: #fee2e2; color: #991b1b; }
+        .msg.info { background: #dbeafe; color: #1e40af; }
+        .table-container {
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid #e5e7eb;
+            overflow-x: auto;
         }
-        .msg.sucesso { background:#D1FAE5; color:#059669; border-left:4px solid #10B981; }
-        .msg.erro { background:#FEE2E2; color:#DC2626; border-left:4px solid #DC2626; }
-        .msg.info { background:#DBEAFE; color:#2563EB; border-left:4px solid #0066FF; }
-        .url-gerada { 
-            background:#F0F4FF; 
-            padding:12px; 
-            border-radius:8px; 
-            margin-top:12px; 
-            word-break:break-all; 
-            border:1px solid #0066FF;
-            text-align:center;
-        }
-        .url-gerada a { color:#0066FF; text-decoration:none; font-weight:600; }
-        .url-gerada a:hover { text-decoration:underline; }
-
-        .premio-preview {
-            display:flex;
-            align-items:center;
-            gap:12px;
-            padding:10px;
-            background:#F8F9FA;
-            border-radius:8px;
-            margin-top:8px;
-            flex-wrap:wrap;
-        }
-        .premio-preview img {
-            max-width:80px;
-            max-height:80px;
-            border-radius:8px;
-            border:2px solid #E5E7EB;
-            object-fit:contain;
-            background:#fff;
-        }
-        .premio-preview .emoji {
-            font-size:48px;
-            line-height:1;
-        }
-
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th { text-align: left; padding: 10px; color: #0066FF; border-bottom: 2px solid #f3f4f6; }
+        td { padding: 10px; border-bottom: 1px solid #f3f4f6; }
+        tr:hover td { background: #f8f9fa; }
+        .status-ativo { color: #10B981; font-weight: 600; }
+        .status-inativo { color: #DC2626; font-weight: 600; }
         .campanha-card {
-            background:#FFFFFF;
-            border-radius:12px;
-            border:1px solid #E5E7EB;
-            padding:16px;
-            margin-bottom:12px;
-            transition:all 0.3s;
-        }
-        .campanha-card:hover {
-            border-color:#0066FF;
-            box-shadow:0 4px 12px rgba(0,102,255,0.08);
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid #e5e7eb;
+            margin-bottom: 12px;
         }
         .campanha-card .topo {
-            display:flex;
-            justify-content:space-between;
-            align-items:flex-start;
-            flex-wrap:wrap;
-            gap:10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 8px;
         }
-        .campanha-card .topo .titulo {
-            font-size:18px;
-            font-weight:600;
-            color:#1A2B4C;
-        }
-        .campanha-card .topo .titulo small {
-            font-weight:400;
-            font-size:13px;
-            color:#6B7280;
-            margin-left:8px;
-        }
+        .campanha-card .topo .titulo { font-size: 18px; font-weight: 600; color: #1a1a2e; }
+        .campanha-card .topo .titulo small { font-weight: 400; font-size: 13px; color: #888; margin-left: 8px; }
         .campanha-card .topo .status-badge {
-            padding:4px 12px;
-            border-radius:12px;
-            font-size:12px;
-            font-weight:600;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
         }
-        .campanha-card .topo .status-badge.ativa { background:#D1FAE5; color:#059669; }
-        .campanha-card .topo .status-badge.inativa { background:#FEE2E2; color:#DC2626; }
-        .campanha-card .premio-row {
-            display:flex;
-            align-items:center;
-            gap:12px;
-            margin:8px 0;
-            padding:8px 12px;
-            background:#F8F9FA;
-            border-radius:8px;
-        }
-        .campanha-card .premio-row img {
-            max-width:50px;
-            max-height:50px;
-            border-radius:6px;
-            object-fit:contain;
-            background:#fff;
-            border:1px solid #E5E7EB;
-        }
-        .campanha-card .premio-row .emoji {
-            font-size:32px;
-        }
-        .campanha-card .premio-row .label {
-            font-size:13px;
-            color:#6B7280;
-        }
-
-        .dashboard {
-            display:grid;
-            grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
-            gap:16px;
-            margin-bottom:24px;
-        }
-        .dashboard .card {
-            background:#FFFFFF;
-            border-radius:12px;
-            padding:16px 20px;
-            border:1px solid #E5E7EB;
-            text-align:center;
-            transition:all 0.3s;
-        }
-        .dashboard .card:hover {
-            border-color:#0066FF;
-            box-shadow:0 4px 12px rgba(0,102,255,0.08);
-        }
-        .dashboard .card .numero {
-            font-size:32px;
-            font-weight:700;
-            color:#0066FF;
-        }
-        .dashboard .card .numero.verde { color:#10B981; }
-        .dashboard .card .numero.vermelho { color:#DC2626; }
-        .dashboard .card .numero.laranja { color:#FF8C00; }
-        .dashboard .card .label {
-            font-size:13px;
-            color:#6B7280;
-            margin-top:4px;
-        }
-        .dashboard .card .sub {
-            font-size:12px;
-            color:#9CA3AF;
-            margin-top:2px;
-        }
-        .dashboard .card .meta-grafico-mini {
-            margin-top:8px;
-            height:6px;
-            background:#E5E7EB;
-            border-radius:3px;
-            overflow:hidden;
-        }
-        .dashboard .card .meta-grafico-mini .barra {
-            height:100%;
-            border-radius:3px;
-            background:linear-gradient(90deg, #0066FF, #10B981);
-            transition:width 1s ease;
-        }
-        .dashboard .card .meta-grafico-mini .barra.atingida {
-            background:linear-gradient(90deg, #10B981, #059669);
-        }
-
+        .campanha-card .topo .status-badge.ativa { background: #d1fae5; color: #065f46; }
+        .campanha-card .topo .status-badge.inativa { background: #fee2e2; color: #991b1b; }
         .campanha-card .detalhes {
-            display:grid;
-            grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));
-            gap:12px;
-            margin-top:12px;
-            padding-top:12px;
-            border-top:1px solid #F3F4F6;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #f3f4f6;
         }
-        .campanha-card .detalhes .item {
-            text-align:center;
-        }
-        .campanha-card .detalhes .item .valor {
-            font-size:20px;
-            font-weight:700;
-            color:#0066FF;
-        }
-        .campanha-card .detalhes .item .label {
-            font-size:12px;
-            color:#6B7280;
-            margin-top:2px;
-        }
-        .campanha-card .detalhes .item .meta-atingida {
-            color:#10B981;
-            font-size:14px;
-        }
-        .campanha-card .detalhes .item .meta-nao-atingida {
-            color:#DC2626;
-            font-size:14px;
-        }
-        
-        .meta-grafico {
-            margin-top:12px;
-            padding:12px;
-            background:#F8F9FA;
-            border-radius:8px;
-            border:1px solid #E5E7EB;
-        }
-        .meta-grafico .barra-container {
-            width:100%;
-            height:20px;
-            background:#E5E7EB;
-            border-radius:10px;
-            overflow:hidden;
-            position:relative;
-        }
-        .meta-grafico .barra-container .barra {
-            height:100%;
-            border-radius:10px;
-            transition:width 1s ease;
-            background:linear-gradient(90deg, #0066FF, #10B981);
-        }
-        .meta-grafico .barra-container .barra.atingida {
-            background:linear-gradient(90deg, #10B981, #059669);
-        }
-        .meta-grafico .info-meta {
-            display:flex;
-            justify-content:space-between;
-            font-size:13px;
-            color:#6B7280;
-            margin-top:4px;
-        }
-        .meta-grafico .info-meta .porcentagem {
-            font-weight:700;
-            color:#0066FF;
-        }
-        .meta-grafico .info-meta .porcentagem.atingida {
-            color:#10B981;
-        }
-
+        .campanha-card .detalhes .item { text-align: center; }
+        .campanha-card .detalhes .item .valor { font-size: 20px; font-weight: 700; color: #0066FF; }
+        .campanha-card .detalhes .item .label { font-size: 12px; color: #888; }
         .campanha-card .acoes {
-            margin-top:12px;
-            padding-top:12px;
-            border-top:1px solid #F3F4F6;
-            display:flex;
-            gap:8px;
-            flex-wrap:wrap;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #f3f4f6;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
         }
-        .campanha-card .url {
-            font-size:12px;
-            color:#6B7280;
-            margin-top:8px;
-        }
-        .campanha-card .url a { color:#0066FF; text-decoration:none; }
-        .campanha-card .url a:hover { text-decoration:underline; }
-
-        .footer { text-align:center; padding:20px; color:#9CA3AF; font-size:12px; }
-
+        .campanha-card .url { font-size: 12px; color: #888; margin-top: 8px; }
+        .campanha-card .url a { color: #0066FF; text-decoration: none; }
+        .campanha-card .url a:hover { text-decoration: underline; }
+        .footer { text-align: center; padding: 20px; color: #888; font-size: 12px; margin-top: 20px; }
         .modal-overlay {
-            display:none;
-            position:fixed;
-            top:0;
-            left:0;
-            width:100%;
-            height:100%;
-            background:rgba(0,0,0,0.4);
-            z-index:9999;
-            justify-content:center;
-            align-items:center;
-            padding:16px;
-            backdrop-filter:blur(4px);
-            -webkit-backdrop-filter:blur(4px);
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
         }
-        .modal-overlay.active { display:flex; }
+        .modal-overlay.active { display: flex; }
         .modal {
-            background:#FFFFFF;
-            border-radius:16px;
-            max-width:600px;
-            width:100%;
-            max-height:90vh;
-            overflow-y:auto;
-            padding:24px;
-            position:relative;
-            animation:modalIn 0.3s ease;
-        }
-        @keyframes modalIn {
-            from { transform:scale(0.95); opacity:0; }
-            to { transform:scale(1); opacity:1; }
+            background: #fff;
+            border-radius: 16px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 24px;
+            position: relative;
         }
         .modal .close {
-            position:absolute;
-            top:12px;
-            right:16px;
-            font-size:24px;
-            cursor:pointer;
-            color:#9CA3AF;
-            background:none;
-            border:none;
-            transition:color 0.3s;
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #888;
+            background: none;
+            border: none;
         }
-        .modal .close:hover { color:#0066FF; }
-        .modal h2 { font-size:20px; color:#1A2B4C; margin-bottom:16px; }
-        .modal .form-group { margin-bottom:12px; }
-        .modal .form-group label { display:block; font-size:13px; font-weight:500; color:#1A2B4C; margin-bottom:4px; }
-        .modal .form-group input { width:100%; padding:10px 12px; border:2px solid #E5E7EB; border-radius:8px; font-size:14px; }
-        .modal .form-group input:focus { outline:none; border-color:#0066FF; }
-        .modal .form-group input[type="file"] { padding:8px; border:2px dashed #E5E7EB; cursor:pointer; }
-        .modal .form-group .tempo-info {
-            font-size:12px;
-            color:#6B7280;
-            margin-top:4px;
-        }
-        .modal .meta-row {
-            display:flex;
-            gap:8px;
-            margin-bottom:6px;
-            flex-wrap:wrap;
-            align-items:center;
-        }
-        .modal .meta-row input {
-            flex:1;
-            min-width:80px;
-            padding:8px;
-            border:2px solid #E5E7EB;
-            border-radius:6px;
-            font-size:13px;
-        }
-        .modal .meta-row input.meta-premio {
-            flex:2;
-            min-width:120px;
-        }
-
-        .login-container {
-            max-width:400px;
-            margin:60px auto;
-            background:#FFFFFF;
-            padding:32px;
-            border-radius:16px;
-            border:1px solid #E5E7EB;
-            box-shadow:0 4px 20px rgba(0,0,0,0.06);
-        }
-        .login-container h2 {
-            color:#0066FF;
-            text-align:center;
-            margin-bottom:8px;
-            font-size:22px;
-        }
-        .login-container p.sub {
-            color:#6B7280;
-            text-align:center;
-            margin-bottom:24px;
-            font-size:14px;
-        }
-        .login-container .form-group {
-            margin-bottom:16px;
-        }
-        .login-container .form-group label {
-            display:block;
-            font-size:13px;
-            font-weight:500;
-            color:#1A2B4C;
-            margin-bottom:4px;
-        }
-        .login-container .form-group input {
-            width:100%;
-            padding:12px 14px;
-            border:2px solid #E5E7EB;
-            border-radius:8px;
-            font-size:15px;
-            transition:border 0.3s;
-        }
-        .login-container .form-group input:focus {
-            outline:none;
-            border-color:#0066FF;
-        }
-        .login-container .btn {
-            width:100%;
-            padding:12px;
-            font-size:16px;
-        }
-        .login-container .erro {
-            color:#DC2626;
-            text-align:center;
-            margin-top:12px;
-            display:none;
-            font-size:14px;
-        }
-
+        .modal .close:hover { color: #0066FF; }
+        .modal h2 { font-size: 20px; color: #1a1a2e; margin-bottom: 16px; }
+        .modal .form-group { margin-bottom: 12px; }
+        .modal .form-group label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+        .modal .form-group input { width: 100%; padding: 10px 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; }
+        .modal .form-group input:focus { border-color: #0066FF; outline: none; }
+        .modal .form-group .tempo-info { font-size: 12px; color: #888; margin-top: 4px; }
         .loading-spinner {
-            display:inline-block;
-            width:16px;
-            height:16px;
-            border:2px solid #fff;
-            border-top:2px solid transparent;
-            border-radius:50%;
-            animation:spin 0.8s linear infinite;
-            vertical-align:middle;
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #fff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            vertical-align: middle;
         }
-        @keyframes spin {
-            0% { transform:rotate(0deg); }
-            100% { transform:rotate(360deg); }
-        }
-
-        @media (max-width:480px) {
-            .header h1 { font-size:17px; }
-            .header { padding:10px 12px; }
-            .btn { font-size:12px; padding:6px 14px; }
-            .table-container { padding:10px; }
-            table { font-size:12px; }
-            th, td { padding:6px; }
-            .form-row { grid-template-columns:1fr; }
-            .admin-form { padding:16px; }
-            .tabs button { padding:8px 16px; font-size:13px; }
-            .campanha-card .detalhes { grid-template-columns:1fr 1fr; }
-            .premio-preview img { max-width:60px; max-height:60px; }
-            .campanha-card .premio-row img { max-width:40px; max-height:40px; }
-            .login-container { margin:30px 16px; padding:24px; }
-            .meta-grafico .info-meta { font-size:11px; flex-direction:column; align-items:center; gap:2px; }
-            .modal { padding:16px; }
-            .dashboard { grid-template-columns:1fr 1fr; gap:10px; }
-            .dashboard .card .numero { font-size:24px; }
-            .modal .meta-row input { min-width:60px; font-size:12px; }
-            .modal .meta-row input.meta-premio { min-width:80px; }
-        }
-        @media (max-width:380px) {
-            .dashboard { grid-template-columns:1fr; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @media (max-width: 600px) {
+            .form-row { grid-template-columns: 1fr; }
+            .container { padding: 16px; }
+            .campanha-card .detalhes { grid-template-columns: 1fr 1fr; }
         }
     </style>
 </head>
 <body>
-    <header class="header">
-        <h1>⚡ <span>Admin</span> Leilão</h1>
-        <div class="user-info">
-            <span class="admin-badge">🔐 Admin</span>
-            <span id="adminStatus" style="display:none;background:#D1FAE5;color:#059669;">✅ Sistema operando</span>
-            <button class="btn-sair" onclick="fazerLogout()">🚪 Sair</button>
-            <a href="/" class="btn-voltar">🏠 Ver Leilão</a>
-        </div>
-    </header>
+<div class="container">
+    <h1>⚡ Admin Leilão</h1>
+    <p class="sub">Gerencie seus leilões</p>
 
-    <div class="container">
-        <div id="loginAdmin" class="login-container">
-            <h2>🔐 Acesso Admin</h2>
-            <p class="sub">Digite a senha para acessar o painel</p>
-            <form onsubmit="fazerLogin(event)">
-                <div class="form-group">
-                    <label>Senha</label>
-                    <input type="password" id="senhaAdmin" placeholder="Digite a senha" required>
-                </div>
-                <button type="submit" class="btn btn-primary">🔓 Entrar</button>
-                <p class="erro" id="loginErro">Senha incorreta</p>
-            </form>
-        </div>
-
-        <div id="painelAdmin" style="display:none;">
-            <div id="msgArea"></div>
-
-            <div class="dashboard" id="dashboardContainer">
-                <div class="card">
-                    <div class="numero" id="dashTotalLeiloes">0</div>
-                    <div class="label">📢 Total de Leilões</div>
-                </div>
-                <div class="card">
-                    <div class="numero" id="dashLeiloesAtivos">0</div>
-                    <div class="label">🟢 Leilões Ativos</div>
-                </div>
-                <div class="card">
-                    <div class="numero" id="dashTotalLances">0</div>
-                    <div class="label">💎 Total de Lances</div>
-                </div>
-                <div class="card">
-                    <div class="numero" id="dashTotalUsuarios">0</div>
-                    <div class="label">👥 Participantes</div>
-                </div>
-                <div class="card">
-                    <div class="numero verde" id="dashMetaAtingida">0</div>
-                    <div class="label">🎯 Metas Atingidas</div>
-                </div>
-                <div class="card">
-                    <div class="numero laranja" id="dashMaiorLance">R$ 0</div>
-                    <div class="label">💰 Maior Lance</div>
-                </div>
-            </div>
-
-            <div class="tabs">
-                <button class="active" onclick="trocarTab('campanhas')">📢 Leilões</button>
-                <button onclick="trocarTab('nova')">➕ Novo Leilão</button>
-            </div>
-
-            <div id="tabCampanhas" class="table-container">
-                <h3 style="color:#0066FF;margin-bottom:16px;font-size:16px;text-align:center;">📢 Gerenciar Leilões</h3>
-                <div id="campanhasList">
-                    <div style="text-align:center;color:#6B7280;padding:30px;">Carregando leilões...</div>
-                </div>
-            </div>
-
-            <div id="tabNova" class="admin-form">
-                <h3>➕ Criar Novo Leilão</h3>
-                <form onsubmit="criarCampanha(event)" enctype="multipart/form-data" novalidate>
-                    <div class="form-group">
-                        <label>Nome do Leilão *</label>
-                        <input type="text" id="campNome" placeholder="Ex: Dia dos Pais" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Slug (URL amigável) *</label>
-                        <input type="text" id="campSlug" placeholder="Ex: dia-dos-pais" required>
-                        <small style="color:#6B7280;font-size:11px;">Será usado na URL: /seu-slug</small>
-                    </div>
-                    <div class="form-group">
-                        <label>Descrição</label>
-                        <textarea id="campDesc" rows="2" placeholder="Descrição do leilão"></textarea>
-                    </div>
-
-                    <h4>🏆 Imagem da Premiação</h4>
-                    <div class="form-group">
-                        <label>Título da Premiação</label>
-                        <input type="text" id="campPremioTitulo" placeholder="Ex: Prêmio Especial" value="🏆 PRÊMIO DO LEILÃO">
-                    </div>
-                    <div class="form-group">
-                        <label>Upload de imagem</label>
-                        <input type="file" id="premioImagem" accept="image/*">
-                        <small style="color:#6B7280;font-size:11px;">Formatos: JPG, PNG, GIF, WEBP (max 5MB)</small>
-                    </div>
-                    <div class="form-group">
-                        <label>OU URL da imagem</label>
-                        <input type="url" id="premioImagemUrl" placeholder="https://exemplo.com/premio.jpg">
-                        <small style="color:#6B7280;font-size:11px;">Deixe em branco para usar o emoji padrão 🏆</small>
-                    </div>
-                    <div id="premioPreview" class="premio-preview" style="display:none;">
-                        <span>Prévia:</span>
-                        <img id="premioPreviewImg" src="" alt="Prévia" style="display:none;">
-                        <span id="premioPreviewEmoji" class="emoji">🏆</span>
-                    </div>
-
-                    <h4>📦 Item do Leilão</h4>
-                    <div class="form-group">
-                        <label>Nome do Item *</label>
-                        <input type="text" id="itemNome" placeholder="Ex: Kit Churrasco" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Descrição do Item</label>
-                        <textarea id="itemDesc" rows="2" placeholder="Descrição do item"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Categoria</label>
-                        <select id="itemCategoria">
-                            <option value="Geral">Geral</option>
-                            <option value="Eletrônicos">Eletrônicos</option>
-                            <option value="Veículos">Veículos</option>
-                            <option value="Imóveis">Imóveis</option>
-                            <option value="Cozinha">Cozinha</option>
-                            <option value="Moda">Moda</option>
-                        </select>
-                    </div>
-
-                    <h4>👤 Controle do Influencer</h4>
-                    <div class="form-group">
-                        <label>Nome do Influencer</label>
-                        <input type="text" id="campInfluencer" placeholder="Ex: João Silva">
-                        <small style="color:#6B7280;font-size:11px;">Este campo é interno e não aparece no leilão</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Metas Internas (porcentagem e prêmio)</label>
-                        <div id="metasInternasContainer">
-                            <div class="meta-row">
-                                <input type="number" class="meta-porcentagem" placeholder="% Meta" min="0" max="100" value="25">
-                                <input type="text" class="meta-premio" placeholder="Prêmio (ex: R$ 100,00)" value="R$ 100,00">
-                                <button type="button" class="btn btn-danger btn-sm" onclick="removerMeta(this)" style="padding:4px 10px;">✕</button>
-                            </div>
-                            <div class="meta-row">
-                                <input type="number" class="meta-porcentagem" placeholder="% Meta" min="0" max="100" value="50">
-                                <input type="text" class="meta-premio" placeholder="Prêmio (ex: R$ 200,00)" value="R$ 200,00">
-                                <button type="button" class="btn btn-danger btn-sm" onclick="removerMeta(this)" style="padding:4px 10px;">✕</button>
-                            </div>
-                            <div class="meta-row">
-                                <input type="number" class="meta-porcentagem" placeholder="% Meta" min="0" max="100" value="75">
-                                <input type="text" class="meta-premio" placeholder="Prêmio (ex: R$ 300,00)" value="R$ 300,00">
-                                <button type="button" class="btn btn-danger btn-sm" onclick="removerMeta(this)" style="padding:4px 10px;">✕</button>
-                            </div>
-                            <div class="meta-row">
-                                <input type="number" class="meta-porcentagem" placeholder="% Meta" min="0" max="100" value="100">
-                                <input type="text" class="meta-premio" placeholder="Prêmio (ex: R$ 500,00)" value="R$ 500,00">
-                                <button type="button" class="btn btn-danger btn-sm" onclick="removerMeta(this)" style="padding:4px 10px;">✕</button>
-                            </div>
-                        </div>
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="adicionarMeta()" style="margin-top:6px;">➕ Adicionar Meta</button>
-                        <small style="color:#6B7280;font-size:11px;">Defina metas em porcentagem e o prêmio correspondente</small>
-                    </div>
-
-                    <h4>⏱️ Controle do Leilão (30 DIAS = 43200 MINUTOS)</h4>
-                    <div class="form-group">
-                        <label>Meta (R$)</label>
-                        <input type="number" id="campMeta" step="0.01" min="0.01" value="3.00" placeholder="3.00">
-                        <small style="color:#6B7280;font-size:11px;">Valor necessário para atingir a premiação</small>
-                    </div>
-                    <div class="form-group">
-                        <label>Duração do Leilão (minutos)</label>
-                        <input type="number" id="campDuracao" min="1" value="1440" placeholder="1440">
-                        <small style="color:#6B7280;font-size:11px;">Tempo total do leilão em minutos (1440 = 24h, máximo 43200 = 30 dias)</small>
-                    </div>
-                    <button type="submit" class="btn btn-success" style="width:100%;">✅ Criar Leilão</button>
-                </form>
-                <div id="urlGeradaContainer" class="url-gerada" style="display:none;"></div>
-            </div>
-
-            <div class="footer">Admin Leilão Fácil • Gerenciamento de Leilões</div>
-        </div>
+    <!-- LOGIN -->
+    <div id="loginAdmin" class="login-box">
+        <h2>🔐 Acesso Admin</h2>
+        <p class="sub">Digite a senha para acessar</p>
+        <form onsubmit="fazerLogin(event)">
+            <input type="password" id="senhaAdmin" placeholder="Digite a senha" required>
+            <button type="submit" class="btn">🔓 Entrar</button>
+            <p class="erro" id="loginErro">Senha incorreta</p>
+        </form>
     </div>
 
-    <!-- MODAL EDITAR -->
-    <div class="modal-overlay" id="modalEditar">
-        <div class="modal">
-            <button class="close" onclick="fecharModalEditar()">✕</button>
-            <h2>✏️ Editar Leilão</h2>
-            <form onsubmit="salvarEdicao(event)" enctype="multipart/form-data" novalidate>
-                <input type="hidden" id="editCampanhaId">
-                
+    <!-- PAINEL -->
+    <div id="painelAdmin" class="hidden">
+        <div id="msgArea"></div>
+
+        <!-- DASHBOARD -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-bottom:24px;" id="dashboardContainer">
+            <div style="background:#f8f9fa;padding:16px;border-radius:12px;text-align:center;border:1px solid #e5e7eb;">
+                <div style="font-size:28px;font-weight:700;color:#0066FF;" id="dashTotalLeiloes">0</div>
+                <div style="font-size:13px;color:#888;">📢 Leilões</div>
+            </div>
+            <div style="background:#f8f9fa;padding:16px;border-radius:12px;text-align:center;border:1px solid #e5e7eb;">
+                <div style="font-size:28px;font-weight:700;color:#10B981;" id="dashLeiloesAtivos">0</div>
+                <div style="font-size:13px;color:#888;">🟢 Ativos</div>
+            </div>
+            <div style="background:#f8f9fa;padding:16px;border-radius:12px;text-align:center;border:1px solid #e5e7eb;">
+                <div style="font-size:28px;font-weight:700;color:#FF8C00;" id="dashTotalLances">0</div>
+                <div style="font-size:13px;color:#888;">💎 Lances</div>
+            </div>
+            <div style="background:#f8f9fa;padding:16px;border-radius:12px;text-align:center;border:1px solid #e5e7eb;">
+                <div style="font-size:28px;font-weight:700;color:#0066FF;" id="dashTotalUsuarios">0</div>
+                <div style="font-size:13px;color:#888;">👥 Participantes</div>
+            </div>
+        </div>
+
+        <!-- TABS -->
+        <div class="tabs">
+            <button class="active" onclick="trocarTab('campanhas')">📢 Leilões</button>
+            <button onclick="trocarTab('nova')">➕ Novo Leilão</button>
+        </div>
+
+        <!-- LISTA -->
+        <div id="tabCampanhas" class="table-container">
+            <h3 style="color:#0066FF;margin-bottom:16px;text-align:center;">📢 Gerenciar Leilões</h3>
+            <div id="campanhasList">
+                <div style="text-align:center;color:#888;padding:30px;">Carregando leilões...</div>
+            </div>
+        </div>
+
+        <!-- NOVO -->
+        <div id="tabNova" class="admin-form">
+            <h3>➕ Criar Novo Leilão</h3>
+            <form onsubmit="criarCampanha(event)" enctype="multipart/form-data" novalidate>
                 <div class="form-group">
                     <label>Nome do Leilão *</label>
-                    <input type="text" id="editNome" required>
+                    <input type="text" id="campNome" placeholder="Ex: Dia dos Pais" required>
                 </div>
                 <div class="form-group">
                     <label>Slug (URL) *</label>
-                    <input type="text" id="editSlug" required>
-                    <small style="color:#6B7280;font-size:11px;">⚠️ Alterar o slug quebra a URL atual!</small>
+                    <input type="text" id="campSlug" placeholder="Ex: dia-dos-pais" required>
                 </div>
                 <div class="form-group">
                     <label>Descrição</label>
-                    <textarea id="editDesc" rows="2"></textarea>
+                    <textarea id="campDesc" rows="2" placeholder="Descrição"></textarea>
                 </div>
-                
-                <h4>🏆 Imagem da Premiação</h4>
+                <h4>🏆 Premiação</h4>
                 <div class="form-group">
-                    <label>Título da Premiação</label>
-                    <input type="text" id="editPremioTitulo" placeholder="Ex: Prêmio Especial">
-                </div>
-                <div class="form-group">
-                    <label>Upload de imagem</label>
-                    <input type="file" id="editPremioImagem" accept="image/*">
-                    <small style="color:#6B7280;font-size:11px;">Formatos: JPG, PNG, GIF, WEBP (max 5MB)</small>
+                    <label>Prêmio (R$)</label>
+                    <input type="number" id="campMeta" step="0.01" min="0.01" value="3.00">
                 </div>
                 <div class="form-group">
-                    <label>OU URL da imagem</label>
-                    <input type="url" id="editPremioImagemUrl" placeholder="https://exemplo.com/premio.jpg">
-                    <small style="color:#6B7280;font-size:11px;">Deixe em branco para usar o emoji padrão 🏆</small>
+                    <label>Imagem do Prêmio (URL)</label>
+                    <input type="url" id="premioImagemUrl" placeholder="https://exemplo.com/imagem.jpg">
                 </div>
-                <div id="editPremioPreview" class="premio-preview" style="display:none;">
-                    <span>Prévia:</span>
-                    <img id="editPremioPreviewImg" src="" alt="Prévia" style="display:none;">
-                    <span id="editPremioPreviewEmoji" class="emoji">🏆</span>
-                </div>
-
-                <h4>📦 Item do Leilão</h4>
+                <h4>📦 Item</h4>
                 <div class="form-group">
                     <label>Nome do Item *</label>
-                    <input type="text" id="editItemNome" required>
+                    <input type="text" id="itemNome" placeholder="Ex: Kit Churrasco" required>
                 </div>
                 <div class="form-group">
                     <label>Descrição do Item</label>
-                    <textarea id="editItemDesc" rows="2"></textarea>
+                    <textarea id="itemDesc" rows="2" placeholder="Descrição"></textarea>
                 </div>
+                <h4>⏱️ Controle</h4>
                 <div class="form-group">
-                    <label>Categoria</label>
-                    <select id="editItemCategoria">
-                        <option value="Geral">Geral</option>
-                        <option value="Eletrônicos">Eletrônicos</option>
-                        <option value="Veículos">Veículos</option>
-                        <option value="Imóveis">Imóveis</option>
-                        <option value="Cozinha">Cozinha</option>
-                        <option value="Moda">Moda</option>
-                    </select>
+                    <label>Duração (minutos)</label>
+                    <input type="text" id="campDuracao" value="1440" inputmode="numeric" pattern="[0-9]*">
+                    <small style="color:#888;">1440 = 24h | Máximo 43200 = 30 dias</small>
                 </div>
-
-                <h4>👤 Controle do Influencer</h4>
-                <div class="form-group">
-                    <label>Nome do Influencer</label>
-                    <input type="text" id="editInfluencer" placeholder="Ex: João Silva">
-                    <small style="color:#6B7280;font-size:11px;">Este campo é interno e não aparece no leilão</small>
-                </div>
-
-                <div class="form-group">
-                    <label>Metas Internas (porcentagem e prêmio)</label>
-                    <div id="editMetasInternasContainer">
-                    </div>
-                    <button type="button" class="btn btn-secondary btn-sm" onclick="adicionarMetaEdicao()" style="margin-top:6px;">➕ Adicionar Meta</button>
-                    <small style="color:#6B7280;font-size:11px;">Defina metas em porcentagem e o prêmio correspondente</small>
-                </div>
-
-                <h4>⏱️ Controle do Leilão (30 DIAS = 43200 MINUTOS)</h4>
-                <div class="form-group">
-                    <label>Meta (R$)</label>
-                    <input type="number" id="editMeta" step="0.01" min="0.01" required>
-                    <small style="color:#6B7280;font-size:11px;">Valor necessário para atingir a premiação</small>
-                </div>
-                
-                <!-- CAMPO DE DURAÇÃO CORRIGIDO - SEM VALIDAÇÃO HTML5 -->
-                <div class="form-group">
-                    <label>Duração Total (minutos)</label>
-                    <input type="text" id="editDuracao" 
-                           inputmode="numeric" 
-                           pattern="[0-9]*" 
-                           required
-                           oninput="this.value = this.value.replace(/[^0-9]/g, ''); 
-                                    if(this.value && parseInt(this.value) > 43200) { 
-                                        this.value = '43200'; 
-                                        document.getElementById('editTempoInfo').textContent = '⏱️ Duração: 30d 0h (máximo)';
-                                        this.setCustomValidity('');
-                                    } else if(this.value && parseInt(this.value) < 1) {
-                                        this.value = '1';
-                                    } else {
-                                        this.setCustomValidity('');
-                                    }
-                                    if(this.value) {
-                                        const val = parseInt(this.value) || 0;
-                                        document.getElementById('editTempoInfo').textContent = '⏱️ Duração: ' + formatarDuracao(val);
-                                    }"
-                           oninvalid="this.setCustomValidity('');"
-                           onblur="if(this.value) { 
-                                    let val = parseInt(this.value) || 1440;
-                                    if(val > 43200) { this.value = '43200'; }
-                                    if(val < 1) { this.value = '1'; }
-                                    this.setCustomValidity('');
-                                    document.getElementById('editTempoInfo').textContent = '⏱️ Duração: ' + formatarDuracao(parseInt(this.value) || 0);
-                                  } else {
-                                    this.value = '1440';
-                                    document.getElementById('editTempoInfo').textContent = '⏱️ Duração: 24h (padrão)';
-                                  }">
-                    <small style="color:#6B7280;font-size:11px;">Tempo total do leilão em minutos (1440 = 24h, máximo 43200 = 30 dias)</small>
-                    <div class="tempo-info" id="editTempoInfo">⏱️ Duração: 24h (padrão)</div>
-                </div>
-
-                <div class="form-group">
-                    <label>Status do Leilão</label>
-                    <select id="editStatus">
-                        <option value="ativa">🟢 Ativo</option>
-                        <option value="inativa">🔴 Inativo</option>
-                    </select>
-                </div>
-
-                <button type="submit" class="btn btn-primary" style="width:100%;">💾 Salvar Alterações</button>
+                <button type="submit" class="btn btn-success" style="width:100%;">✅ Criar Leilão</button>
             </form>
+            <div id="urlGeradaContainer" style="margin-top:12px;padding:12px;background:#f0f4ff;border-radius:8px;display:none;text-align:center;border:1px solid #0066FF;"></div>
         </div>
+
+        <div class="footer">Leilão Fácil • Admin</div>
     </div>
+</div>
 
-    <script>
-        const API_URL = window.location.origin;
-        let campanhasCache = [];
-        let token = localStorage.getItem('adminToken');
-        let isLoggedIn = false;
-        let refreshTimeout = null;
-        let isRefreshing = false;
-        const MAX_DURACAO = 43200;
+<!-- MODAL EDITAR -->
+<div class="modal-overlay" id="modalEditar">
+    <div class="modal">
+        <button class="close" onclick="fecharModalEditar()">✕</button>
+        <h2>✏️ Editar Leilão</h2>
+        <form onsubmit="salvarEdicao(event)" novalidate>
+            <input type="hidden" id="editCampanhaId">
+            <div class="form-group"><label>Nome</label><input type="text" id="editNome" required></div>
+            <div class="form-group"><label>Slug</label><input type="text" id="editSlug" required></div>
+            <div class="form-group"><label>Descrição</label><textarea id="editDesc" rows="2"></textarea></div>
+            <div class="form-group"><label>Prêmio (R$)</label><input type="number" id="editMeta" step="0.01" min="0.01" required></div>
+            <div class="form-group"><label>Duração (minutos)</label>
+                <input type="text" id="editDuracao" inputmode="numeric" pattern="[0-9]*" required
+                       oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value>43200) this.value=43200; if(this.value<1) this.value=1;">
+                <div class="tempo-info" id="editTempoInfo">⏱️ Duração: 24h</div>
+            </div>
+            <div class="form-group"><label>Status</label>
+                <select id="editStatus"><option value="ativa">🟢 Ativo</option><option value="inativa">🔴 Inativo</option></select>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%;">💾 Salvar</button>
+        </form>
+    </div>
+</div>
 
-        // ===== BLOQUEIA COMPLETAMENTE A VALIDAÇÃO HTML5 =====
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('input').forEach(function(input) {
-                input.removeAttribute('max');
-                input.removeAttribute('min');
-                input.setAttribute('novalidate', 'novalidate');
-                input.addEventListener('invalid', function(e) {
-                    e.preventDefault();
-                    this.setCustomValidity('');
-                });
-            });
-            
-            document.getElementById('loginAdmin').style.display = 'block';
-            document.getElementById('painelAdmin').style.display = 'none';
-            
-            if (token) {
-                verificarToken(token);
-            }
+<script>
+const MAX_DURACAO = 43200;
+let campanhasCache = [];
+let token = localStorage.getItem('adminToken');
+let isLoggedIn = false;
+
+// ============ LOGIN ============
+document.addEventListener('DOMContentLoaded', function() {
+    if (token) verificarToken(token);
+});
+
+async function verificarToken(t) {
+    try {
+        const res = await fetch('/api/admin/verificar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ senha: t })
         });
-
-        function formatarDuracao(minutos) {
-            if (minutos <= 0) return '0 minutos';
-            if (minutos < 60) return `${minutos} minutos`;
-            const h = Math.floor(minutos / 60);
-            const m = minutos % 60;
-            if (h < 24) return `${h}h ${m > 0 ? m + 'm' : ''}`;
-            const d = Math.floor(h / 24);
-            const rh = h % 24;
-            return `${d}d ${rh}h${m > 0 ? ' ' + m + 'm' : ''}`;
+        const data = await res.json();
+        if (data.sucesso) {
+            isLoggedIn = true;
+            document.getElementById('loginAdmin').style.display = 'none';
+            document.getElementById('painelAdmin').classList.remove('hidden');
+            carregarCampanhas();
+        } else {
+            localStorage.removeItem('adminToken');
+            token = null;
         }
+    } catch(e) { localStorage.removeItem('adminToken'); token = null; }
+}
 
-        async function verificarToken(token) {
-            try {
-                const res = await fetch('/api/admin/verificar', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ senha: token })
-                });
-                const data = await res.json();
-                if (data.sucesso) {
-                    isLoggedIn = true;
-                    document.getElementById('loginAdmin').style.display = 'none';
-                    document.getElementById('painelAdmin').style.display = 'block';
-                    document.getElementById('adminStatus').style.display = 'inline-block';
-                    carregarCampanhas();
-                    configurarSlugAutomatico();
-                    configurarPreviewImagem();
-                } else {
-                    localStorage.removeItem('adminToken');
-                    token = null;
-                    isLoggedIn = false;
-                    document.getElementById('loginAdmin').style.display = 'block';
-                    document.getElementById('painelAdmin').style.display = 'none';
-                    document.getElementById('adminStatus').style.display = 'none';
-                }
-            } catch (err) {
-                localStorage.removeItem('adminToken');
-                token = null;
-                isLoggedIn = false;
-                document.getElementById('loginAdmin').style.display = 'block';
-                document.getElementById('painelAdmin').style.display = 'none';
-                document.getElementById('adminStatus').style.display = 'none';
-            }
-        }
-
-        async function fazerLogin(e) {
-            e.preventDefault();
-            const senha = document.getElementById('senhaAdmin').value;
-            const erroEl = document.getElementById('loginErro');
-            erroEl.style.display = 'none';
-
-            try {
-                const res = await fetch('/api/admin/verificar', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ senha })
-                });
-
-                const data = await res.json();
-
-                if (data.sucesso) {
-                    token = senha;
-                    isLoggedIn = true;
-                    localStorage.setItem('adminToken', senha);
-                    document.getElementById('loginAdmin').style.display = 'none';
-                    document.getElementById('painelAdmin').style.display = 'block';
-                    document.getElementById('adminStatus').style.display = 'inline-block';
-                    carregarCampanhas();
-                    configurarSlugAutomatico();
-                    configurarPreviewImagem();
-                } else {
-                    erroEl.style.display = 'block';
-                }
-            } catch (err) {
-                erroEl.style.display = 'block';
-                console.error(err);
-            }
-        }
-
-        function fazerLogout() {
-            if (confirm('Deseja realmente sair?')) {
-                localStorage.removeItem('adminToken');
-                token = null;
-                isLoggedIn = false;
-                document.getElementById('loginAdmin').style.display = 'block';
-                document.getElementById('painelAdmin').style.display = 'none';
-                document.getElementById('adminStatus').style.display = 'none';
-                document.getElementById('senhaAdmin').value = '';
-                mostrarMsg('✅ Você saiu do painel admin', 'sucesso');
-            }
-        }
-
-        function mostrarMsg(texto, tipo) {
-            const area = document.getElementById('msgArea');
-            area.innerHTML = `<div class="msg ${tipo}">${texto}</div>`;
-            setTimeout(() => { area.innerHTML = ''; }, 5000);
-        }
-
-        function trocarTab(tab) {
-            document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
-            const idx = ['campanhas', 'nova'].indexOf(tab);
-            const btns = document.querySelectorAll('.tabs button');
-            if (btns[idx]) btns[idx].classList.add('active');
-            
-            document.getElementById('tabCampanhas').classList.toggle('hidden', tab !== 'campanhas');
-            document.getElementById('tabNova').classList.toggle('active', tab === 'nova');
-            
-            if (tab === 'campanhas') carregarCampanhas();
-        }
-
-        function configurarSlugAutomatico() {
-            document.getElementById('campNome').addEventListener('input', function() {
-                const slugInput = document.getElementById('campSlug');
-                if (!slugInput.value || slugInput.dataset.auto === 'true') {
-                    slugInput.value = this.value.toLowerCase()
-                        .replace(/\s+/g, '-')
-                        .replace(/[^a-z0-9-]/g, '');
-                    slugInput.dataset.auto = 'true';
-                }
-            });
-
-            document.getElementById('campSlug').addEventListener('input', function() {
-                this.dataset.auto = 'false';
-            });
-        }
-
-        function configurarPreviewImagem() {
-            document.getElementById('premioImagem').addEventListener('change', function(e) {
-                const preview = document.getElementById('premioPreview');
-                const emoji = document.getElementById('premioPreviewEmoji');
-                const img = document.getElementById('premioPreviewImg');
-                
-                if (this.files && this.files[0]) {
-                    const reader = new FileReader();
-                    reader.onload = function(ev) {
-                        img.src = ev.target.result;
-                        img.style.display = 'block';
-                        emoji.style.display = 'none';
-                        preview.style.display = 'flex';
-                    };
-                    reader.readAsDataURL(this.files[0]);
-                } else {
-                    preview.style.display = 'none';
-                }
-            });
-
-            document.getElementById('premioImagemUrl').addEventListener('input', function() {
-                const preview = document.getElementById('premioPreview');
-                const emoji = document.getElementById('premioPreviewEmoji');
-                const img = document.getElementById('premioPreviewImg');
-                
-                if (this.value && this.value.trim() !== '') {
-                    img.src = this.value.trim();
-                    img.style.display = 'block';
-                    emoji.style.display = 'none';
-                    preview.style.display = 'flex';
-                } else {
-                    preview.style.display = 'none';
-                }
-            });
-
-            document.getElementById('editPremioImagem').addEventListener('change', function(e) {
-                const preview = document.getElementById('editPremioPreview');
-                const emoji = document.getElementById('editPremioPreviewEmoji');
-                const img = document.getElementById('editPremioPreviewImg');
-                
-                if (this.files && this.files[0]) {
-                    const reader = new FileReader();
-                    reader.onload = function(ev) {
-                        img.src = ev.target.result;
-                        img.style.display = 'block';
-                        emoji.style.display = 'none';
-                        preview.style.display = 'flex';
-                    };
-                    reader.readAsDataURL(this.files[0]);
-                }
-            });
-
-            document.getElementById('editPremioImagemUrl').addEventListener('input', function() {
-                const preview = document.getElementById('editPremioPreview');
-                const emoji = document.getElementById('editPremioPreviewEmoji');
-                const img = document.getElementById('editPremioPreviewImg');
-                
-                if (this.value && this.value.trim() !== '') {
-                    img.src = this.value.trim();
-                    img.style.display = 'block';
-                    emoji.style.display = 'none';
-                    preview.style.display = 'flex';
-                } else {
-                    preview.style.display = 'none';
-                }
-            });
-        }
-
-        function formatarTempo(segundos) {
-            if (segundos <= 0) return 'Encerrado';
-            const d = Math.floor(segundos / 86400);
-            const h = Math.floor((segundos % 86400) / 3600);
-            const m = Math.floor((segundos % 3600) / 60);
-            if (d > 0) return `${d}d ${h}h`;
-            if (h > 0) return `${h}h ${m}m`;
-            return `${m}m`;
-        }
-
-        function adicionarMeta(containerId, porcentagem, premio) {
-            const container = document.getElementById(containerId);
-            const row = document.createElement('div');
-            row.className = 'meta-row';
-            row.innerHTML = `
-                <input type="number" class="meta-porcentagem" placeholder="% Meta" min="0" max="100" value="${porcentagem || ''}" style="flex:1;min-width:80px;padding:8px;border:2px solid #E5E7EB;border-radius:6px;font-size:13px;">
-                <input type="text" class="meta-premio" placeholder="Prêmio (ex: R$ 100,00)" value="${premio || ''}" style="flex:2;min-width:120px;padding:8px;border:2px solid #E5E7EB;border-radius:6px;font-size:13px;">
-                <button type="button" class="btn btn-danger btn-sm" onclick="removerMeta(this)" style="padding:4px 10px;">✕</button>
-            `;
-            container.appendChild(row);
-        }
-
-        function adicionarMetaEdicao() {
-            adicionarMeta('editMetasInternasContainer');
-        }
-
-        function removerMeta(btn) {
-            const row = btn.closest('.meta-row');
-            const container = row.parentElement;
-            if (container.querySelectorAll('.meta-row').length > 1) {
-                row.remove();
-            } else {
-                mostrarMsg('⚠️ É necessário ter pelo menos uma meta', 'erro');
-            }
-        }
-
-        function getMetasInternas(containerId) {
-            const container = document.getElementById(containerId);
-            const rows = container.querySelectorAll('.meta-row');
-            const metas = [];
-            rows.forEach(row => {
-                const porcentagem = parseFloat(row.querySelector('.meta-porcentagem').value);
-                const premio = row.querySelector('.meta-premio').value.trim();
-                if (!isNaN(porcentagem) && premio) {
-                    metas.push({ meta: porcentagem, premio: premio });
-                }
-            });
-            return metas;
-        }
-
-        function atualizarDashboard(campanhas) {
-            const total = campanhas.length;
-            const ativos = campanhas.filter(c => c.status === 'ativa').length;
-            
-            let totalLances = 0;
-            let totalUsuarios = new Set();
-            let metasAtingidas = 0;
-            let maiorLance = 0;
-            
-            campanhas.forEach(c => {
-                totalLances += c.total_lances || 0;
-                if (c.vencedor_atual) {
-                    totalUsuarios.add(c.vencedor_atual.nome);
-                }
-                if (c.atingiu_meta) metasAtingidas++;
-                if ((c.lance_atual || 0) > maiorLance) {
-                    maiorLance = c.lance_atual || 0;
-                }
-            });
-
-            document.getElementById('dashTotalLeiloes').textContent = total;
-            document.getElementById('dashLeiloesAtivos').textContent = ativos;
-            document.getElementById('dashTotalLances').textContent = totalLances;
-            document.getElementById('dashTotalUsuarios').textContent = totalUsuarios.size || 0;
-            document.getElementById('dashMetaAtingida').textContent = metasAtingidas;
-            document.getElementById('dashMaiorLance').textContent = `R$ ${maiorLance.toFixed(2)}`;
-        }
-
-        function renderizarCampanhas(campanhas) {
-            const container = document.getElementById('campanhasList');
-            
-            if (!campanhas || campanhas.length === 0) {
-                container.innerHTML = `
-                    <div style="text-align:center;color:#6B7280;padding:30px;">
-                        📭 Nenhum leilão criado ainda.<br>
-                        <button class="btn btn-primary" style="margin-top:12px;" onclick="trocarTab('nova')">
-                            ➕ Criar primeiro leilão
-                        </button>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = campanhas.map(c => {
-                let premioHtml = '';
-                if (c.premio_imagem_url && c.premio_imagem_url.trim() !== '') {
-                    premioHtml = `<img src="${c.premio_imagem_url}" alt="Prêmio">`;
-                } else if (c.premio_imagem && c.premio_imagem.startsWith('/uploads/')) {
-                    premioHtml = `<img src="${c.premio_imagem}" alt="Prêmio">`;
-                } else {
-                    premioHtml = `<span class="emoji">${c.premio_imagem || '🏆'}</span>`;
-                }
-
-                const percentual = c.percentual_meta || 0;
-                const atingiuMeta = c.atingiu_meta || false;
-                const barraClass = atingiuMeta ? 'barra atingida' : 'barra';
-                const percentualClass = atingiuMeta ? 'porcentagem atingida' : 'porcentagem';
-
-                let metasHtml = '';
-                if (c.metas_atingidas && c.metas_atingidas.length > 0) {
-                    metasHtml = `
-                        <div style="margin-top:8px;padding:8px;background:#D1FAE5;border-radius:6px;font-size:12px;color:#059669;">
-                            🎯 Metas Internas Atingidas: ${c.metas_atingidas.map(m => `${m.meta}% (${m.premio})`).join(', ')}
-                        </div>
-                    `;
-                }
-
-                return `
-                <div class="campanha-card">
-                    <div class="topo">
-                        <div>
-                            <span class="titulo">${c.nome}</span>
-                            <small>#${c.id} • /${c.slug}</small>
-                            ${c.influencer && c.influencer !== 'Não informado' ? `<br><small style="color:#6B7280;">👤 Influencer: ${c.influencer}</small>` : ''}
-                        </div>
-                        <div>
-                            <span class="status-badge ${c.status === 'ativa' ? 'ativa' : 'inativa'}">
-                                ${c.status === 'ativa' ? '🟢 Ativo' : '🔴 Inativo'}
-                            </span>
-                        </div>
-                    </div>
-                    
-                    <div class="premio-row">
-                        ${premioHtml}
-                        <span class="label">🏆 Prêmio: ${c.meta_valor ? `R$ ${c.meta_valor.toFixed(2)}` : 'N/A'}</span>
-                    </div>
-                    
-                    <div class="meta-grafico">
-                        <div class="barra-container">
-                            <div class="${barraClass}" style="width:${Math.min(percentual, 100)}%;"></div>
-                        </div>
-                        <div class="info-meta">
-                            <span>🎯 Meta: R$ ${(c.meta_valor || 3.00).toFixed(2)}</span>
-                            <span class="${percentualClass}">${percentual.toFixed(1)}% ${atingiuMeta ? '✅ Atingida!' : ''}</span>
-                            <span>💰 Atual: R$ ${(c.lance_atual || 0).toFixed(2)}</span>
-                        </div>
-                    </div>
-                    
-                    ${metasHtml}
-
-                    <div class="detalhes">
-                        <div class="item">
-                            <div class="valor">${c.total_lances || 0}</div>
-                            <div class="label">📊 Lances</div>
-                        </div>
-                        <div class="item">
-                            <div class="valor">R$ ${(c.lance_atual || 0).toFixed(2)}</div>
-                            <div class="label">💰 Lance Atual</div>
-                        </div>
-                        <div class="item">
-                            <div class="valor">${c.vencedor_atual ? c.vencedor_atual.nome : '—'}</div>
-                            <div class="label">🏆 Vencedor</div>
-                        </div>
-                        <div class="item">
-                            <div class="valor">${formatarTempo(c.tempo_restante || 0)}</div>
-                            <div class="label">⏱️ Restante</div>
-                        </div>
-                    </div>
-
-                    <div class="url">
-                        🔗 URL: <a href="${c.url}" target="_blank">${c.url}</a>
-                        <button class="btn btn-secondary btn-sm" onclick="copiarUrl('${c.url}')" style="margin-left:8px;padding:2px 10px;font-size:11px;">📋 Copiar</button>
-                    </div>
-
-                    <div class="acoes">
-                        <button class="btn btn-secondary btn-sm" onclick="editarCampanha(${c.id})">
-                            ✏️ Editar
-                        </button>
-                        <button class="btn btn-warning btn-sm" onclick="resetarLeilao(${c.id})">
-                            🔄 Resetar
-                        </button>
-                        <button class="btn ${c.status === 'ativa' ? 'btn-danger' : 'btn-success'} btn-sm" onclick="toggleStatus(${c.id}, '${c.status === 'ativa' ? 'inativa' : 'ativa'}')">
-                            ${c.status === 'ativa' ? '⏸️ Desativar' : '▶️ Ativar'}
-                        </button>
-                        <button class="btn btn-primary btn-sm" onclick="window.open('${c.url}', '_blank')">
-                            🔗 Abrir
-                        </button>
-                        <button class="btn btn-secondary btn-sm" onclick="exportarDados()">💾 Backup</button>
-                    </div>
-                </div>
-            `}).join('');
-        }
-
-        function carregarCampanhas() {
-            if (isRefreshing) return;
-            isRefreshing = true;
-            
-            if (!isLoggedIn) {
-                document.getElementById('loginAdmin').style.display = 'block';
-                document.getElementById('painelAdmin').style.display = 'none';
-                document.getElementById('adminStatus').style.display = 'none';
-                isRefreshing = false;
-                return;
-            }
-
-            try {
-                fetch('/api/admin/campanhas-completas', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                })
-                .then(res => {
-                    if (res.status === 401) {
-                        localStorage.removeItem('adminToken');
-                        isLoggedIn = false;
-                        document.getElementById('loginAdmin').style.display = 'block';
-                        document.getElementById('painelAdmin').style.display = 'none';
-                        document.getElementById('adminStatus').style.display = 'none';
-                        mostrarMsg('Sessão expirada. Faça login novamente.', 'erro');
-                        isRefreshing = false;
-                        throw new Error('Unauthorized');
-                    }
-                    return res.json();
-                })
-                .then(campanhas => {
-                    campanhasCache = campanhas;
-                    atualizarDashboard(campanhas);
-                    renderizarCampanhas(campanhas);
-                    document.getElementById('adminStatus').style.display = 'inline-block';
-                    document.getElementById('adminStatus').style.background = '#D1FAE5';
-                    document.getElementById('adminStatus').style.color = '#059669';
-                    document.getElementById('adminStatus').textContent = '✅ Sistema operando';
-                    isRefreshing = false;
-                })
-                .catch(err => {
-                    if (err.message !== 'Unauthorized') {
-                        console.error('Erro ao carregar leilões:', err);
-                        document.getElementById('adminStatus').style.display = 'inline-block';
-                        document.getElementById('adminStatus').style.background = '#FEE2E2';
-                        document.getElementById('adminStatus').style.color = '#DC2626';
-                        document.getElementById('adminStatus').textContent = '⚠️ Erro ao carregar';
-                        document.getElementById('campanhasList').innerHTML = 
-                            '<div style="text-align:center;color:#DC2626;padding:30px;">❌ Erro ao carregar leilões. Tentando novamente...</div>';
-                        setTimeout(() => {
-                            isRefreshing = false;
-                            carregarCampanhas();
-                        }, 10000);
-                    }
-                    isRefreshing = false;
-                });
-            } catch (e) {
-                console.error('Erro ao carregar leilões:', e);
-                isRefreshing = false;
-            }
-        }
-
-        function carregarCampanhasDebounced() {
-            if (refreshTimeout) {
-                clearTimeout(refreshTimeout);
-            }
-            refreshTimeout = setTimeout(() => {
-                carregarCampanhas();
-            }, 1000);
-        }
-
-        function copiarUrl(url) {
-            navigator.clipboard.writeText(url).then(() => {
-                mostrarMsg('✅ URL copiada!', 'sucesso');
-            }).catch(() => {
-                const input = document.createElement('input');
-                input.value = url;
-                document.body.appendChild(input);
-                input.select();
-                document.execCommand('copy');
-                document.body.removeChild(input);
-                mostrarMsg('✅ URL copiada!', 'sucesso');
-            });
-        }
-
-        // ===== VALIDAÇÃO REMOVIDA PARA DURAÇÃO - DEIXAMOS O BACKEND TRATAR =====
-        function validarCampanha(dados) {
-            const erros = [];
-            if (!dados.nome || dados.nome.trim().length < 3) {
-                erros.push('Nome deve ter pelo menos 3 caracteres');
-            }
-            if (!dados.slug || !/^[a-z0-9-]+$/.test(dados.slug)) {
-                erros.push('Slug deve conter apenas letras minúsculas, números e hífens');
-            }
-            if (isNaN(dados.meta_valor) || dados.meta_valor <= 0) {
-                erros.push('Meta deve ser um valor maior que 0');
-            }
-            return erros;
-        }
-
-        async function criarCampanha(e) {
-            e.preventDefault();
-            
-            if (!isLoggedIn) {
-                mostrarMsg('⚠️ Faça login novamente', 'erro');
-                return;
-            }
-
-            const form = e.target;
-            const formData = new FormData(form);
-            
-            const nome = document.getElementById('campNome').value.trim();
-            const slug = document.getElementById('campSlug').value.trim().toLowerCase().replace(/\s+/g, '-');
-            let duracaoMinutos = parseInt(document.getElementById('campDuracao').value) || 1440;
-            if (duracaoMinutos > MAX_DURACAO) {
-                duracaoMinutos = MAX_DURACAO;
-                document.getElementById('campDuracao').value = MAX_DURACAO;
-                mostrarMsg(`⏱️ Duração ajustada para o máximo de 30 dias (${MAX_DURACAO} minutos)`, 'info');
-            }
-            if (duracaoMinutos < 1) {
-                duracaoMinutos = 1;
-                document.getElementById('campDuracao').value = 1;
-            }
-            const premioTitulo = document.getElementById('campPremioTitulo').value.trim() || '🏆 PRÊMIO DO LEILÃO';
-            const meta_valor = parseFloat(document.getElementById('campMeta').value) || 3.00;
-            const influencer = document.getElementById('campInfluencer').value.trim() || 'Não informado';
-            const metasInternas = getMetasInternas('metasInternasContainer');
-            
-            const erros = validarCampanha({ nome, slug, meta_valor });
-            if (erros.length > 0) {
-                mostrarMsg('⚠️ ' + erros.join('; '), 'erro');
-                return;
-            }
-
-            const slugExists = campanhasCache.some(c => c.slug === slug);
-            if (slugExists) {
-                mostrarMsg('⚠️ Este slug já está em uso. Escolha outro.', 'erro');
-                return;
-            }
-
-            const agora = new Date();
-            const dataFim = new Date(agora);
-            dataFim.setMinutes(dataFim.getMinutes() + duracaoMinutos);
-
-            formData.append('data_fim', dataFim.toISOString());
-            formData.append('premio_titulo', premioTitulo);
-            formData.append('meta_valor', meta_valor);
-            formData.append('influencer', influencer);
-            formData.append('metas_internas', JSON.stringify(metasInternas));
-            formData.append('duracao', duracaoMinutos);
-
-            const btn = document.querySelector('#tabNova .btn-success');
-            const originalText = btn.textContent;
-            btn.disabled = true;
-            btn.innerHTML = '<span class="loading-spinner"></span> Criando...';
-
-            try {
-                const res = await fetch('/api/admin/criar-campanha', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` },
-                    body: formData
-                });
-                
-                const data = await res.json();
-                
-                if (data.sucesso) {
-                    mostrarMsg('✅ Leilão criado com sucesso!', 'sucesso');
-                    
-                    const urlContainer = document.getElementById('urlGeradaContainer');
-                    urlContainer.style.display = 'block';
-                    urlContainer.innerHTML = `
-                        <strong>🔗 URL do Leilão:</strong><br>
-                        <a href="${data.url}" target="_blank">${data.url}</a>
-                        <br><small style="color:#6B7280;">Compartilhe este link para os participantes</small>
-                        <br><button class="btn btn-secondary btn-sm" onclick="copiarUrl('${data.url}')" style="margin-top:8px;">📋 Copiar URL</button>
-                    `;
-                    
-                    form.reset();
-                    document.getElementById('premioPreview').style.display = 'none';
-                    document.getElementById('premioPreviewEmoji').textContent = '🏆';
-                    document.getElementById('premioPreviewImg').style.display = 'none';
-                    document.getElementById('campDuracao').value = '1440';
-                    document.getElementById('campPremioTitulo').value = '🏆 PRÊMIO DO LEILÃO';
-                    document.getElementById('campMeta').value = '3.00';
-                    document.getElementById('campInfluencer').value = '';
-                    
-                    const metasContainer = document.getElementById('metasInternasContainer');
-                    metasContainer.innerHTML = '';
-                    adicionarMeta('metasInternasContainer', 25, 'R$ 100,00');
-                    adicionarMeta('metasInternasContainer', 50, 'R$ 200,00');
-                    adicionarMeta('metasInternasContainer', 75, 'R$ 300,00');
-                    adicionarMeta('metasInternasContainer', 100, 'R$ 500,00');
-                    
-                    carregarCampanhas();
-                    setTimeout(() => trocarTab('campanhas'), 2000);
-                } else {
-                    mostrarMsg('❌ ' + (data.erro || 'Erro ao criar leilão'), 'erro');
-                }
-            } catch (e) {
-                console.error('Erro ao criar leilão:', e);
-                mostrarMsg('❌ Erro ao criar leilão', 'erro');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-            }
-        }
-
-        function editarCampanha(id) {
-            if (!isLoggedIn) {
-                mostrarMsg('⚠️ Faça login novamente', 'erro');
-                return;
-            }
-
-            const campanha = campanhasCache.find(c => c.id === id);
-            if (!campanha) {
-                mostrarMsg('❌ Leilão não encontrado', 'erro');
-                return;
-            }
-
-            document.getElementById('editCampanhaId').value = id;
-            document.getElementById('editNome').value = campanha.nome;
-            document.getElementById('editSlug').value = campanha.slug;
-            document.getElementById('editDesc').value = campanha.descricao || '';
-            document.getElementById('editMeta').value = campanha.meta_valor || 3.00;
-            document.getElementById('editItemNome').value = campanha.item_nome || '';
-            document.getElementById('editItemDesc').value = campanha.item_descricao || '';
-            document.getElementById('editItemCategoria').value = campanha.item_categoria || 'Geral';
-            document.getElementById('editStatus').value = campanha.status || 'ativa';
-            document.getElementById('editPremioTitulo').value = campanha.premio_titulo || '🏆 PRÊMIO DO LEILÃO';
-            document.getElementById('editInfluencer').value = campanha.influencer || '';
-            
-            const metasContainer = document.getElementById('editMetasInternasContainer');
-            metasContainer.innerHTML = '';
-            if (campanha.metas_internas && campanha.metas_internas.length > 0) {
-                campanha.metas_internas.forEach(meta => {
-                    adicionarMeta('editMetasInternasContainer', meta.meta, meta.premio);
-                });
-            } else {
-                adicionarMeta('editMetasInternasContainer', 25, 'R$ 100,00');
-                adicionarMeta('editMetasInternasContainer', 50, 'R$ 200,00');
-                adicionarMeta('editMetasInternasContainer', 75, 'R$ 300,00');
-                adicionarMeta('editMetasInternasContainer', 100, 'R$ 500,00');
-            }
-            
-            let duracaoAtual = 1440;
-            if (campanha.data_fim && campanha.started_at) {
-                const inicio = new Date(campanha.started_at);
-                const fim = new Date(campanha.data_fim);
-                const diffMinutos = Math.round((fim - inicio) / (1000 * 60));
-                if (diffMinutos > 0) {
-                    duracaoAtual = Math.min(diffMinutos, MAX_DURACAO);
-                }
-            } else if (campanha.data_fim) {
-                const agora = new Date();
-                const fim = new Date(campanha.data_fim);
-                const diffMinutos = Math.round((fim - agora) / (1000 * 60));
-                if (diffMinutos > 0) {
-                    duracaoAtual = Math.min(diffMinutos, MAX_DURACAO);
-                }
-            }
-            
-            document.getElementById('editDuracao').value = duracaoAtual;
-            document.getElementById('editTempoInfo').textContent = `⏱️ Duração: ${formatarDuracao(duracaoAtual)}`;
-            
-            document.getElementById('editPremioImagemUrl').value = campanha.premio_imagem_url || '';
-            
-            const preview = document.getElementById('editPremioPreview');
-            const emoji = document.getElementById('editPremioPreviewEmoji');
-            const img = document.getElementById('editPremioPreviewImg');
-            
-            if (campanha.premio_imagem_url && campanha.premio_imagem_url.trim() !== '') {
-                img.src = campanha.premio_imagem_url;
-                img.style.display = 'block';
-                emoji.style.display = 'none';
-                preview.style.display = 'flex';
-            } else if (campanha.premio_imagem && campanha.premio_imagem.startsWith('/uploads/')) {
-                img.src = campanha.premio_imagem;
-                img.style.display = 'block';
-                emoji.style.display = 'none';
-                preview.style.display = 'flex';
-            } else {
-                emoji.textContent = campanha.premio_imagem || '🏆';
-                emoji.style.display = 'block';
-                img.style.display = 'none';
-                preview.style.display = 'flex';
-            }
-            
-            document.getElementById('modalEditar').classList.add('active');
-        }
-
-        function fecharModalEditar() {
-            document.getElementById('modalEditar').classList.remove('active');
-        }
-
-        async function salvarEdicao(e) {
-            e.preventDefault();
-            
-            if (!isLoggedIn) {
-                mostrarMsg('⚠️ Faça login novamente', 'erro');
-                return;
-            }
-
-            const id = parseInt(document.getElementById('editCampanhaId').value);
-            const formData = new FormData(e.target);
-            
-            const nome = document.getElementById('editNome').value.trim();
-            const slug = document.getElementById('editSlug').value.trim().toLowerCase().replace(/\s+/g, '-');
-            const descricao = document.getElementById('editDesc').value.trim();
-            const meta_valor = parseFloat(document.getElementById('editMeta').value) || 3.00;
-            const premio_imagem_url = document.getElementById('editPremioImagemUrl').value.trim();
-            const premio_titulo = document.getElementById('editPremioTitulo').value.trim() || '🏆 PRÊMIO DO LEILÃO';
-            const item_nome = document.getElementById('editItemNome').value.trim();
-            const item_descricao = document.getElementById('editItemDesc').value.trim();
-            const item_categoria = document.getElementById('editItemCategoria').value;
-            
-            let duracao = parseInt(document.getElementById('editDuracao').value) || 1440;
-            if (duracao > MAX_DURACAO) {
-                duracao = MAX_DURACAO;
-                document.getElementById('editDuracao').value = MAX_DURACAO;
-                mostrarMsg(`⏱️ Duração ajustada para o máximo de 30 dias (${MAX_DURACAO} minutos)`, 'info');
-            }
-            if (duracao < 1) {
-                duracao = 1;
-                document.getElementById('editDuracao').value = 1;
-            }
-            
-            const status = document.getElementById('editStatus').value;
-            const influencer = document.getElementById('editInfluencer').value.trim() || 'Não informado';
-            const metasInternas = getMetasInternas('editMetasInternasContainer');
-
-            const erros = validarCampanha({ nome, slug, meta_valor });
-            if (erros.length > 0) {
-                mostrarMsg('⚠️ ' + erros.join('; '), 'erro');
-                return;
-            }
-
-            const slugExists = campanhasCache.some(c => c.slug === slug && c.id !== id);
-            if (slugExists) {
-                mostrarMsg('⚠️ Este slug já está em uso. Escolha outro.', 'erro');
-                return;
-            }
-
-            formData.append('nome', nome);
-            formData.append('slug', slug);
-            formData.append('descricao', descricao);
-            formData.append('meta_valor', meta_valor);
-            formData.append('premio_imagem_url', premio_imagem_url);
-            formData.append('premio_titulo', premio_titulo);
-            formData.append('item_nome', item_nome);
-            formData.append('item_descricao', item_descricao);
-            formData.append('item_categoria', item_categoria);
-            formData.append('duracao', duracao);
-            formData.append('status', status);
-            formData.append('influencer', influencer);
-            formData.append('metas_internas', JSON.stringify(metasInternas));
-
-            const btn = e.target.querySelector('button[type="submit"]');
-            const originalText = btn.textContent;
-            btn.disabled = true;
-            btn.innerHTML = '<span class="loading-spinner"></span> Salvando...';
-
-            try {
-                const res = await fetch(`/api/admin/campanhas/${id}`, {
-                    method: 'PUT',
-                    headers: { 'Authorization': `Bearer ${token}` },
-                    body: formData
-                });
-                
-                const data = await res.json();
-                if (data.sucesso) {
-                    mostrarMsg('✅ Leilão atualizado com sucesso!', 'sucesso');
-                    fecharModalEditar();
-                    carregarCampanhas();
-                    btn.innerHTML = '✅ Salvo!';
-                    setTimeout(() => {
-                        btn.textContent = originalText;
-                        btn.disabled = false;
-                    }, 2000);
-                } else {
-                    mostrarMsg('❌ ' + (data.erro || 'Erro ao editar'), 'erro');
-                    btn.textContent = originalText;
-                    btn.disabled = false;
-                }
-            } catch (e) {
-                mostrarMsg('❌ Erro ao editar leilão', 'erro');
-                console.error(e);
-                btn.textContent = originalText;
-                btn.disabled = false;
-            }
-        }
-
-        async function resetarLeilao(campanha_id) {
-            if (!isLoggedIn) {
-                mostrarMsg('⚠️ Faça login novamente', 'erro');
-                return;
-            }
-            if (!confirm('⚠️ Resetar o leilão? Todos os lances serão perdidos!')) return;
-            if (!confirm('🔄 Última chance! Resetar para R$ 0,00?')) return;
-
-            try {
-                const res = await fetch(`/api/admin/resetar-leilao/${campanha_id}`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                const data = await res.json();
-                
-                if (data.sucesso) {
-                    mostrarMsg('✅ Leilão resetado para R$ 0,00!', 'sucesso');
-                    carregarCampanhas();
-                } else {
-                    mostrarMsg('❌ ' + (data.erro || 'Erro ao resetar'), 'erro');
-                }
-            } catch (e) {
-                mostrarMsg('❌ Erro ao resetar leilão', 'erro');
-                console.error(e);
-            }
-        }
-
-        async function toggleStatus(campanha_id, novoStatus) {
-            if (!isLoggedIn) {
-                mostrarMsg('⚠️ Faça login novamente', 'erro');
-                return;
-            }
-            if (!confirm(`Alterar leilão #${campanha_id} para "${novoStatus}"?`)) return;
-
-            try {
-                const res = await fetch(`/api/admin/campanhas/${campanha_id}/status`, {
-                    method: 'PUT',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ status: novoStatus })
-                });
-                
-                const data = await res.json();
-                if (data.sucesso) {
-                    mostrarMsg(`✅ Leilão ${novoStatus === 'ativa' ? 'ativado' : 'desativado'}!`, 'sucesso');
-                    carregarCampanhas();
-                } else {
-                    mostrarMsg('❌ ' + (data.erro || 'Erro ao alterar status'), 'erro');
-                }
-            } catch (e) {
-                mostrarMsg('❌ Erro ao alterar status', 'erro');
-                console.error(e);
-            }
-        }
-
-        function exportarDados() {
-            if (!confirm('Exportar todos os dados do sistema?')) return;
-            
-            fetch('/api/admin/exportar-dados', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            })
-            .then(res => {
-                if (res.status === 401) {
-                    mostrarMsg('Sessão expirada. Faça login novamente.', 'erro');
-                    return;
-                }
-                return res.json();
-            })
-            .then(data => {
-                if (!data) return;
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = `backup-leilao-${new Date().toISOString().slice(0,10)}.json`;
-                link.click();
-                mostrarMsg('✅ Backup exportado com sucesso!', 'sucesso');
-            })
-            .catch(() => mostrarMsg('❌ Erro ao exportar dados', 'erro'));
-        }
-
-        setInterval(() => {
-            const tab = document.getElementById('tabCampanhas');
-            if (!tab.classList.contains('hidden') && isLoggedIn) {
-                carregarCampanhasDebounced();
-            }
-        }, 30000);
-
-        document.querySelectorAll('.modal-overlay').forEach(el => {
-            el.addEventListener('click', (e) => {
-                if (e.target === el) el.classList.remove('active');
-            });
+async function fazerLogin(e) {
+    e.preventDefault();
+    const senha = document.getElementById('senhaAdmin').value;
+    try {
+        const res = await fetch('/api/admin/verificar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ senha })
         });
-    </script>
+        const data = await res.json();
+        if (data.sucesso) {
+            token = senha;
+            isLoggedIn = true;
+            localStorage.setItem('adminToken', senha);
+            document.getElementById('loginAdmin').style.display = 'none';
+            document.getElementById('painelAdmin').classList.remove('hidden');
+            carregarCampanhas();
+        } else {
+            document.getElementById('loginErro').style.display = 'block';
+        }
+    } catch(e) { mostrarMsg('Erro ao conectar', 'erro'); }
+}
+
+function fazerLogout() {
+    if (confirm('Sair?')) {
+        localStorage.removeItem('adminToken');
+        token = null;
+        isLoggedIn = false;
+        document.getElementById('loginAdmin').style.display = 'block';
+        document.getElementById('painelAdmin').classList.add('hidden');
+    }
+}
+
+// ============ UTILITÁRIOS ============
+function mostrarMsg(texto, tipo) {
+    const area = document.getElementById('msgArea');
+    area.innerHTML = `<div class="msg ${tipo}">${texto}</div>`;
+    setTimeout(() => area.innerHTML = '', 5000);
+}
+
+function trocarTab(tab) {
+    document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+    const tabs = document.querySelectorAll('.tabs button');
+    const idx = ['campanhas', 'nova'].indexOf(tab);
+    if (tabs[idx]) tabs[idx].classList.add('active');
+    document.getElementById('tabCampanhas').classList.toggle('hidden', tab !== 'campanhas');
+    document.getElementById('tabNova').classList.toggle('active', tab === 'nova');
+    if (tab === 'campanhas') carregarCampanhas();
+}
+
+function formatarTempo(seg) {
+    if (seg <= 0) return 'Encerrado';
+    const d = Math.floor(seg/86400), h = Math.floor((seg%86400)/3600), m = Math.floor((seg%3600)/60);
+    if (d > 0) return `${d}d ${h}h`;
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m`;
+}
+
+function formatarDuracao(min) {
+    if (min <= 0) return '0min';
+    if (min < 60) return `${min}min`;
+    const h = Math.floor(min/60), m = min%60;
+    if (h < 24) return `${h}h ${m>0?m+'m':''}`;
+    const d = Math.floor(h/24), rh = h%24;
+    return `${d}d ${rh}h${m>0?' '+m+'m':''}`;
+}
+
+// ============ CAMPANHAS ============
+async function carregarCampanhas() {
+    if (!isLoggedIn) return;
+    try {
+        const res = await fetch('/api/admin/campanhas-completas', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.status === 401) { fazerLogout(); return; }
+        const data = await res.json();
+        campanhasCache = data;
+        atualizarDashboard(data);
+        renderizarCampanhas(data);
+    } catch(e) {
+        document.getElementById('campanhasList').innerHTML = '<div style="text-align:center;color:#dc2626;padding:30px;">❌ Erro ao carregar</div>';
+    }
+}
+
+function atualizarDashboard(campanhas) {
+    document.getElementById('dashTotalLeiloes').textContent = campanhas.length;
+    document.getElementById('dashLeiloesAtivos').textContent = campanhas.filter(c => c.status === 'ativa').length;
+    let lances = 0, usuarios = new Set();
+    campanhas.forEach(c => {
+        lances += c.total_lances || 0;
+        if (c.vencedor_atual) usuarios.add(c.vencedor_atual.nome);
+    });
+    document.getElementById('dashTotalLances').textContent = lances;
+    document.getElementById('dashTotalUsuarios').textContent = usuarios.size;
+}
+
+function renderizarCampanhas(campanhas) {
+    const container = document.getElementById('campanhasList');
+    if (!campanhas || campanhas.length === 0) {
+        container.innerHTML = `
+            <div style="text-align:center;color:#888;padding:30px;">
+                📭 Nenhum leilão criado.<br>
+                <button class="btn btn-primary" style="margin-top:12px;" onclick="trocarTab('nova')">➕ Criar</button>
+            </div>`;
+        return;
+    }
+    container.innerHTML = campanhas.map(c => `
+        <div class="campanha-card">
+            <div class="topo">
+                <div><span class="titulo">${c.nome}</span><small>#${c.id} • /${c.slug}</small></div>
+                <div><span class="status-badge ${c.status}">${c.status === 'ativa' ? '🟢 Ativo' : '🔴 Inativo'}</span></div>
+            </div>
+            <div class="detalhes">
+                <div class="item"><div class="valor">${c.total_lances||0}</div><div class="label">📊 Lances</div></div>
+                <div class="item"><div class="valor">R$ ${(c.lance_atual||0).toFixed(2)}</div><div class="label">💰 Lance</div></div>
+                <div class="item"><div class="valor">${c.vencedor_atual ? c.vencedor_atual.nome : '—'}</div><div class="label">🏆 Vencedor</div></div>
+                <div class="item"><div class="valor">${formatarTempo(c.tempo_restante||0)}</div><div class="label">⏱️ Restante</div></div>
+            </div>
+            <div class="url">🔗 <a href="${c.url}" target="_blank">${c.url}</a></div>
+            <div class="acoes">
+                <button class="btn btn-secondary btn-sm" onclick="editarCampanha(${c.id})">✏️ Editar</button>
+                <button class="btn btn-warning btn-sm" onclick="resetarLeilao(${c.id})">🔄 Resetar</button>
+                <button class="btn ${c.status==='ativa'?'btn-danger':'btn-success'} btn-sm" onclick="toggleStatus(${c.id})">${c.status==='ativa'?'⏸️ Desativar':'▶️ Ativar'}</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// ============ CRIAR ============
+async function criarCampanha(e) {
+    e.preventDefault();
+    if (!isLoggedIn) return;
+    const btn = e.target.querySelector('button[type="submit"]');
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner"></span> Criando...';
+
+    const duracao = parseInt(document.getElementById('campDuracao').value) || 1440;
+    const finalDuracao = Math.min(Math.max(duracao, 1), MAX_DURACAO);
+
+    const data = {
+        nome: document.getElementById('campNome').value.trim(),
+        slug: document.getElementById('campSlug').value.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+        descricao: document.getElementById('campDesc').value.trim(),
+        item_nome: document.getElementById('itemNome').value.trim(),
+        item_descricao: document.getElementById('itemDesc').value.trim(),
+        meta_valor: parseFloat(document.getElementById('campMeta').value) || 3.00,
+        duracao: finalDuracao,
+        premio_imagem_url: document.getElementById('premioImagemUrl').value.trim()
+    };
+
+    try {
+        const res = await fetch('/api/admin/criar-campanha', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (result.sucesso) {
+            mostrarMsg('✅ Leilão criado!', 'sucesso');
+            document.getElementById('urlGeradaContainer').style.display = 'block';
+            document.getElementById('urlGeradaContainer').innerHTML = `🔗 <a href="${result.url}" target="_blank">${result.url}</a>`;
+            carregarCampanhas();
+            setTimeout(() => trocarTab('campanhas'), 1500);
+        } else {
+            mostrarMsg('❌ ' + (result.erro || 'Erro'), 'erro');
+        }
+    } catch(e) { mostrarMsg('❌ Erro ao criar', 'erro'); }
+    btn.disabled = false;
+    btn.textContent = original;
+}
+
+// ============ EDITAR ============
+function editarCampanha(id) {
+    const c = campanhasCache.find(x => x.id === id);
+    if (!c) return;
+    document.getElementById('editCampanhaId').value = id;
+    document.getElementById('editNome').value = c.nome;
+    document.getElementById('editSlug').value = c.slug;
+    document.getElementById('editDesc').value = c.descricao || '';
+    document.getElementById('editMeta').value = c.meta_valor || 3.00;
+    document.getElementById('editStatus').value = c.status || 'ativa';
+    let duracao = 1440;
+    if (c.data_fim && c.started_at) {
+        const diff = Math.round((new Date(c.data_fim) - new Date(c.started_at)) / 60000);
+        if (diff > 0) duracao = Math.min(diff, MAX_DURACAO);
+    }
+    document.getElementById('editDuracao').value = duracao;
+    document.getElementById('editTempoInfo').textContent = `⏱️ Duração: ${formatarDuracao(duracao)}`;
+    document.getElementById('modalEditar').classList.add('active');
+}
+
+function fecharModalEditar() {
+    document.getElementById('modalEditar').classList.remove('active');
+}
+
+async function salvarEdicao(e) {
+    e.preventDefault();
+    const id = parseInt(document.getElementById('editCampanhaId').value);
+    const duracao = parseInt(document.getElementById('editDuracao').value) || 1440;
+    const finalDuracao = Math.min(Math.max(duracao, 1), MAX_DURACAO);
+    const data = {
+        nome: document.getElementById('editNome').value.trim(),
+        slug: document.getElementById('editSlug').value.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+        descricao: document.getElementById('editDesc').value.trim(),
+        meta_valor: parseFloat(document.getElementById('editMeta').value) || 3.00,
+        duracao: finalDuracao,
+        status: document.getElementById('editStatus').value
+    };
+    try {
+        const res = await fetch(`/api/admin/campanhas/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (result.sucesso) {
+            mostrarMsg('✅ Atualizado!', 'sucesso');
+            fecharModalEditar();
+            carregarCampanhas();
+        } else {
+            mostrarMsg('❌ ' + (result.erro || 'Erro'), 'erro');
+        }
+    } catch(e) { mostrarMsg('❌ Erro ao salvar', 'erro'); }
+}
+
+// ============ AÇÕES ============
+async function toggleStatus(id) {
+    if (!confirm('Alterar status?')) return;
+    const c = campanhasCache.find(x => x.id === id);
+    const novo = c.status === 'ativa' ? 'inativa' : 'ativa';
+    try {
+        const res = await fetch(`/api/admin/campanhas/${id}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ status: novo })
+        });
+        const result = await res.json();
+        if (result.sucesso) { mostrarMsg('✅ Status alterado!', 'sucesso'); carregarCampanhas(); }
+        else { mostrarMsg('❌ ' + (result.erro || 'Erro'), 'erro'); }
+    } catch(e) { mostrarMsg('❌ Erro', 'erro'); }
+}
+
+async function resetarLeilao(id) {
+    if (!confirm('Resetar todos os lances?')) return;
+    if (!confirm('Última chance!')) return;
+    try {
+        const res = await fetch(`/api/admin/resetar-leilao/${id}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const result = await res.json();
+        if (result.sucesso) { mostrarMsg('✅ Resetado!', 'sucesso'); carregarCampanhas(); }
+        else { mostrarMsg('❌ ' + (result.erro || 'Erro'), 'erro'); }
+    } catch(e) { mostrarMsg('❌ Erro', 'erro'); }
+}
+
+// ============ AUTO ATUALIZAÇÃO ============
+setInterval(() => {
+    if (isLoggedIn && !document.getElementById('tabCampanhas').classList.contains('hidden')) {
+        carregarCampanhas();
+    }
+}, 30000);
+
+// Fechar modal ao clicar fora
+document.querySelectorAll('.modal-overlay').forEach(el => {
+    el.addEventListener('click', (e) => { if (e.target === el) el.classList.remove('active'); });
+});
+</script>
 </body>
 </html>
