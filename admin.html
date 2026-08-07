@@ -616,7 +616,7 @@
 
             <div id="tabNova" class="admin-form">
                 <h3>➕ Criar Novo Leilão</h3>
-                <form onsubmit="criarCampanha(event)" enctype="multipart/form-data" novalidate>
+                <form id="formCriarCampanha" onsubmit="criarCampanha(event)" enctype="multipart/form-data" novalidate>
                     <div class="form-group">
                         <label>Nome do Leilão *</label>
                         <input type="text" id="campNome" placeholder="Ex: Dia dos Pais" required>
@@ -716,7 +716,7 @@
                     </div>
                     <div class="form-group">
                         <label>Duração do Leilão (minutos)</label>
-                        <input type="text" id="campDuracao" value="1440" inputmode="numeric" pattern="[0-9]*">
+                        <input type="text" id="campDuracao" value="43200" inputmode="numeric" pattern="[0-9]*">
                         <small style="color:#6B7280;font-size:11px;">Tempo total do leilão em minutos (1440 = 24h, máximo 43200 = 30 dias)</small>
                     </div>
                     <button type="submit" class="btn btn-success" style="width:100%;">✅ Criar Leilão</button>
@@ -1250,85 +1250,105 @@
         return erros;
     }
 
+    // ========== FUNÇÃO CORRIGIDA PARA CRIAR CAMPANHA ==========
     async function criarCampanha(e) {
         e.preventDefault();
         if (!isLoggedIn) {
             mostrarMsg('⚠️ Faça login novamente', 'erro');
             return;
         }
-        const form = e.target;
-        const formData = new FormData(form);
-        const nome = document.getElementById('campNome').value.trim();
-        const slug = document.getElementById('campSlug').value.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-        let duracaoMinutos = parseInt(document.getElementById('campDuracao').value) || 1440;
-        if (duracaoMinutos > MAX_DURACAO) { duracaoMinutos = MAX_DURACAO; document.getElementById('campDuracao').value = MAX_DURACAO; }
-        if (duracaoMinutos < 1) { duracaoMinutos = 1; document.getElementById('campDuracao').value = 1; }
-        const premioTitulo = document.getElementById('campPremioTitulo').value.trim() || '🏆 PRÊMIO DO LEILÃO';
-        const meta_valor = parseFloat(document.getElementById('campMeta').value) || 3.00;
-        const influencer = document.getElementById('campInfluencer').value.trim() || 'Não informado';
-        const metasInternas = getMetasInternas('metasInternasContainer');
-        const erros = validarCampanha({ nome, slug, meta_valor });
-        if (erros.length > 0) {
-            mostrarMsg('⚠️ ' + erros.join('; '), 'erro');
-            return;
-        }
-        const slugExists = campanhasCache.some(c => c.slug === slug);
-        if (slugExists) {
-            mostrarMsg('⚠️ Este slug já está em uso. Escolha outro.', 'erro');
-            return;
-        }
-        const agora = new Date();
-        const dataFim = new Date(agora);
-        dataFim.setMinutes(dataFim.getMinutes() + duracaoMinutos);
-        formData.append('data_fim', dataFim.toISOString());
-        formData.append('premio_titulo', premioTitulo);
-        formData.append('meta_valor', meta_valor);
-        formData.append('influencer', influencer);
-        formData.append('metas_internas', JSON.stringify(metasInternas));
-        formData.append('duracao', duracaoMinutos);
+
         const btn = document.querySelector('#tabNova .btn-success');
         const originalText = btn.textContent;
         btn.disabled = true;
         btn.innerHTML = '<span class="loading-spinner"></span> Criando...';
+
         try {
+            const nome = document.getElementById('campNome').value.trim();
+            const slug = document.getElementById('campSlug').value.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+            const descricao = document.getElementById('campDesc').value.trim();
+            const item_nome = document.getElementById('itemNome').value.trim();
+            const item_descricao = document.getElementById('itemDesc').value.trim();
+            const item_categoria = document.getElementById('itemCategoria').value;
+            const premio_titulo = document.getElementById('campPremioTitulo').value.trim() || '🏆 PRÊMIO DO LEILÃO';
+            const premio_imagem_url = document.getElementById('premioImagemUrl').value.trim();
+            const meta_valor = parseFloat(document.getElementById('campMeta').value) || 3.00;
+            let duracao = parseInt(document.getElementById('campDuracao').value) || 43200;
+            const influencer = document.getElementById('campInfluencer').value.trim() || 'Não informado';
+
+            if (!nome) { mostrarMsg('⚠️ Nome do leilão é obrigatório', 'erro'); btn.disabled = false; btn.innerHTML = originalText; return; }
+            if (!slug) { mostrarMsg('⚠️ Slug é obrigatório', 'erro'); btn.disabled = false; btn.innerHTML = originalText; return; }
+            if (!item_nome) { mostrarMsg('⚠️ Nome do item é obrigatório', 'erro'); btn.disabled = false; btn.innerHTML = originalText; return; }
+            if (duracao > 43200) duracao = 43200;
+            if (duracao < 1) duracao = 1;
+
+            const metasInternas = getMetasInternas('metasInternasContainer');
+
+            const data = {
+                nome,
+                slug,
+                descricao,
+                item_nome,
+                item_descricao,
+                item_categoria,
+                premio_titulo,
+                premio_imagem_url,
+                meta_valor,
+                duracao,
+                influencer,
+                metas_internas: JSON.stringify(metasInternas)
+            };
+
+            console.log('📤 Enviando dados:', data);
+
             const res = await fetch('/api/admin/criar-campanha', {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: formData
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(data)
             });
-            const data = await res.json();
-            if (data.sucesso) {
+
+            const result = await res.json();
+            console.log('📥 Resposta:', result);
+
+            if (result.sucesso) {
                 mostrarMsg('✅ Leilão criado com sucesso!', 'sucesso');
+                
                 const urlContainer = document.getElementById('urlGeradaContainer');
                 urlContainer.style.display = 'block';
                 urlContainer.innerHTML = `
                     <strong>🔗 URL do Leilão:</strong><br>
-                    <a href="${data.url}" target="_blank">${data.url}</a>
+                    <a href="${result.url}" target="_blank">${result.url}</a>
                     <br><small style="color:#6B7280;">Compartilhe este link para os participantes</small>
-                    <br><button class="btn btn-secondary btn-sm" onclick="copiarUrl('${data.url}')" style="margin-top:8px;">📋 Copiar URL</button>
+                    <br><button class="btn btn-secondary btn-sm" onclick="copiarUrl('${result.url}')" style="margin-top:8px;">📋 Copiar URL</button>
                 `;
-                form.reset();
+
+                document.getElementById('formCriarCampanha').reset();
                 document.getElementById('premioPreview').style.display = 'none';
                 document.getElementById('premioPreviewEmoji').textContent = '🏆';
                 document.getElementById('premioPreviewImg').style.display = 'none';
-                document.getElementById('campDuracao').value = '1440';
+                document.getElementById('campDuracao').value = '43200';
                 document.getElementById('campPremioTitulo').value = '🏆 PRÊMIO DO LEILÃO';
                 document.getElementById('campMeta').value = '3.00';
                 document.getElementById('campInfluencer').value = '';
+                
                 const metasContainer = document.getElementById('metasInternasContainer');
                 metasContainer.innerHTML = '';
                 adicionarMeta('metasInternasContainer', 25, 'R$ 100,00');
                 adicionarMeta('metasInternasContainer', 50, 'R$ 200,00');
                 adicionarMeta('metasInternasContainer', 75, 'R$ 300,00');
                 adicionarMeta('metasInternasContainer', 100, 'R$ 500,00');
+
                 carregarCampanhas();
                 setTimeout(() => trocarTab('campanhas'), 2000);
             } else {
-                mostrarMsg('❌ ' + (data.erro || 'Erro ao criar leilão'), 'erro');
+                mostrarMsg('❌ ' + (result.erro || 'Erro ao criar leilão'), 'erro');
             }
-        } catch (e) {
-            console.error('Erro ao criar leilão:', e);
-            mostrarMsg('❌ Erro ao criar leilão', 'erro');
+        } catch (err) {
+            console.error('❌ Erro:', err);
+            mostrarMsg('❌ Erro ao criar leilão: ' + err.message, 'erro');
         } finally {
             btn.disabled = false;
             btn.innerHTML = originalText;
