@@ -24,7 +24,6 @@
     <meta name="twitter:image" content="{{OG_IMAGE}}" />
     <!-- ========================================================== -->
 
-    <title>Leilão Fácil</title>
     <script src="https://cdn.socket.io/4.6.1/socket.io.min.js" defer></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -560,41 +559,92 @@
             color: #FFD700;
         }
 
+        /* ===== TIMER MELHORADO ===== */
         .timer-destaque {
             background: linear-gradient(135deg, #1A2B4C, #0066FF);
             border-radius: 16px;
-            padding: 20px;
+            padding: 24px;
             margin: 12px 0;
             color: #fff;
             box-shadow: 0 4px 20px rgba(0,102,255,0.3);
             text-align: center;
+            transition: background 0.5s ease;
         }
-        .timer-destaque .relogio {
-            font-size: 42px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            font-family: 'Courier New', monospace;
-            text-shadow: 0 0 20px rgba(255,255,255,0.2);
-        }
-        .timer-destaque .relogio .dias {
-            font-size: 28px;
-            color: #FFD700;
-        }
-        .timer-destaque .relogio.encerrado { color: #FF6B6B; }
         .timer-destaque .label-tempo {
             font-size: 13px;
             opacity: 0.8;
             text-transform: uppercase;
             letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+        .timer-destaque .relogio {
+            font-size: 38px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 0 20px rgba(255,255,255,0.15);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .timer-destaque .relogio .dias {
+            font-size: 38px;
+            color: #FFD700;
+            font-weight: 800;
+        }
+        .timer-destaque .relogio .dias-label {
+            font-size: 18px;
+            color: #FFD700;
+            font-weight: 600;
+            margin-right: 4px;
+        }
+        .timer-destaque .relogio .tempo-numero {
+            font-size: 32px;
+            font-weight: 700;
+            min-width: 40px;
+            display: inline-block;
+        }
+        .timer-destaque .relogio .tempo-separador {
+            font-size: 28px;
+            color: rgba(255,255,255,0.4);
+            font-weight: 300;
+        }
+        .timer-destaque .relogio .tempo-label {
+            font-size: 12px;
+            opacity: 0.6;
+            margin: 0 2px;
+        }
+        .timer-destaque .relogio.encerrado {
+            color: #FF6B6B;
+        }
+        .timer-destaque .relogio.encerrado .dias {
+            color: #FF6B6B;
         }
         .timer-destaque .lance-atual {
             font-size: 18px;
-            margin-top: 8px;
+            margin-top: 12px;
         }
         .timer-destaque .lance-atual .valor {
             font-size: 28px;
             font-weight: 700;
             color: #FFD700;
+        }
+        .timer-destaque .timer-status {
+            font-size: 14px;
+            margin-top: 10px;
+            opacity: 0.9;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .timer-destaque .timer-status.urgente {
+            animation: piscar 0.8s infinite;
+            font-weight: 700;
+        }
+        @keyframes piscar {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
         }
 
         .item-card .info h2 { 
@@ -1056,7 +1106,8 @@
             .pix-area .pix-link { padding: 6px 10px; }
             .pix-area .qr-code { max-width: 180px; padding: 8px; }
             .timer-destaque .relogio { font-size: 28px; letter-spacing: 1px; }
-            .timer-destaque .relogio .dias { font-size: 20px; }
+            .timer-destaque .relogio .dias { font-size: 28px; }
+            .timer-destaque .relogio .tempo-numero { font-size: 22px; min-width: 28px; }
             .timer-destaque .lance-atual .valor { font-size: 22px; }
             .item-card .info .ultimos-lances .lance-item { flex-wrap: wrap; gap: 4px; padding: 6px 10px; font-size: 12px; }
             .item-card .info .ultimos-lances .lance-item .data { min-width: auto; width: 100%; text-align: left; font-size: 10px; }
@@ -1079,7 +1130,8 @@
             .item-card .info .lance-fixo .btn-lance-fixo { font-size: 15px; padding: 14px; }
             .pix-area .qr-code { max-width: 150px; }
             .timer-destaque .relogio { font-size: 22px; }
-            .timer-destaque .relogio .dias { font-size: 16px; }
+            .timer-destaque .relogio .dias { font-size: 22px; }
+            .timer-destaque .relogio .tempo-numero { font-size: 18px; min-width: 20px; }
             .premio-container .imagem-premio-wrapper img { max-height: 150px; }
             .premio-container .imagem-premio-wrapper .emoji-grande { font-size: 44px; padding: 12px; }
             .zoom-modal-overlay .zoom-content .emoji-zoom { font-size: 60px; padding: 20px; }
@@ -1501,36 +1553,89 @@
         }
         function fecharZoom() { document.getElementById('zoomModal').classList.remove('active'); }
 
+        // ===== TIMER MELHORADO =====
         function iniciarTimer(dataFim) {
             if (timerInterval) clearInterval(timerInterval);
+            
             function atualizarTimer() {
                 const diff = new Date(dataFim) - new Date();
+                const timerContainer = document.getElementById('timerContainer');
+                const statusEl = document.getElementById('timerStatus');
+                const diasEl = document.getElementById('diasRestantes');
+                const horasEl = document.getElementById('horasRestantes');
+                const minutosEl = document.getElementById('minutosRestantes');
+                const segundosEl = document.getElementById('segundosRestantes');
+                
                 if (diff <= 0) {
-                    const el = document.getElementById('tempoRestante');
-                    if (el) { 
-                        el.innerHTML = '00:00:00'; 
-                        el.className = 'relogio encerrado'; 
-                        setTimeout(carregarItem, 1000); 
+                    diasEl.textContent = '00';
+                    horasEl.textContent = '00';
+                    minutosEl.textContent = '00';
+                    segundosEl.textContent = '00';
+                    if (statusEl) {
+                        statusEl.textContent = '⏰ LEILÃO ENCERRADO!';
+                        statusEl.className = 'timer-status urgente';
+                        statusEl.style.color = '#FF6B6B';
                     }
-                    clearInterval(timerInterval); 
+                    if (timerContainer) {
+                        timerContainer.style.background = '#4a4a4a';
+                    }
+                    clearInterval(timerInterval);
                     return;
                 }
+                
                 const totalSegundos = Math.floor(diff / 1000);
                 const dias = Math.floor(totalSegundos / 86400);
                 const horas = Math.floor((totalSegundos % 86400) / 3600);
                 const minutos = Math.floor((totalSegundos % 3600) / 60);
                 const segundos = totalSegundos % 60;
                 
-                const el = document.getElementById('tempoRestante');
-                if (el) {
+                // Atualiza os elementos do DOM
+                if (diasEl) diasEl.textContent = String(dias).padStart(2, '0');
+                if (horasEl) horasEl.textContent = String(horas).padStart(2, '0');
+                if (minutosEl) minutosEl.textContent = String(minutos).padStart(2, '0');
+                if (segundosEl) segundosEl.textContent = String(segundos).padStart(2, '0');
+                
+                // Mensagem amigável
+                if (statusEl) {
+                    let mensagem = '';
+                    let cor = '';
+                    let classe = '';
+                    
                     if (dias > 0) {
-                        el.innerHTML = `<span class="dias">${dias}d</span> ${horas.toString().padStart(2,'0')}:${minutos.toString().padStart(2,'0')}:${segundos.toString().padStart(2,'0')}`;
+                        mensagem = `📅 ${dias} dia${dias > 1 ? 's' : ''} restantes`;
+                        cor = '#90EE90';
+                        classe = '';
+                    } else if (horas > 6) {
+                        mensagem = `⏰ ${horas}h ${minutos}m restantes`;
+                        cor = '#FFD700';
+                        classe = '';
+                    } else if (horas > 1) {
+                        mensagem = `🔥 ${horas}h ${minutos}m restantes - Últimas horas!`;
+                        cor = '#FF8C00';
+                        classe = 'urgente';
+                    } else if (horas > 0) {
+                        mensagem = `⚡ Menos de 1 hora! Corra!`;
+                        cor = '#FF4500';
+                        classe = 'urgente';
+                    } else if (minutos > 0) {
+                        mensagem = `🔥 ${minutos}m ${segundos}s - Últimos minutos!`;
+                        cor = '#FF0000';
+                        classe = 'urgente';
                     } else {
-                        el.textContent = `${horas.toString().padStart(2,'0')}:${minutos.toString().padStart(2,'0')}:${segundos.toString().padStart(2,'0')}`;
+                        mensagem = `⏰ ${segundos}s - Últimos segundos!`;
+                        cor = '#FF0000';
+                        classe = 'urgente';
                     }
+                    
+                    statusEl.textContent = mensagem;
+                    statusEl.style.color = cor;
+                    statusEl.className = 'timer-status' + (classe ? ' ' + classe : '');
                 }
             }
+            
+            // Chama a função imediatamente para não ficar em branco
             atualizarTimer();
+            // Depois atualiza a cada segundo
             timerInterval = setInterval(atualizarTimer, 1000);
         }
 
@@ -1575,14 +1680,54 @@
 
                 let tempoHtml = '';
                 if (encerrado) {
-                    tempoHtml = `<div class="timer-destaque" style="background:#4a4a4a;"><div class="label-tempo">⏰ LEILÃO ENCERRADO</div><div class="relogio encerrado">00:00:00</div>${lanceAtual > 0 ? `<div class="lance-atual">💰 Lance final: <span class="valor">R$ ${lanceAtual.toFixed(2)}</span></div>` : ''}</div>`;
+                    tempoHtml = `
+                        <div class="timer-destaque" id="timerContainer" style="background:#4a4a4a;">
+                            <div class="label-tempo">⏰ LEILÃO ENCERRADO</div>
+                            <div class="relogio encerrado">
+                                <span class="dias">00</span><span class="dias-label">d</span>
+                                <span class="tempo-numero" id="horasRestantes">00</span><span class="tempo-label">h</span>
+                                <span class="tempo-separador">:</span>
+                                <span class="tempo-numero" id="minutosRestantes">00</span><span class="tempo-label">m</span>
+                                <span class="tempo-separador">:</span>
+                                <span class="tempo-numero" id="segundosRestantes">00</span><span class="tempo-label">s</span>
+                            </div>
+                            ${lanceAtual > 0 ? `<div class="lance-atual">💰 Lance final: <span class="valor">R$ ${lanceAtual.toFixed(2)}</span></div>` : ''}
+                            <div class="timer-status" style="color:#FF6B6B;">⏰ LEILÃO ENCERRADO!</div>
+                        </div>
+                    `;
                 } else if (metaAtingida && totalLances > 0) {
-                    tempoHtml = `<div class="timer-destaque" style="background:#10B981;"><div class="label-tempo">🎯 META ATINGIDA!</div><div class="relogio" style="color:#FFD700;">R$ ${lanceAtual.toFixed(2)}</div><div class="lance-atual">🏆 Leilão concluído com sucesso!</div></div>`;
+                    tempoHtml = `
+                        <div class="timer-destaque" style="background:#10B981;">
+                            <div class="label-tempo">🎯 META ATINGIDA!</div>
+                            <div class="relogio" style="color:#FFD700;">R$ ${lanceAtual.toFixed(2)}</div>
+                            <div class="lance-atual">🏆 Leilão concluído com sucesso!</div>
+                        </div>
+                    `;
                 } else if (temLanceInicial && item.started_at) {
-                    tempoHtml = `<div class="timer-destaque"><div class="label-tempo">⏱️ TEMPO RESTANTE</div><div class="relogio" id="tempoRestante">Carregando...</div><div class="lance-atual">💰 Lance atual: <span class="valor">R$ ${lanceAtual.toFixed(2)}</span></div></div>`;
+                    tempoHtml = `
+                        <div class="timer-destaque" id="timerContainer">
+                            <div class="label-tempo">⏱️ TEMPO RESTANTE</div>
+                            <div class="relogio" id="tempoRestante">
+                                <span class="dias" id="diasRestantes">--</span><span class="dias-label">d</span>
+                                <span class="tempo-numero" id="horasRestantes">--</span><span class="tempo-label">h</span>
+                                <span class="tempo-separador">:</span>
+                                <span class="tempo-numero" id="minutosRestantes">--</span><span class="tempo-label">m</span>
+                                <span class="tempo-separador">:</span>
+                                <span class="tempo-numero" id="segundosRestantes">--</span><span class="tempo-label">s</span>
+                            </div>
+                            <div class="lance-atual">💰 Lance atual: <span class="valor" id="lanceAtualValor">R$ ${lanceAtual.toFixed(2)}</span></div>
+                            <div class="timer-status" id="timerStatus">⏳ Carregando...</div>
+                        </div>
+                    `;
                     iniciarTimer(item.data_fim);
                 } else {
-                    tempoHtml = `<div class="timer-destaque" style="background:#10B981;"><div class="label-tempo">⏳ AGUARDANDO</div><div class="relogio">R$ 0,01</div><div class="lance-atual">💡 Primeiro lance inicia a contagem!</div></div>`;
+                    tempoHtml = `
+                        <div class="timer-destaque" style="background:#10B981;">
+                            <div class="label-tempo">⏳ AGUARDANDO</div>
+                            <div class="relogio">R$ 0,01</div>
+                            <div class="lance-atual">💡 Primeiro lance inicia a contagem!</div>
+                        </div>
+                    `;
                 }
 
                 const ultimosHtml = lances.length > 0 ? lances.map(l => `<div class="lance-item"><span class="usuario">👤 ${l.nome}</span><span class="valor">R$ ${l.valor.toFixed(2)}</span><span class="data">${new Date(l.data).toLocaleString()}</span></div>`).join('') : '<div style="color:#6B7280;text-align:center;padding:8px;">Nenhum lance ainda</div>';
