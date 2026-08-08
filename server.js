@@ -17,7 +17,7 @@ const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 const MERCADO_PAGO_ACCESS_TOKEN = process.env.MERCADO_PAGO_ACCESS_TOKEN || 'APP_USR-6748594610084561-072611-b75a26bd80e196ee7040b30ee7a09fa3-1459269241';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
-const MAX_DURACAO_MINUTOS = 43200;
+const MAX_DURACAO_MINUTOS = 43200; // 30 DIAS
 
 // ========== SUPABASE ==========
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -90,7 +90,6 @@ let db = {
 
 // ========== FUNÇÕES DO BANCO ==========
 async function loadDB() {
-    // Tenta carregar do Supabase primeiro
     if (useSupabase) {
         try {
             const [campanhas, itens, usuarios, lances, pagamentos] = await Promise.all([
@@ -115,7 +114,6 @@ async function loadDB() {
         }
     }
 
-    // Fallback: carrega do JSON
     try {
         if (fs.existsSync(DB_FILE)) {
             db = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
@@ -126,7 +124,6 @@ async function loadDB() {
         console.error('Erro ao carregar DB:', e);
     }
 
-    // Se não tem nada, cria campanha padrão
     const now = new Date();
     const fim = new Date(now);
     fim.setDate(fim.getDate() + 7);
@@ -148,6 +145,7 @@ async function loadDB() {
             { meta: 75, premio: 'R$ 300,00' },
             { meta: 100, premio: 'R$ 500,00' }
         ],
+        duracao: 1440,
         created_at: now.toISOString()
     });
 
@@ -173,10 +171,8 @@ async function loadDB() {
 }
 
 async function saveDB() {
-    // Salva no Supabase
     if (useSupabase) {
         try {
-            // Salva campanhas
             for (const item of db.campanhas) {
                 await supabase.from('campanhas').upsert(item);
             }
@@ -199,7 +195,6 @@ async function saveDB() {
         }
     }
 
-    // Fallback: salva no JSON
     try {
         fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
         console.log('✅ Dados salvos no JSON');
@@ -242,13 +237,9 @@ app.use('/uploads', express.static(UPLOAD_DIR));
 // ========== ADMIN MIDDLEWARE ==========
 const verificarAdmin = (req, res, next) => {
     const auth = req.headers.authorization;
-    if (!auth) {
-        return res.status(401).json({ erro: 'Acesso negado' });
-    }
+    if (!auth) return res.status(401).json({ erro: 'Acesso negado' });
     const token = auth.split(' ')[1];
-    if (token !== ADMIN_PASSWORD) {
-        return res.status(401).json({ erro: 'Senha incorreta' });
-    }
+    if (token !== ADMIN_PASSWORD) return res.status(401).json({ erro: 'Senha incorreta' });
     next();
 };
 
@@ -408,7 +399,7 @@ app.get('/api/campanha/:slug', (req, res) => {
     }
 });
 
-// ========== CRIAR PAGAMENTO ==========
+// ========== CRIAR PAGAMENTO (CORRIGIDO) ==========
 app.post('/api/criar-pagamento', async (req, res) => {
     const { item_id, campanha_id, usuario_id, nome, email, valor } = req.body;
     if (!item_id || valor === undefined || valor < 0) {
@@ -424,9 +415,10 @@ app.post('/api/criar-pagamento', async (req, res) => {
         const item = db.itens.find(i => i.id === item_id);
         if (!item) return res.status(404).json({ erro: 'Item não encontrado' });
         if (item.status !== 'ativo') return res.status(400).json({ erro: 'Leilão encerrado' });
-        if (new Date(item.data_fim) < new Date()) return res.status(400).json({ erro: 'Leilão encerrado' });
+        
         const campanha = db.campanhas.find(c => c.id === campanha_id);
         if (!campanha) return res.status(404).json({ erro: 'Campanha não encontrada' });
+        
         const lancesItem = db.lances.filter(l => l.item_id === item_id && l.status === 'confirmado');
         const maiorLance = lancesItem.length > 0 ? Math.max(...lancesItem.map(l => l.valor)) : item.lance_inicial;
         const proximoLance = parseFloat((maiorLance + 0.01).toFixed(2));
@@ -436,14 +428,41 @@ app.post('/api/criar-pagamento', async (req, res) => {
                 proximo_lance: proximoLance
             });
         }
+
+        // ===== CORREÇÃO: PRIMEIRO LANCE USA A DURAÇÃO DA CAMPANHA =====
         if (lancesItem.length === 0) {
             const agora = new Date();
             const fim = new Date(agora);
-            fim.setHours(fim.getHours() + 24);
-            update('itens', item.id, { started_at: agora.toISOString(), data_fim: fim.toISOString() });
+            
+            // Busca a duração configurada na campanha (em minutos)
+            let duracaoMinutos = 1440; // padrão: 24h
+            
+            if (campanha && campanha.duracao) {
+                duracaoMinutos = parseInt(campanha.duracao) || 1440;
+            }
+            
+            // Limita ao máximo de 30 dias (43200 minutos)
+            if (duracaoMinutos > MAX_DURACAO_MINUTOS) {
+                duracaoMinutos = MAX_DURACAO_MINUTOS;
+            }
+            if (duracaoMinutos < 1) {
+                duracaoMinutos = 1;
+            }
+            
+            fim.setMinutes(fim.getMinutes() + duracaoMinutos);
+            
+            update('itens', item.id, {
+                started_at: agora.toISOString(),
+                data_fim: fim.toISOString()
+            });
+            
+            // Atualiza o item local também
             item.started_at = agora.toISOString();
             item.data_fim = fim.toISOString();
+            
+            console.log(`⏱️ Primeiro lance! Duração: ${duracaoMinutos} minutos (${Math.floor(duracaoMinutos/1440)} dias)`);
         }
+
         const resultado = await criarPagamentoPIX(valor, `Lance - ${item.nome}`, usuario, item, campanha);
         if (!resultado.sucesso) {
             return res.status(500).json({ erro: resultado.erro || 'Erro ao criar pagamento' });
@@ -723,6 +742,7 @@ app.post('/api/admin/criar-campanha', verificarAdmin, upload.single('premio_imag
             premio_titulo: premio_titulo || '🏆 PRÊMIO DO LEILÃO',
             influencer: influencer || 'Não informado',
             metas_internas: metasInternasArray,
+            duracao: parseInt(duracao) || 1440,
             created_at: new Date().toISOString()
         });
         let dataFim = data_fim;
@@ -789,6 +809,7 @@ app.put('/api/admin/campanhas/:id', verificarAdmin, upload.single('premio_imagem
         if (status) campUpdates.status = status;
         if (premio_titulo !== undefined) campUpdates.premio_titulo = premio_titulo;
         if (influencer !== undefined) campUpdates.influencer = influencer;
+        if (duracao !== undefined) campUpdates.duracao = parseInt(duracao) || 1440;
         if (metas_internas) {
             try { campUpdates.metas_internas = JSON.parse(metas_internas); } catch (e) {}
         }
@@ -811,24 +832,21 @@ app.put('/api/admin/campanhas/:id', verificarAdmin, upload.single('premio_imagem
         if (item_nome) itemUpdates.nome = item_nome;
         if (item_descricao !== undefined) itemUpdates.descricao = item_descricao;
         if (item_categoria) itemUpdates.categoria = item_categoria;
-        if (duracao !== undefined && duracao !== null && duracao !== '') {
+        if (status === 'inativa') itemUpdates.status = 'inativo';
+        else if (status === 'ativa') itemUpdates.status = 'ativo';
+        
+        // Se a duração foi alterada e o leilão já começou, recalcula data_fim
+        if (duracao !== undefined && duracao !== null && duracao !== '' && item.started_at) {
             let duracaoMinutos = parseInt(duracao) || 1440;
             if (duracaoMinutos > MAX_DURACAO_MINUTOS) duracaoMinutos = MAX_DURACAO_MINUTOS;
             if (duracaoMinutos < 1) duracaoMinutos = 1;
-            if (item.started_at) {
-                const inicio = new Date(item.started_at);
-                const novoFim = new Date(inicio);
-                novoFim.setMinutes(novoFim.getMinutes() + duracaoMinutos);
-                itemUpdates.data_fim = novoFim.toISOString();
-            } else {
-                const agora = new Date();
-                const novoFim = new Date(agora);
-                novoFim.setMinutes(novoFim.getMinutes() + duracaoMinutos);
-                itemUpdates.data_fim = novoFim.toISOString();
-            }
+            const inicio = new Date(item.started_at);
+            const novoFim = new Date(inicio);
+            novoFim.setMinutes(novoFim.getMinutes() + duracaoMinutos);
+            itemUpdates.data_fim = novoFim.toISOString();
+            console.log(`⏱️ Duração atualizada: ${duracaoMinutos} minutos, novo fim: ${novoFim.toISOString()}`);
         }
-        if (status === 'inativa') itemUpdates.status = 'inativo';
-        else if (status === 'ativa') itemUpdates.status = 'ativo';
+        
         if (Object.keys(itemUpdates).length > 0) {
             update('itens', item.id, itemUpdates);
         }
@@ -891,6 +909,15 @@ app.get('/api/admin/campanhas-completas', verificarAdmin, (req, res) => {
                     if (percentualMeta >= metaInterna.meta) metasAtingidas.push(metaInterna);
                 });
             }
+            // Calcula a duração em dias a partir da data_fim - started_at
+            let duracaoDias = 'N/A';
+            if (item.started_at && item.data_fim) {
+                const inicio = new Date(item.started_at);
+                const fim = new Date(item.data_fim);
+                const diffMs = fim - inicio;
+                const diffDias = diffMs / (1000 * 60 * 60 * 24);
+                duracaoDias = Math.round(diffDias);
+            }
             return {
                 ...campanha,
                 status,
@@ -914,6 +941,7 @@ app.get('/api/admin/campanhas-completas', verificarAdmin, (req, res) => {
                 influencer: campanha.influencer || 'Não informado',
                 metas_internas: campanha.metas_internas || [],
                 metas_atingidas: metasAtingidas,
+                duracao_dias: duracaoDias,
                 url: `https://${process.env.APP_NAME || 'leilao-facil'}.onrender.com/${campanha.slug}`
             };
         });

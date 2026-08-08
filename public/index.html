@@ -559,7 +559,7 @@
             color: #FFD700;
         }
 
-        /* ===== TIMER MELHORADO COM TEXTO CLARO ===== */
+        /* ===== TIMER MELHORADO ===== */
         .timer-destaque {
             background: linear-gradient(135deg, #1A2B4C, #0066FF);
             border-radius: 16px;
@@ -1552,12 +1552,15 @@
         }
         function fecharZoom() { document.getElementById('zoomModal').classList.remove('active'); }
 
-        // ===== TIMER MELHORADO COM TEXTO CLARO =====
+        // ===== TIMER CORRIGIDO - CALCULA DIAS CORRETAMENTE =====
         function iniciarTimer(dataFim) {
             if (timerInterval) clearInterval(timerInterval);
             
             function atualizarTimer() {
-                const diff = new Date(dataFim) - new Date();
+                const agora = new Date();
+                const fim = new Date(dataFim);
+                const diff = fim - agora;
+                
                 const timerContainer = document.getElementById('timerContainer');
                 const statusEl = document.getElementById('timerStatus');
                 const diasEl = document.getElementById('diasRestantes');
@@ -1632,9 +1635,7 @@
                 }
             }
             
-            // Chama a função imediatamente para não ficar em branco
             atualizarTimer();
-            // Depois atualiza a cada segundo
             timerInterval = setInterval(atualizarTimer, 1000);
         }
 
