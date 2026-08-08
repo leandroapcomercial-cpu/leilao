@@ -858,7 +858,7 @@ app.post('/api/admin/criar-campanha', verificarAdmin, upload.single('premio_imag
     }
 });
 
-// ============== ADMIN - EDITAR CAMPANHA (CORRIGIDO) ==============
+// ============== ADMIN - EDITAR CAMPANHA ==============
 app.put('/api/admin/campanhas/:id', verificarAdmin, upload.single('premio_imagem'), (req, res) => {
     const id = parseInt(req.params.id);
     const { 
@@ -1140,14 +1140,44 @@ app.put('/api/admin/itens/:id', verificarAdmin, (req, res) => {
     res.json({ sucesso: true });
 });
 
-// ============== ROTA PARA SERVIR A INDEX DINAMICAMENTE ==============
+// ============== ROTA PARA SERVIR A INDEX DINAMICAMENTE (COM OPEN GRAPH) ==============
 app.get('/:slug', (req, res) => {
     const slug = req.params.slug;
     const campanha = findOne('campanhas', { slug });
+    
     if (!campanha) {
         return res.status(404).send('Campanha não encontrada');
     }
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+
+    // Busca o item (produto) da campanha
+    const item = db.itens.find(i => i.campanha_id === campanha.id);
+    
+    // Define os dados para as tags Open Graph
+    const ogTitle = campanha.premio_titulo || campanha.nome || 'Leilão Fácil';
+    const ogDescription = campanha.descricao || `Participe do leilão ${campanha.nome}! Lances a partir de R$ 0,01.`;
+    
+    // Define a imagem do prêmio (prioridade: URL > upload > emoji padrão)
+    let ogImage = 'https://leilao-facil.onrender.com/logo-default.jpg'; // imagem padrão
+    if (campanha.premio_imagem_url && campanha.premio_imagem_url.trim() !== '') {
+        ogImage = campanha.premio_imagem_url;
+    } else if (campanha.premio_imagem && campanha.premio_imagem.startsWith('/uploads/')) {
+        ogImage = `https://leilao-facil.onrender.com${campanha.premio_imagem}`;
+    }
+
+    const ogUrl = `https://leilao-facil.onrender.com/${slug}`;
+
+    // Lê o arquivo index.html
+    const indexPath = path.join(__dirname, 'public', 'index.html');
+    let html = fs.readFileSync(indexPath, 'utf8');
+
+    // Substitui as tags dinâmicas no HTML
+    html = html.replace(/{{OG_TITLE}}/g, ogTitle);
+    html = html.replace(/{{OG_DESCRIPTION}}/g, ogDescription);
+    html = html.replace(/{{OG_IMAGE}}/g, ogImage);
+    html = html.replace(/{{OG_URL}}/g, ogUrl);
+
+    // Envia o HTML modificado
+    res.send(html);
 });
 
 // ============== ROTA RAIZ ==============
@@ -1180,4 +1210,5 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log(`🔒 Admin: /admin.html (senha: ${ADMIN_PASSWORD})`);
     console.log(`✅ Limite máximo de duração: ${MAX_DURACAO_MINUTOS} minutos (30 dias)`);
     console.log(`✅ CORREÇÃO APLICADA: NUNCA retorna erro de validação de duração`);
+    console.log(`✅ Open Graph dinâmico: cada slug tem sua própria thumbnail!`);
 });
