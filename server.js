@@ -89,41 +89,7 @@ let db = {
 };
 
 // ========== FUNÇÕES DO BANCO ==========
-async function loadDB() {
-    if (useSupabase) {
-        try {
-            const [campanhas, itens, usuarios, lances, pagamentos] = await Promise.all([
-                supabase.from('campanhas').select('*'),
-                supabase.from('itens').select('*'),
-                supabase.from('usuarios').select('*'),
-                supabase.from('lances').select('*'),
-                supabase.from('pagamentos').select('*')
-            ]);
-
-            if (campanhas.data && campanhas.data.length > 0) {
-                db.campanhas = campanhas.data;
-                db.itens = itens.data || [];
-                db.usuarios = usuarios.data || [];
-                db.lances = lances.data || [];
-                db.pagamentos = pagamentos.data || [];
-                console.log('✅ Dados carregados do Supabase');
-                return;
-            }
-        } catch (e) {
-            console.log('⚠️ Erro ao carregar do Supabase, usando JSON:', e.message);
-        }
-    }
-
-    try {
-        if (fs.existsSync(DB_FILE)) {
-            db = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-            console.log('✅ Banco carregado do JSON');
-            return;
-        }
-    } catch (e) {
-        console.error('Erro ao carregar DB:', e);
-    }
-
+function criarCampanhaPadrao() {
     const now = new Date();
     const fim = new Date(now);
     fim.setDate(fim.getDate() + 7);
@@ -170,6 +136,50 @@ async function loadDB() {
     console.log('✅ Banco criado com campanha padrão');
 }
 
+async function loadDB() {
+    // PRIORIZA SUPABASE
+    if (useSupabase) {
+        try {
+            const [campanhas, itens, usuarios, lances, pagamentos] = await Promise.all([
+                supabase.from('campanhas').select('*'),
+                supabase.from('itens').select('*'),
+                supabase.from('usuarios').select('*'),
+                supabase.from('lances').select('*'),
+                supabase.from('pagamentos').select('*')
+            ]);
+
+            if (campanhas.data && campanhas.data.length > 0) {
+                db.campanhas = campanhas.data;
+                db.itens = itens.data || [];
+                db.usuarios = usuarios.data || [];
+                db.lances = lances.data || [];
+                db.pagamentos = pagamentos.data || [];
+                console.log('✅ Dados carregados do Supabase');
+                return;
+            } else {
+                console.log('⚠️ Supabase vazio, tentando JSON...');
+            }
+        } catch (e) {
+            console.log('⚠️ Erro no Supabase, usando JSON:', e.message);
+        }
+    }
+
+    // FALLBACK: JSON
+    try {
+        if (fs.existsSync(DB_FILE)) {
+            const raw = fs.readFileSync(DB_FILE, 'utf8');
+            db = JSON.parse(raw);
+            console.log('✅ Banco carregado do JSON');
+            return;
+        }
+    } catch (e) {
+        console.error('Erro ao carregar DB:', e);
+    }
+
+    // Se não tem nada, cria campanha padrão
+    criarCampanhaPadrao();
+}
+
 async function saveDB() {
     if (useSupabase) {
         try {
@@ -195,6 +205,7 @@ async function saveDB() {
         }
     }
 
+    // FALLBACK: JSON
     try {
         fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
         console.log('✅ Dados salvos no JSON');
@@ -399,7 +410,7 @@ app.get('/api/campanha/:slug', (req, res) => {
     }
 });
 
-// ========== CRIAR PAGAMENTO (CORRIGIDO) ==========
+// ========== CRIAR PAGAMENTO ==========
 app.post('/api/criar-pagamento', async (req, res) => {
     const { item_id, campanha_id, usuario_id, nome, email, valor } = req.body;
     if (!item_id || valor === undefined || valor < 0) {
@@ -434,14 +445,12 @@ app.post('/api/criar-pagamento', async (req, res) => {
             const agora = new Date();
             const fim = new Date(agora);
             
-            // Busca a duração configurada na campanha (em minutos)
             let duracaoMinutos = 1440; // padrão: 24h
             
             if (campanha && campanha.duracao) {
                 duracaoMinutos = parseInt(campanha.duracao) || 1440;
             }
             
-            // Limita ao máximo de 30 dias (43200 minutos)
             if (duracaoMinutos > MAX_DURACAO_MINUTOS) {
                 duracaoMinutos = MAX_DURACAO_MINUTOS;
             }
@@ -456,7 +465,6 @@ app.post('/api/criar-pagamento', async (req, res) => {
                 data_fim: fim.toISOString()
             });
             
-            // Atualiza o item local também
             item.started_at = agora.toISOString();
             item.data_fim = fim.toISOString();
             
@@ -835,7 +843,6 @@ app.put('/api/admin/campanhas/:id', verificarAdmin, upload.single('premio_imagem
         if (status === 'inativa') itemUpdates.status = 'inativo';
         else if (status === 'ativa') itemUpdates.status = 'ativo';
         
-        // Se a duração foi alterada e o leilão já começou, recalcula data_fim
         if (duracao !== undefined && duracao !== null && duracao !== '' && item.started_at) {
             let duracaoMinutos = parseInt(duracao) || 1440;
             if (duracaoMinutos > MAX_DURACAO_MINUTOS) duracaoMinutos = MAX_DURACAO_MINUTOS;
@@ -909,7 +916,6 @@ app.get('/api/admin/campanhas-completas', verificarAdmin, (req, res) => {
                     if (percentualMeta >= metaInterna.meta) metasAtingidas.push(metaInterna);
                 });
             }
-            // Calcula a duração em dias a partir da data_fim - started_at
             let duracaoDias = 'N/A';
             if (item.started_at && item.data_fim) {
                 const inicio = new Date(item.started_at);
