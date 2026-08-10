@@ -148,13 +148,24 @@ async function loadDB() {
                 supabase.from('pagamentos').select('*')
             ]);
 
+            // Verifica se há campanhas e se elas têm itens vinculados
             if (campanhas.data && campanhas.data.length > 0) {
                 db.campanhas = campanhas.data;
                 db.itens = itens.data || [];
                 db.usuarios = usuarios.data || [];
                 db.lances = lances.data || [];
                 db.pagamentos = pagamentos.data || [];
-                console.log('✅ Dados carregados do Supabase');
+                console.log(`✅ Dados carregados do Supabase: ${db.campanhas.length} campanhas, ${db.itens.length} itens`);
+                
+                // Verifica se os itens estão vinculados corretamente
+                let itensOrfaos = 0;
+                db.itens.forEach(item => {
+                    const campanha = db.campanhas.find(c => c.id === item.campanha_id);
+                    if (!campanha) itensOrfaos++;
+                });
+                if (itensOrfaos > 0) {
+                    console.log(`⚠️ ATENÇÃO: ${itensOrfaos} itens estão sem campanha vinculada!`);
+                }
                 return;
             } else {
                 console.log('⚠️ Supabase vazio, tentando JSON...');
@@ -169,7 +180,7 @@ async function loadDB() {
         if (fs.existsSync(DB_FILE)) {
             const raw = fs.readFileSync(DB_FILE, 'utf8');
             db = JSON.parse(raw);
-            console.log('✅ Banco carregado do JSON');
+            console.log(`✅ Banco carregado do JSON: ${db.campanhas.length} campanhas, ${db.itens.length} itens`);
             return;
         }
     } catch (e) {
@@ -183,18 +194,25 @@ async function loadDB() {
 async function saveDB() {
     if (useSupabase) {
         try {
+            // Salva campanhas
             for (const item of db.campanhas) {
-                await supabase.from('campanhas').upsert(item);
+                const { error } = await supabase.from('campanhas').upsert(item);
+                if (error) console.error('❌ Erro ao salvar campanha:', error.message);
             }
+            // Salva itens
             for (const item of db.itens) {
-                await supabase.from('itens').upsert(item);
+                const { error } = await supabase.from('itens').upsert(item);
+                if (error) console.error('❌ Erro ao salvar item:', error.message);
             }
+            // Salva usuários
             for (const item of db.usuarios) {
                 await supabase.from('usuarios').upsert(item);
             }
+            // Salva lances
             for (const item of db.lances) {
                 await supabase.from('lances').upsert(item);
             }
+            // Salva pagamentos
             for (const item of db.pagamentos) {
                 await supabase.from('pagamentos').upsert(item);
             }
@@ -700,18 +718,28 @@ app.get('/api/admin/exportar-dados', verificarAdmin, (req, res) => {
     res.json(db);
 });
 
-// ========== ADMIN - CRIAR CAMPANHA ==========
+// ========== ADMIN - CRIAR CAMPANHA (CORRIGIDO) ==========
 app.post('/api/admin/criar-campanha', verificarAdmin, upload.single('premio_imagem'), (req, res) => {
-    const { nome, descricao, slug, item_nome, item_descricao, item_categoria, data_fim, meta_valor, premio_imagem_url, premio_titulo, influencer, metas_internas, duracao } = req.body;
+    const { 
+        nome, descricao, slug, 
+        item_nome, item_descricao, item_categoria, 
+        data_fim, meta_valor, premio_imagem_url,
+        premio_titulo, influencer, metas_internas,
+        duracao
+    } = req.body;
+    
     if (!nome || !slug || !item_nome) {
         return res.status(400).json({ erro: 'Nome, slug e nome do item são obrigatórios' });
     }
+
     if (findOne('campanhas', { slug })) {
         return res.status(400).json({ erro: 'Slug já existe. Escolha outro.' });
     }
+
     try {
         let premio_imagem = '🏆';
         let premio_imagem_url_final = '';
+
         if (req.file) {
             premio_imagem = `/uploads/${req.file.filename}`;
             premio_imagem_url_final = '';
@@ -721,6 +749,7 @@ app.post('/api/admin/criar-campanha', verificarAdmin, upload.single('premio_imag
             premio_imagem = '';
             console.log(`🌐 URL da imagem: ${premio_imagem_url_final}`);
         }
+
         let metasInternasArray = [];
         if (metas_internas) {
             try { metasInternasArray = JSON.parse(metas_internas); } catch (e) {
@@ -739,6 +768,8 @@ app.post('/api/admin/criar-campanha', verificarAdmin, upload.single('premio_imag
                 { meta: 100, premio: 'R$ 500,00' }
             ];
         }
+
+        // ===== CRIA A CAMPANHA =====
         const campResult = insert('campanhas', {
             nome,
             descricao: descricao || '',
@@ -753,6 +784,10 @@ app.post('/api/admin/criar-campanha', verificarAdmin, upload.single('premio_imag
             duracao: parseInt(duracao) || 1440,
             created_at: new Date().toISOString()
         });
+
+        console.log(`✅ Campanha criada com ID: ${campResult.lastID}`);
+
+        // ===== CRIA O ITEM VINCULADO À CAMPANHA =====
         let dataFim = data_fim;
         if (!dataFim && duracao) {
             const agora = new Date();
@@ -769,8 +804,9 @@ app.post('/api/admin/criar-campanha', verificarAdmin, upload.single('premio_imag
             fim.setHours(fim.getHours() + 24);
             dataFim = fim.toISOString();
         }
+
         const itemResult = insert('itens', {
-            campanha_id: campResult.lastID,
+            campanha_id: campResult.lastID, // ← GARANTE QUE O ID DA CAMPANHA SEJA SALVO!
             nome: item_nome,
             descricao: item_descricao || '',
             imagem: '📦',
@@ -783,7 +819,11 @@ app.post('/api/admin/criar-campanha', verificarAdmin, upload.single('premio_imag
             started_at: null,
             created_at: new Date().toISOString()
         });
+
+        console.log(`✅ Item criado com ID: ${itemResult.lastID}, vinculado à campanha ${campResult.lastID}`);
+
         const url = `https://${process.env.APP_NAME || 'leilao-facil'}.onrender.com/${slug}`;
+
         res.json({
             sucesso: true,
             campanha: { id: campResult.lastID, nome, slug },
@@ -799,16 +839,24 @@ app.post('/api/admin/criar-campanha', verificarAdmin, upload.single('premio_imag
 // ========== ADMIN - EDITAR CAMPANHA ==========
 app.put('/api/admin/campanhas/:id', verificarAdmin, upload.single('premio_imagem'), (req, res) => {
     const id = parseInt(req.params.id);
-    const { nome, descricao, meta_valor, premio_imagem_url, item_nome, item_descricao, item_categoria, duracao, status, premio_titulo, slug, influencer, metas_internas } = req.body;
+    const { 
+        nome, descricao, meta_valor, premio_imagem_url,
+        item_nome, item_descricao, item_categoria,
+        duracao, status, premio_titulo, slug,
+        influencer, metas_internas
+    } = req.body;
+
     try {
         const campanha = db.campanhas.find(c => c.id === id);
         if (!campanha) return res.status(404).json({ erro: 'Campanha não encontrada' });
         const item = db.itens.find(i => i.campanha_id === id);
         if (!item) return res.status(404).json({ erro: 'Item da campanha não encontrado' });
+        
         if (slug && slug !== campanha.slug) {
             const slugExists = db.campanhas.some(c => c.slug === slug && c.id !== id);
             if (slugExists) return res.status(400).json({ erro: 'Este slug já está em uso' });
         }
+        
         const campUpdates = {};
         if (nome) campUpdates.nome = nome;
         if (slug) campUpdates.slug = slug;
@@ -836,6 +884,7 @@ app.put('/api/admin/campanhas/:id', verificarAdmin, upload.single('premio_imagem
         if (Object.keys(campUpdates).length > 0) {
             update('campanhas', id, campUpdates);
         }
+        
         const itemUpdates = {};
         if (item_nome) itemUpdates.nome = item_nome;
         if (item_descricao !== undefined) itemUpdates.descricao = item_descricao;
@@ -857,6 +906,7 @@ app.put('/api/admin/campanhas/:id', verificarAdmin, upload.single('premio_imagem
         if (Object.keys(itemUpdates).length > 0) {
             update('itens', item.id, itemUpdates);
         }
+        
         const novaUrl = `https://${process.env.APP_NAME || 'leilao-facil'}.onrender.com/${slug || campanha.slug}`;
         res.json({ sucesso: true, mensagem: 'Campanha atualizada', url: novaUrl });
     } catch (e) {
