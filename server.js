@@ -13,15 +13,13 @@ const { createClient } = require('@supabase/supabase-js');
 const app = express();
 const server = http.createServer(app);
 
-// ========== CONFIGURAÇÕES ==========
 const PORT = process.env.PORT || 3000;
 const MERCADO_PAGO_ACCESS_TOKEN = process.env.MERCADO_PAGO_ACCESS_TOKEN || 'APP_USR-6748594610084561-072611-b75a26bd80e196ee7040b30ee7a09fa3-1459269241';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
-const MAX_DURACAO_MINUTOS = 43200; // 30 DIAS
+const MAX_DURACAO_MINUTOS = 43200;
 
-// ========== SUPABASE ==========
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_KEY;
+const supabaseUrl = process.env.SUPABASE_URL || 'https://vobtnchmkflerkeabksi.supabase.co';
+const supabaseKey = process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZvYnRuY2hta2ZsZXJrZWFia3NpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NjE1NjY1NSwiZXhwIjoyMTAxNzMyNjU1fQ.ASpilqe_ZXjuzT-8Idi65n_hWQkMEkPpP3F51FmiHIg';
 let supabase = null;
 let useSupabase = false;
 
@@ -34,11 +32,8 @@ if (supabaseUrl && supabaseKey) {
         console.log('⚠️ Erro ao conectar Supabase, usando JSON fallback');
         useSupabase = false;
     }
-} else {
-    console.log('⚠️ Supabase não configurado, usando JSON fallback');
 }
 
-// ========== BANCO DE DADOS JSON (FALLBACK) ==========
 const DATA_DIR = './';
 const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
 const DB_FILE = path.join(DATA_DIR, 'database.json');
@@ -47,7 +42,6 @@ if (!fs.existsSync(UPLOAD_DIR)) {
     fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
 
-// ========== MULTER ==========
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, UPLOAD_DIR);
@@ -58,7 +52,7 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({ 
+const upload = multer({
     storage,
     limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
@@ -68,17 +62,13 @@ const upload = multer({
     }
 });
 
-// ========== SOCKET.IO ==========
 const io = socketIo(server, {
     cors: { origin: "*", methods: ["GET", "POST"] },
     transports: ['websocket', 'polling'],
     pingTimeout: 30000,
-    pingInterval: 15000,
-    maxHttpBufferSize: 1e4,
-    perMessageDeflate: { threshold: 1024 }
+    pingInterval: 15000
 });
 
-// ========== ESTRUTURA DO BANCO ==========
 let db = {
     usuarios: [],
     campanhas: [],
@@ -88,53 +78,8 @@ let db = {
     _nextId: { usuarios: 1, campanhas: 1, itens: 1, lances: 1, pagamentos: 1 }
 };
 
-// ========== FUNÇÕES DO BANCO ==========
-function criarCampanhaPadrao() {
-    const now = new Date();
-    const fim = new Date(now);
-    fim.setDate(fim.getDate() + 7);
-
-    db.campanhas.push({
-        id: 1,
-        nome: 'Campanha Padrão',
-        slug: 'campanha-padrao',
-        descricao: 'Leilão de produtos selecionados',
-        status: 'ativa',
-        meta_valor: 3.00,
-        premio_imagem: '🏆',
-        premio_imagem_url: '',
-        premio_titulo: '🏆 PRÊMIO DO LEILÃO',
-        influencer: 'Não informado',
-        metas_internas: [
-            { meta: 25, premio: 'R$ 100,00' },
-            { meta: 50, premio: 'R$ 200,00' },
-            { meta: 75, premio: 'R$ 300,00' },
-            { meta: 100, premio: 'R$ 500,00' }
-        ],
-        duracao: 1440,
-        created_at: now.toISOString()
-    });
-
-    db.itens.push({
-        id: 1,
-        campanha_id: 1,
-        nome: 'Kit Churrasco Luxo',
-        descricao: 'Maleta com faca, garfo, pegador e tábua personalizada',
-        imagem: '🥩',
-        categoria: 'Cozinha',
-        lance_inicial: 0.00,
-        lance_minimo: 0.00,
-        incremento_minimo: 0.01,
-        data_fim: fim.toISOString(),
-        status: 'ativo',
-        started_at: null,
-        created_at: now.toISOString()
-    });
-    db._nextId.itens = 2;
-    db._nextId.campanhas = 2;
-    saveDB();
-    console.log('✅ Banco criado com campanha padrão');
-}
+// ========== REMOVIDO: Criação automática de campanha padrão ==========
+// Agora o sistema começa vazio se não houver dados
 
 async function loadDB() {
     // PRIORIZA SUPABASE
@@ -148,30 +93,35 @@ async function loadDB() {
                 supabase.from('pagamentos').select('*')
             ]);
 
-            // Verifica se há campanhas e se elas têm itens vinculados
             if (campanhas.data && campanhas.data.length > 0) {
                 db.campanhas = campanhas.data;
                 db.itens = itens.data || [];
                 db.usuarios = usuarios.data || [];
                 db.lances = lances.data || [];
                 db.pagamentos = pagamentos.data || [];
-                console.log(`✅ Dados carregados do Supabase: ${db.campanhas.length} campanhas, ${db.itens.length} itens`);
-                
-                // Verifica se os itens estão vinculados corretamente
-                let itensOrfaos = 0;
+
                 db.itens.forEach(item => {
-                    const campanha = db.campanhas.find(c => c.id === item.campanha_id);
-                    if (!campanha) itensOrfaos++;
+                    if (item.started_at && !item.data_fim) {
+                        const fim = new Date(item.started_at);
+                        fim.setMinutes(fim.getMinutes() + 1440);
+                        item.data_fim = fim.toISOString();
+                    }
                 });
-                if (itensOrfaos > 0) {
-                    console.log(`⚠️ ATENÇÃO: ${itensOrfaos} itens estão sem campanha vinculada!`);
-                }
+
+                // Atualiza _nextId com base nos dados existentes
+                db._nextId = {
+                    usuarios: (db.usuarios.length || 0) + 1,
+                    campanhas: (db.campanhas.length || 0) + 1,
+                    itens: (db.itens.length || 0) + 1,
+                    lances: (db.lances.length || 0) + 1,
+                    pagamentos: (db.pagamentos.length || 0) + 1
+                };
+
+                console.log(`✅ Dados carregados do Supabase: ${db.campanhas.length} campanhas, ${db.itens.length} itens, ${db.lances.length} lances`);
                 return;
-            } else {
-                console.log('⚠️ Supabase vazio, tentando JSON...');
             }
         } catch (e) {
-            console.log('⚠️ Erro no Supabase, usando JSON:', e.message);
+            console.log('⚠️ Erro no Supabase:', e.message);
         }
     }
 
@@ -180,50 +130,61 @@ async function loadDB() {
         if (fs.existsSync(DB_FILE)) {
             const raw = fs.readFileSync(DB_FILE, 'utf8');
             db = JSON.parse(raw);
-            console.log(`✅ Banco carregado do JSON: ${db.campanhas.length} campanhas, ${db.itens.length} itens`);
+            console.log(`✅ Banco carregado do JSON: ${db.campanhas.length} campanhas`);
+            
+            // Atualiza _nextId com base nos dados existentes
+            db._nextId = {
+                usuarios: (db.usuarios.length || 0) + 1,
+                campanhas: (db.campanhas.length || 0) + 1,
+                itens: (db.itens.length || 0) + 1,
+                lances: (db.lances.length || 0) + 1,
+                pagamentos: (db.pagamentos.length || 0) + 1
+            };
             return;
         }
     } catch (e) {
         console.error('Erro ao carregar DB:', e);
     }
 
-    // Se não tem nada, cria campanha padrão
-    criarCampanhaPadrao();
+    // ========== NENHUM DADO ENCONTRADO - COMEÇA VAZIO ==========
+    console.log('📭 Nenhum dado encontrado. Sistema vazio. Crie uma campanha pelo admin.');
+    db = {
+        usuarios: [],
+        campanhas: [],
+        itens: [],
+        lances: [],
+        pagamentos: [],
+        _nextId: { usuarios: 1, campanhas: 1, itens: 1, lances: 1, pagamentos: 1 }
+    };
+    saveDB();
 }
 
 async function saveDB() {
     if (useSupabase) {
         try {
-            // Salva campanhas
+            // Salva cada tabela individualmente
             for (const item of db.campanhas) {
-                const { error } = await supabase.from('campanhas').upsert(item);
-                if (error) console.error('❌ Erro ao salvar campanha:', error.message);
+                await supabase.from('campanhas').upsert(item);
             }
-            // Salva itens
             for (const item of db.itens) {
-                const { error } = await supabase.from('itens').upsert(item);
-                if (error) console.error('❌ Erro ao salvar item:', error.message);
+                await supabase.from('itens').upsert(item);
             }
-            // Salva usuários
             for (const item of db.usuarios) {
                 await supabase.from('usuarios').upsert(item);
             }
-            // Salva lances
             for (const item of db.lances) {
                 await supabase.from('lances').upsert(item);
             }
-            // Salva pagamentos
             for (const item of db.pagamentos) {
                 await supabase.from('pagamentos').upsert(item);
             }
             console.log('✅ Dados salvos no Supabase');
             return;
         } catch (e) {
-            console.log('⚠️ Erro ao salvar no Supabase, salvando JSON:', e.message);
+            console.log('⚠️ Erro ao salvar no Supabase:', e.message);
         }
     }
 
-    // FALLBACK: JSON
     try {
         fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
         console.log('✅ Dados salvos no JSON');
@@ -243,7 +204,7 @@ function insert(table, data) {
     data.id = id;
     db._nextId[table] = id + 1;
     db[table].push(data);
-    saveDB();
+    saveDB(); // Salva imediatamente
     return { lastID: id };
 }
 
@@ -251,28 +212,38 @@ function update(table, id, data) {
     const index = db[table].findIndex(item => item.id === id);
     if (index !== -1) {
         db[table][index] = { ...db[table][index], ...data };
-        saveDB();
+        saveDB(); // Salva imediatamente
         return true;
     }
     return false;
 }
 
-// ========== MIDDLEWARES ==========
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
 app.use('/uploads', express.static(UPLOAD_DIR));
 
-// ========== ADMIN MIDDLEWARE ==========
 const verificarAdmin = (req, res, next) => {
     const auth = req.headers.authorization;
-    if (!auth) return res.status(401).json({ erro: 'Acesso negado' });
+    if (!auth) {
+        return res.status(401).json({ erro: 'Acesso negado' });
+    }
     const token = auth.split(' ')[1];
-    if (token !== ADMIN_PASSWORD) return res.status(401).json({ erro: 'Senha incorreta' });
+    if (token !== ADMIN_PASSWORD) {
+        return res.status(401).json({ erro: 'Senha incorreta' });
+    }
     next();
 };
 
-// ========== FUNÇÃO PIX ==========
+app.post('/api/admin/verificar', (req, res) => {
+    const { senha } = req.body;
+    if (senha === ADMIN_PASSWORD) {
+        res.json({ sucesso: true });
+    } else {
+        res.status(401).json({ erro: 'Senha incorreta' });
+    }
+});
+
 async function criarPagamentoPIX(valor, descricao, usuario, item, campanha) {
     try {
         console.log(`💰 Criando PIX: R$ ${valor} para ${usuario.nome}`);
@@ -354,7 +325,6 @@ async function criarPagamentoPIX(valor, descricao, usuario, item, campanha) {
     }
 }
 
-// ========== ROTA QR CODE ==========
 app.post('/api/gerar-qr', async (req, res) => {
     const { texto } = req.body;
     if (!texto) return res.status(400).json({ erro: 'Texto é obrigatório' });
@@ -372,7 +342,6 @@ app.post('/api/gerar-qr', async (req, res) => {
     }
 });
 
-// ========== ROTAS DE USUÁRIO ==========
 app.post('/api/usuario', (req, res) => {
     const { nome, email } = req.body;
     if (!nome || !email) return res.status(400).json({ erro: 'Nome e email são obrigatórios' });
@@ -384,7 +353,6 @@ app.post('/api/usuario', (req, res) => {
     res.json({ sucesso: true, usuario: { id: usuario.id, nome: usuario.nome, email: usuario.email } });
 });
 
-// ========== ROTA DE CAMPANHA (PÚBLICA) ==========
 app.get('/api/campanha/:slug', (req, res) => {
     try {
         const campanha = findOne('campanhas', { slug: req.params.slug });
@@ -409,8 +377,9 @@ app.get('/api/campanha/:slug', (req, res) => {
             total_lances: lances.length,
             lance_atual: maiorLance,
             encerrado: encerrado,
-            tem_lance_inicial: lances.length > 0,
+            tem_lance_inicial: lances.length > 0 || (item.started_at !== null),
             started_at: item.started_at,
+            data_fim: item.data_fim,
             meta_valor: campanha.meta_valor || 3.00,
             premio_imagem: premioImagem,
             premio_imagem_url: campanha.premio_imagem_url || '',
@@ -428,7 +397,6 @@ app.get('/api/campanha/:slug', (req, res) => {
     }
 });
 
-// ========== CRIAR PAGAMENTO ==========
 app.post('/api/criar-pagamento', async (req, res) => {
     const { item_id, campanha_id, usuario_id, nome, email, valor } = req.body;
     if (!item_id || valor === undefined || valor < 0) {
@@ -444,10 +412,10 @@ app.post('/api/criar-pagamento', async (req, res) => {
         const item = db.itens.find(i => i.id === item_id);
         if (!item) return res.status(404).json({ erro: 'Item não encontrado' });
         if (item.status !== 'ativo') return res.status(400).json({ erro: 'Leilão encerrado' });
-        
+
         const campanha = db.campanhas.find(c => c.id === campanha_id);
         if (!campanha) return res.status(404).json({ erro: 'Campanha não encontrada' });
-        
+
         const lancesItem = db.lances.filter(l => l.item_id === item_id && l.status === 'confirmado');
         const maiorLance = lancesItem.length > 0 ? Math.max(...lancesItem.map(l => l.valor)) : item.lance_inicial;
         const proximoLance = parseFloat((maiorLance + 0.01).toFixed(2));
@@ -458,34 +426,32 @@ app.post('/api/criar-pagamento', async (req, res) => {
             });
         }
 
-        // ===== CORREÇÃO: PRIMEIRO LANCE USA A DURAÇÃO DA CAMPANHA =====
         if (lancesItem.length === 0) {
             const agora = new Date();
             const fim = new Date(agora);
-            
-            let duracaoMinutos = 1440; // padrão: 24h
-            
+
+            let duracaoMinutos = 1440;
             if (campanha && campanha.duracao) {
                 duracaoMinutos = parseInt(campanha.duracao) || 1440;
             }
-            
             if (duracaoMinutos > MAX_DURACAO_MINUTOS) {
                 duracaoMinutos = MAX_DURACAO_MINUTOS;
+                console.log(`⚠️ Duração ajustada para o máximo de ${MAX_DURACAO_MINUTOS} minutos (30 dias)`);
             }
-            if (duracaoMinutos < 1) {
-                duracaoMinutos = 1;
-            }
-            
+            if (duracaoMinutos < 1) duracaoMinutos = 1;
+
             fim.setMinutes(fim.getMinutes() + duracaoMinutos);
-            
+
             update('itens', item.id, {
                 started_at: agora.toISOString(),
                 data_fim: fim.toISOString()
             });
-            
+
             item.started_at = agora.toISOString();
             item.data_fim = fim.toISOString();
-            
+
+            saveDB();
+
             console.log(`⏱️ Primeiro lance! Duração: ${duracaoMinutos} minutos (${Math.floor(duracaoMinutos/1440)} dias)`);
         }
 
@@ -527,7 +493,6 @@ app.post('/api/criar-pagamento', async (req, res) => {
     }
 });
 
-// ========== CONSULTAR PAGAMENTO ==========
 app.get('/api/consultar-pagamento/:mp_id', async (req, res) => {
     const mp_id = req.params.mp_id;
     try {
@@ -558,7 +523,6 @@ app.get('/api/consultar-pagamento/:mp_id', async (req, res) => {
     }
 });
 
-// ========== CONFIRMAR PAGAMENTO ==========
 app.post('/api/confirmar-pagamento', (req, res) => {
     const { transacao_id } = req.body;
     try {
@@ -587,12 +551,16 @@ app.post('/api/confirmar-pagamento', (req, res) => {
         });
         update('pagamentos', pagamento.id, { status: 'confirmado', data_confirmacao: new Date().toISOString() });
         const usuario = findOne('usuarios', { id: pagamento.usuario_id });
+        
         io.emit('novo_lance', {
             item_id: pagamento.item_id,
+            campanha_id: pagamento.campanha_id,
             valor: pagamento.valor,
             usuario: usuario ? usuario.nome : 'Anônimo',
-            lance_id: lanceResult.lastID
+            lance_id: lanceResult.lastID,
+            total_lances: lancesItem.length + 1
         });
+        
         res.json({
             sucesso: true,
             lance: {
@@ -608,7 +576,6 @@ app.post('/api/confirmar-pagamento', (req, res) => {
     }
 });
 
-// ========== RANKING ==========
 app.get('/api/ranking/:item_id', (req, res) => {
     try {
         const item_id = parseInt(req.params.item_id);
@@ -706,28 +673,21 @@ app.get('/api/ranking/:item_id', (req, res) => {
     }
 });
 
-// ========== ADMIN - VERIFICAR SENHA ==========
-app.post('/api/admin/verificar', (req, res) => {
-    const { senha } = req.body;
-    if (senha === ADMIN_PASSWORD) res.json({ sucesso: true });
-    else res.status(401).json({ erro: 'Senha incorreta' });
-});
-
-// ========== ADMIN - EXPORTAR DADOS ==========
 app.get('/api/admin/exportar-dados', verificarAdmin, (req, res) => {
     res.json(db);
 });
 
-// ========== ADMIN - CRIAR CAMPANHA (CORRIGIDO) ==========
 app.post('/api/admin/criar-campanha', verificarAdmin, upload.single('premio_imagem'), (req, res) => {
-    const { 
-        nome, descricao, slug, 
-        item_nome, item_descricao, item_categoria, 
+    const {
+        nome, descricao, slug,
+        item_nome, item_descricao, item_categoria,
         data_fim, meta_valor, premio_imagem_url,
         premio_titulo, influencer, metas_internas,
         duracao
     } = req.body;
-    
+
+    console.log('📝 Criando campanha:', { nome, slug, item_nome });
+
     if (!nome || !slug || !item_nome) {
         return res.status(400).json({ erro: 'Nome, slug e nome do item são obrigatórios' });
     }
@@ -769,7 +729,13 @@ app.post('/api/admin/criar-campanha', verificarAdmin, upload.single('premio_imag
             ];
         }
 
-        // ===== CRIA A CAMPANHA =====
+        let duracaoMinutos = parseInt(duracao) || 1440;
+        if (duracaoMinutos > MAX_DURACAO_MINUTOS) {
+            duracaoMinutos = MAX_DURACAO_MINUTOS;
+            console.log(`⚠️ Duração ajustada para o máximo de ${MAX_DURACAO_MINUTOS} minutos (30 dias)`);
+        }
+        if (duracaoMinutos < 1) duracaoMinutos = 1;
+
         const campResult = insert('campanhas', {
             nome,
             descricao: descricao || '',
@@ -781,35 +747,25 @@ app.post('/api/admin/criar-campanha', verificarAdmin, upload.single('premio_imag
             premio_titulo: premio_titulo || '🏆 PRÊMIO DO LEILÃO',
             influencer: influencer || 'Não informado',
             metas_internas: metasInternasArray,
-            duracao: parseInt(duracao) || 1440,
+            duracao: duracaoMinutos,
             created_at: new Date().toISOString()
         });
 
         console.log(`✅ Campanha criada com ID: ${campResult.lastID}`);
 
-        // ===== CRIA O ITEM VINCULADO À CAMPANHA =====
         let dataFim = data_fim;
-        if (!dataFim && duracao) {
+        if (!dataFim) {
             const agora = new Date();
             const fim = new Date(agora);
-            let duracaoMinutos = parseInt(duracao) || 1440;
-            if (duracaoMinutos > MAX_DURACAO_MINUTOS) duracaoMinutos = MAX_DURACAO_MINUTOS;
-            if (duracaoMinutos < 1) duracaoMinutos = 1;
             fim.setMinutes(fim.getMinutes() + duracaoMinutos);
-            dataFim = fim.toISOString();
-            console.log(`⏱️ Duração configurada: ${duracaoMinutos} minutos`);
-        } else if (!dataFim) {
-            const agora = new Date();
-            const fim = new Date(agora);
-            fim.setHours(fim.getHours() + 24);
             dataFim = fim.toISOString();
         }
 
         const itemResult = insert('itens', {
-            campanha_id: campResult.lastID, // ← GARANTE QUE O ID DA CAMPANHA SEJA SALVO!
+            campanha_id: campResult.lastID,
             nome: item_nome,
             descricao: item_descricao || '',
-            imagem: '📦',
+            imagem: item_categoria === 'Imagem' ? '📸' : '📦',
             categoria: item_categoria || 'Geral',
             lance_inicial: 0.00,
             lance_minimo: 0.00,
@@ -820,26 +776,86 @@ app.post('/api/admin/criar-campanha', verificarAdmin, upload.single('premio_imag
             created_at: new Date().toISOString()
         });
 
-        console.log(`✅ Item criado com ID: ${itemResult.lastID}, vinculado à campanha ${campResult.lastID}`);
-
-        const url = `https://${process.env.APP_NAME || 'leilao-facil'}.onrender.com/${slug}`;
+        console.log(`✅ Item criado com ID: ${itemResult.lastID}`);
 
         res.json({
             sucesso: true,
             campanha: { id: campResult.lastID, nome, slug },
             item: { id: itemResult.lastID, nome: item_nome },
-            url
+            url: `/${slug}`
         });
     } catch (e) {
-        console.error('Erro ao criar campanha:', e);
-        res.status(500).json({ erro: 'Erro ao criar campanha' });
+        console.error('❌ Erro ao criar campanha:', e);
+        res.status(500).json({ erro: 'Erro ao criar campanha: ' + e.message });
     }
 });
 
-// ========== ADMIN - EDITAR CAMPANHA ==========
+app.get('/api/admin/campanhas-completas', verificarAdmin, (req, res) => {
+    try {
+        const campanhasCompletas = db.campanhas.map(campanha => {
+            const item = db.itens.find(i => i.campanha_id === campanha.id);
+            if (!item) {
+                return {
+                    ...campanha,
+                    item_id: null,
+                    item_nome: 'N/A',
+                    total_lances: 0,
+                    lance_atual: 0,
+                    vencedor_atual: null,
+                    atingiu_meta: false,
+                    tempo_restante: 0,
+                    lances: []
+                };
+            }
+
+            const lances = db.lances.filter(l => l.item_id === item.id && l.status === 'confirmado');
+            const totalLances = lances.length;
+            const lanceAtual = totalLances > 0 ? Math.max(...lances.map(l => l.valor)) : 0;
+
+            let vencedorAtual = null;
+            if (lances.length > 0) {
+                const ultimoLance = lances.reduce((a, b) => a.id > b.id ? a : b);
+                const usuario = db.usuarios.find(u => u.id === ultimoLance.usuario_id);
+                vencedorAtual = usuario ? { id: usuario.id, nome: usuario.nome } : null;
+            }
+
+            const agora = new Date();
+            const dataFim = new Date(item.data_fim);
+            const tempoRestante = Math.max(0, Math.floor((dataFim - agora) / 1000));
+            const metaValor = campanha.meta_valor || 3.00;
+            const atingiuMeta = lanceAtual >= metaValor;
+
+            return {
+                ...campanha,
+                item_id: item.id,
+                item_nome: item.nome,
+                item_descricao: item.descricao,
+                item_imagem: item.imagem,
+                total_lances: totalLances,
+                lance_atual: lanceAtual,
+                vencedor_atual: vencedorAtual,
+                atingiu_meta: atingiuMeta,
+                meta_valor: metaValor,
+                started_at: item.started_at,
+                data_fim: item.data_fim,
+                tempo_restante: tempoRestante,
+                created_at: item.created_at,
+                lances: lances,
+                usuarios: db.usuarios
+            };
+        });
+
+        campanhasCompletas.sort((a, b) => b.id - a.id);
+        res.json(campanhasCompletas);
+    } catch (e) {
+        console.error('Erro ao buscar campanhas completas:', e);
+        res.status(500).json({ erro: 'Erro ao buscar campanhas' });
+    }
+});
+
 app.put('/api/admin/campanhas/:id', verificarAdmin, upload.single('premio_imagem'), (req, res) => {
     const id = parseInt(req.params.id);
-    const { 
+    const {
         nome, descricao, meta_valor, premio_imagem_url,
         item_nome, item_descricao, item_categoria,
         duracao, status, premio_titulo, slug,
@@ -848,15 +864,22 @@ app.put('/api/admin/campanhas/:id', verificarAdmin, upload.single('premio_imagem
 
     try {
         const campanha = db.campanhas.find(c => c.id === id);
-        if (!campanha) return res.status(404).json({ erro: 'Campanha não encontrada' });
+        if (!campanha) {
+            return res.status(404).json({ erro: 'Campanha não encontrada' });
+        }
+
         const item = db.itens.find(i => i.campanha_id === id);
-        if (!item) return res.status(404).json({ erro: 'Item da campanha não encontrado' });
-        
+        if (!item) {
+            return res.status(404).json({ erro: 'Item da campanha não encontrado' });
+        }
+
         if (slug && slug !== campanha.slug) {
             const slugExists = db.campanhas.some(c => c.slug === slug && c.id !== id);
-            if (slugExists) return res.status(400).json({ erro: 'Este slug já está em uso' });
+            if (slugExists) {
+                return res.status(400).json({ erro: 'Este slug já está em uso' });
+            }
         }
-        
+
         const campUpdates = {};
         if (nome) campUpdates.nome = nome;
         if (slug) campUpdates.slug = slug;
@@ -865,171 +888,96 @@ app.put('/api/admin/campanhas/:id', verificarAdmin, upload.single('premio_imagem
         if (status) campUpdates.status = status;
         if (premio_titulo !== undefined) campUpdates.premio_titulo = premio_titulo;
         if (influencer !== undefined) campUpdates.influencer = influencer;
-        if (duracao !== undefined) campUpdates.duracao = parseInt(duracao) || 1440;
+
         if (metas_internas) {
-            try { campUpdates.metas_internas = JSON.parse(metas_internas); } catch (e) {}
+            try {
+                campUpdates.metas_internas = JSON.parse(metas_internas);
+            } catch (e) {
+                console.error('Erro ao parsear metas_internas:', e);
+            }
         }
+
         if (req.file) {
             campUpdates.premio_imagem = `/uploads/${req.file.filename}`;
             campUpdates.premio_imagem_url = '';
+            console.log(`📸 Imagem atualizada: ${campUpdates.premio_imagem}`);
         } else if (premio_imagem_url !== undefined) {
             if (premio_imagem_url && premio_imagem_url.trim() !== '') {
                 campUpdates.premio_imagem_url = premio_imagem_url.trim();
                 campUpdates.premio_imagem = '';
+                console.log(`🌐 URL da imagem atualizada: ${campUpdates.premio_imagem_url}`);
             } else {
                 campUpdates.premio_imagem = '🏆';
                 campUpdates.premio_imagem_url = '';
             }
         }
+
         if (Object.keys(campUpdates).length > 0) {
             update('campanhas', id, campUpdates);
         }
-        
+
         const itemUpdates = {};
         if (item_nome) itemUpdates.nome = item_nome;
         if (item_descricao !== undefined) itemUpdates.descricao = item_descricao;
         if (item_categoria) itemUpdates.categoria = item_categoria;
-        if (status === 'inativa') itemUpdates.status = 'inativo';
-        else if (status === 'ativa') itemUpdates.status = 'ativo';
-        
-        if (duracao !== undefined && duracao !== null && duracao !== '' && item.started_at) {
+
+        if (duracao !== undefined && duracao !== null && duracao !== '') {
             let duracaoMinutos = parseInt(duracao) || 1440;
-            if (duracaoMinutos > MAX_DURACAO_MINUTOS) duracaoMinutos = MAX_DURACAO_MINUTOS;
+            if (duracaoMinutos > MAX_DURACAO_MINUTOS) {
+                duracaoMinutos = MAX_DURACAO_MINUTOS;
+                console.log(`⚠️ Duração ajustada para o máximo de ${MAX_DURACAO_MINUTOS} minutos (30 dias)`);
+            }
             if (duracaoMinutos < 1) duracaoMinutos = 1;
-            const inicio = new Date(item.started_at);
-            const novoFim = new Date(inicio);
-            novoFim.setMinutes(novoFim.getMinutes() + duracaoMinutos);
-            itemUpdates.data_fim = novoFim.toISOString();
-            console.log(`⏱️ Duração atualizada: ${duracaoMinutos} minutos, novo fim: ${novoFim.toISOString()}`);
+
+            if (item.started_at) {
+                const inicio = new Date(item.started_at);
+                const novoFim = new Date(inicio);
+                novoFim.setMinutes(novoFim.getMinutes() + duracaoMinutos);
+                itemUpdates.data_fim = novoFim.toISOString();
+                console.log(`⏱️ Duração atualizada: ${duracaoMinutos} minutos (${Math.floor(duracaoMinutos/1440)} dias)`);
+            } else {
+                console.log(`⏱️ Duração definida: ${duracaoMinutos} minutos (aguardando primeiro lance)`);
+            }
         }
-        
+
+        if (status === 'inativa') {
+            itemUpdates.status = 'inativo';
+        } else if (status === 'ativa') {
+            itemUpdates.status = 'ativo';
+        }
+
         if (Object.keys(itemUpdates).length > 0) {
             update('itens', item.id, itemUpdates);
         }
-        
-        const novaUrl = `https://${process.env.APP_NAME || 'leilao-facil'}.onrender.com/${slug || campanha.slug}`;
-        res.json({ sucesso: true, mensagem: 'Campanha atualizada', url: novaUrl });
+
+        const novaUrl = `/${slug || campanha.slug}`;
+
+        res.json({
+            sucesso: true,
+            mensagem: 'Campanha atualizada',
+            url: novaUrl
+        });
     } catch (e) {
         console.error('Erro ao editar campanha:', e);
         res.status(500).json({ erro: 'Erro ao editar campanha' });
     }
 });
 
-// ========== ADMIN - LISTAR CAMPANHAS COMPLETAS ==========
-app.get('/api/admin/campanhas-completas', verificarAdmin, (req, res) => {
-    try {
-        const campanhas = db.campanhas.map(campanha => {
-            const item = db.itens.find(i => i.campanha_id === campanha.id);
-            if (!item) {
-                return {
-                    ...campanha,
-                    item_nome: 'N/A',
-                    item_id: null,
-                    total_lances: 0,
-                    lance_atual: 0,
-                    vencedor_atual: null,
-                    atingiu_meta: false,
-                    percentual_meta: 0,
-                    tempo_restante: 0,
-                    premio_imagem: campanha.premio_imagem || '🏆',
-                    premio_imagem_url: campanha.premio_imagem_url || '',
-                    premio_titulo: campanha.premio_titulo || '🏆 PRÊMIO DO LEILÃO',
-                    influencer: campanha.influencer || 'Não informado',
-                    metas_internas: campanha.metas_internas || [],
-                    metas_atingidas: [],
-                    url: `https://${process.env.APP_NAME || 'leilao-facil'}.onrender.com/${campanha.slug}`
-                };
-            }
-            const lances = db.lances.filter(l => l.item_id === item.id && l.status === 'confirmado');
-            const totalLances = lances.length;
-            const maiorLance = lances.length > 0 ? Math.max(...lances.map(l => l.valor)) : 0;
-            let vencedorAtual = null;
-            if (lances.length > 0) {
-                const ultimoLance = lances.reduce((a, b) => a.id > b.id ? a : b);
-                const usuario = db.usuarios.find(u => u.id === ultimoLance.usuario_id);
-                vencedorAtual = usuario ? { id: usuario.id, nome: usuario.nome } : null;
-            }
-            const agora = new Date();
-            const dataFim = new Date(item.data_fim);
-            const tempoRestante = Math.max(0, Math.floor((dataFim - agora) / 1000));
-            const metaValor = campanha.meta_valor || 3.00;
-            const atingiuMeta = maiorLance >= metaValor;
-            const percentualMeta = metaValor > 0 ? Math.min(100, (maiorLance / metaValor) * 100) : 0;
-            const status = item.status === 'ativo' ? 'ativa' : 'inativa';
-            let premioImagem = campanha.premio_imagem || '🏆';
-            if (campanha.premio_imagem_url && campanha.premio_imagem_url.trim() !== '') {
-                premioImagem = campanha.premio_imagem_url;
-            }
-            const metasAtingidas = [];
-            if (campanha.metas_internas && campanha.metas_internas.length > 0) {
-                campanha.metas_internas.forEach(metaInterna => {
-                    if (percentualMeta >= metaInterna.meta) metasAtingidas.push(metaInterna);
-                });
-            }
-            let duracaoDias = 'N/A';
-            if (item.started_at && item.data_fim) {
-                const inicio = new Date(item.started_at);
-                const fim = new Date(item.data_fim);
-                const diffMs = fim - inicio;
-                const diffDias = diffMs / (1000 * 60 * 60 * 24);
-                duracaoDias = Math.round(diffDias);
-            }
-            return {
-                ...campanha,
-                status,
-                item_id: item.id,
-                item_nome: item.nome,
-                item_descricao: item.descricao,
-                item_imagem: item.imagem,
-                total_lances: totalLances,
-                lance_atual: maiorLance,
-                vencedor_atual: vencedorAtual,
-                atingiu_meta: atingiuMeta,
-                percentual_meta: percentualMeta,
-                meta_valor: metaValor,
-                started_at: item.started_at,
-                data_fim: item.data_fim,
-                tempo_restante: tempoRestante,
-                created_at: item.created_at,
-                premio_imagem: premioImagem,
-                premio_imagem_url: campanha.premio_imagem_url || '',
-                premio_titulo: campanha.premio_titulo || '🏆 PRÊMIO DO LEILÃO',
-                influencer: campanha.influencer || 'Não informado',
-                metas_internas: campanha.metas_internas || [],
-                metas_atingidas: metasAtingidas,
-                duracao_dias: duracaoDias,
-                url: `https://${process.env.APP_NAME || 'leilao-facil'}.onrender.com/${campanha.slug}`
-            };
-        });
-        campanhas.sort((a, b) => b.id - a.id);
-        res.json(campanhas);
-    } catch (e) {
-        console.error('Erro ao buscar campanhas completas:', e);
-        res.status(500).json({ erro: 'Erro ao buscar campanhas' });
-    }
-});
-
-// ========== ADMIN - LISTAR CAMPANHAS ==========
-app.get('/api/admin/campanhas', verificarAdmin, (req, res) => {
-    res.json(db.campanhas);
-});
-
-// ========== ADMIN - LISTAR ITENS ==========
-app.get('/api/admin/itens', verificarAdmin, (req, res) => {
-    res.json(db.itens);
-});
-
-// ========== ADMIN - ALTERAR STATUS DA CAMPANHA ==========
 app.put('/api/admin/campanhas/:id/status', verificarAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     const { status } = req.body;
+
     try {
         const campanha = db.campanhas.find(c => c.id === id);
-        if (!campanha) return res.status(404).json({ erro: 'Campanha não encontrada' });
+        if (!campanha) {
+            return res.status(404).json({ erro: 'Campanha não encontrada' });
+        }
+
         const item = db.itens.find(i => i.campanha_id === id);
         if (item) {
             update('itens', item.id, { status: status === 'ativa' ? 'ativo' : 'inativo' });
         }
+
         update('campanhas', id, { status });
         res.json({ sucesso: true, mensagem: `Campanha ${status}` });
     } catch (e) {
@@ -1038,10 +986,10 @@ app.put('/api/admin/campanhas/:id/status', verificarAdmin, (req, res) => {
     }
 });
 
-// ========== ADMIN - RESETAR LEILÃO ==========
 app.post('/api/admin/resetar-leilao/:campanha_id', verificarAdmin, (req, res) => {
     const campanha_id = parseInt(req.params.campanha_id);
-    const item = db.itens.find(i => i.campanha_id === campanha_id && i.status === 'ativo');
+    const item = db.itens.find(i => i.campanha_id === campanha_id);
+
     if (item) {
         const agora = new Date();
         const fim = new Date(agora);
@@ -1060,45 +1008,182 @@ app.post('/api/admin/resetar-leilao/:campanha_id', verificarAdmin, (req, res) =>
     }
 });
 
-// ========== ADMIN - ALTERAR STATUS DO ITEM ==========
-app.put('/api/admin/itens/:id', verificarAdmin, (req, res) => {
-    const id = parseInt(req.params.id);
-    const { status } = req.body;
-    update('itens', id, { status });
-    res.json({ sucesso: true });
-});
-
-// ========== ROTA PARA SERVIR A INDEX DINAMICAMENTE (OPEN GRAPH) ==========
-app.get('/:slug', (req, res) => {
-    const slug = req.params.slug;
-    const campanha = findOne('campanhas', { slug });
-    if (!campanha) {
-        return res.status(404).send('Campanha não encontrada');
+app.delete('/api/admin/campanhas', verificarAdmin, (req, res) => {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ erro: 'IDs inválidos' });
     }
-    const ogTitle = campanha.premio_titulo || campanha.nome || 'Leilão Fácil';
-    const ogDescription = campanha.descricao || `Participe do leilão ${campanha.nome}! Lances a partir de R$ 0,01.`;
-    let ogImage = 'https://leilao-facil.onrender.com/logo-default.jpg';
-    if (campanha.premio_imagem_url && campanha.premio_imagem_url.trim() !== '') {
-        ogImage = campanha.premio_imagem_url;
-    } else if (campanha.premio_imagem && campanha.premio_imagem.startsWith('/uploads/')) {
-        ogImage = `https://leilao-facil.onrender.com${campanha.premio_imagem}`;
+
+    try {
+        ids.forEach(id => {
+            const campanha = db.campanhas.find(c => c.id === id);
+            if (campanha) {
+                const item = db.itens.find(i => i.campanha_id === id);
+                if (item) {
+                    db.lances = db.lances.filter(l => l.item_id !== item.id);
+                    db.pagamentos = db.pagamentos.filter(p => p.item_id !== item.id);
+                    db.itens = db.itens.filter(i => i.id !== item.id);
+                }
+                db.campanhas = db.campanhas.filter(c => c.id !== id);
+            }
+        });
+        saveDB();
+        res.json({ sucesso: true, mensagem: 'Campanhas removidas' });
+    } catch (e) {
+        console.error('Erro ao excluir campanhas:', e);
+        res.status(500).json({ erro: 'Erro ao excluir campanhas' });
     }
-    const ogUrl = `https://leilao-facil.onrender.com/${slug}`;
-    const indexPath = path.join(__dirname, 'public', 'index.html');
-    let html = fs.readFileSync(indexPath, 'utf8');
-    html = html.replace(/{{OG_TITLE}}/g, ogTitle);
-    html = html.replace(/{{OG_DESCRIPTION}}/g, ogDescription);
-    html = html.replace(/{{OG_IMAGE}}/g, ogImage);
-    html = html.replace(/{{OG_URL}}/g, ogUrl);
-    res.send(html);
 });
 
-// ========== ROTA RAIZ ==========
-app.get('/', (req, res) => {
-    res.redirect('/campanha-padrao');
+app.get('/api/campanha-ativa', (req, res) => {
+    try {
+        const campanha = db.campanhas.find(c => c.status === 'ativa');
+        if (campanha) {
+            res.json({ slug: campanha.slug });
+        } else {
+            res.status(404).json({ erro: 'Nenhuma campanha ativa' });
+        }
+    } catch (e) {
+        res.status(500).json({ erro: 'Erro ao buscar campanha ativa' });
+    }
 });
 
-// ========== WEBSOCKET ==========
+app.get('/api/rankings', (req, res) => {
+    try {
+        const slug = req.query.slug;
+        let campanha = null;
+        if (slug) {
+            campanha = findOne('campanhas', { slug });
+        } else {
+            campanha = db.campanhas.find(c => c.status === 'ativa');
+        }
+        if (!campanha) {
+            return res.json({ ranking_maior_lance: [], ranking_mais_lances: [], ranking_menos_lances: [] });
+        }
+        const item = db.itens.find(i => i.campanha_id === campanha.id);
+        if (!item) {
+            return res.json({ ranking_maior_lance: [], ranking_mais_lances: [], ranking_menos_lances: [] });
+        }
+        const lancesConfirmados = db.lances.filter(l => l.item_id === item.id && l.status === 'confirmado');
+        if (lancesConfirmados.length === 0) {
+            return res.json({ ranking_maior_lance: [], ranking_mais_lances: [], ranking_menos_lances: [] });
+        }
+        const usuariosMap = {};
+        lancesConfirmados.forEach(lance => {
+            const user = findOne('usuarios', { id: lance.usuario_id });
+            const nome = user ? user.nome : 'Anônimo';
+            if (!usuariosMap[nome]) {
+                usuariosMap[nome] = { usuario: nome, lances: [], total_investido: 0, maior: 0, quantidade: 0 };
+            }
+            usuariosMap[nome].lances.push(lance);
+            usuariosMap[nome].total_investido += lance.valor;
+            usuariosMap[nome].quantidade++;
+            if (lance.valor > usuariosMap[nome].maior) {
+                usuariosMap[nome].maior = lance.valor;
+            }
+        });
+        let usuariosArray = Object.values(usuariosMap).map(u => {
+            const ultimoLance = u.lances.reduce((a, b) => a.id > b.id ? a : b);
+            return {
+                usuario: u.usuario,
+                maior_lance: u.maior,
+                total_investido: u.total_investido,
+                quantidade_lances: u.quantidade,
+                ultimo_valor: ultimoLance.valor,
+                ultimo_lance_id: ultimoLance.id,
+                data_ultimo_lance: ultimoLance.data_hora,
+                maior_lance_ordenacao: u.maior,
+                quantidade_ordenacao: u.quantidade
+            };
+        });
+        const rankingMaiorLance = [...usuariosArray]
+            .sort((a, b) => b.maior_lance - a.maior_lance)
+            .slice(0, 10)
+            .map((u, index) => ({
+                posicao: index + 1,
+                usuario: u.usuario,
+                valor: u.maior_lance,
+                total_investido: u.total_investido,
+                lances: u.quantidade_lances,
+                data_hora: u.data_ultimo_lance,
+                ultimo_valor: u.ultimo_valor,
+                is_vencedor: index === 0
+            }));
+        const rankingMaisLances = [...usuariosArray]
+            .sort((a, b) => b.quantidade_lances - a.quantidade_lances)
+            .slice(0, 10)
+            .map((u, index) => ({
+                posicao: index + 1,
+                usuario: u.usuario,
+                valor: u.maior_lance,
+                total_investido: u.total_investido,
+                lances: u.quantidade_lances,
+                data_hora: u.data_ultimo_lance,
+                ultimo_valor: u.ultimo_valor,
+                is_vencedor: u.maior_lance === rankingMaiorLance[0]?.valor && u.usuario === rankingMaiorLance[0]?.usuario
+            }));
+        const rankingMenosLances = [...usuariosArray]
+            .filter(u => u.quantidade_lances > 0)
+            .sort((a, b) => a.quantidade_lances - b.quantidade_lances)
+            .slice(0, 10)
+            .map((u, index) => ({
+                posicao: index + 1,
+                usuario: u.usuario,
+                valor: u.maior_lance,
+                total_investido: u.total_investido,
+                lances: u.quantidade_lances,
+                data_hora: u.data_ultimo_lance,
+                ultimo_valor: u.ultimo_valor,
+                is_vencedor: u.maior_lance === rankingMaiorLance[0]?.valor && u.usuario === rankingMaiorLance[0]?.usuario
+            }));
+        res.json({
+            ranking_maior_lance: rankingMaiorLance,
+            ranking_mais_lances: rankingMaisLances,
+            ranking_menos_lances: rankingMenosLances,
+            premiacoes: {
+                maior_lance: campanha.premios?.maiorLance ? [{ posicao: 1, premio: campanha.premios.maiorLance.nome }] : [],
+                mais_lances: campanha.premios?.maisLances ? [{ posicao: 1, premio: campanha.premios.maisLances.nome }] : [],
+                menos_lances: campanha.premios?.menosLances ? [{ posicao: 1, premio: campanha.premios.menosLances.nome }] : []
+            }
+        });
+    } catch (e) {
+        console.error('Erro ao buscar rankings:', e);
+        res.status(500).json({ erro: 'Erro ao buscar rankings' });
+    }
+});
+
+app.get('/api/usuarios/:nome/historico', (req, res) => {
+    try {
+        const nome = decodeURIComponent(req.params.nome);
+        const slug = req.query.slug;
+        let campanha = null;
+        if (slug) {
+            campanha = findOne('campanhas', { slug });
+        } else {
+            campanha = db.campanhas.find(c => c.status === 'ativa');
+        }
+        if (!campanha) {
+            return res.json({ lances: [], totalGasto: 0 });
+        }
+        const item = db.itens.find(i => i.campanha_id === campanha.id);
+        if (!item) {
+            return res.json({ lances: [], totalGasto: 0 });
+        }
+        const usuario = findOne('usuarios', { nome });
+        if (!usuario) {
+            return res.json({ lances: [], totalGasto: 0 });
+        }
+        const lances = db.lances
+            .filter(l => l.usuario_id === usuario.id && l.item_id === item.id && l.status === 'confirmado')
+            .map(l => ({ valor: l.valor, data: l.data_hora }));
+        const totalGasto = lances.reduce((s, l) => s + l.valor, 0);
+        res.json({ lances, totalGasto });
+    } catch (e) {
+        console.error('Erro ao buscar histórico:', e);
+        res.status(500).json({ erro: 'Erro ao buscar histórico' });
+    }
+});
+
 io.on('connection', (socket) => {
     console.log('✅ Cliente conectado:', socket.id);
     socket.on('join_item', (item_id) => {
@@ -1109,21 +1194,13 @@ io.on('connection', (socket) => {
     });
 });
 
-// ========== INICIA SERVIDOR ==========
 loadDB().then(() => {
-    server.listen(PORT, '0.0.0.0', () => {
+    server.listen(PORT, () => {
         console.log(`🚀 Servidor: http://localhost:${PORT}`);
-        console.log(`📁 Arquivos em: ${DATA_DIR}`);
-        console.log(`📸 Uploads em: ${UPLOAD_DIR}`);
         console.log(`📦 Itens: ${db.itens.length}`);
         console.log(`👥 Usuários: ${db.usuarios.length}`);
         console.log(`💎 Lances: ${db.lances.length}`);
         console.log(`💳 Pagamentos: ${db.pagamentos.length}`);
         console.log(`📢 Campanhas: ${db.campanhas.length}`);
-        console.log(`🔒 Admin: /admin.html (senha: ${ADMIN_PASSWORD})`);
-        console.log(`✅ Limite máximo de duração: ${MAX_DURACAO_MINUTOS} minutos (30 dias)`);
-        console.log(`✅ CORREÇÃO APLICADA: NUNCA retorna erro de validação de duração`);
-        console.log(`✅ Open Graph dinâmico: cada slug tem sua própria thumbnail!`);
-        console.log(`✅ Supabase: ${useSupabase ? 'CONECTADO' : 'NÃO CONFIGURADO (usando JSON)'}`);
     });
 });
