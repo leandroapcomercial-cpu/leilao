@@ -785,14 +785,11 @@ nomeInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') btnS
 emailInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') btnSalvarNome.click(); });
 whatsappInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') btnSalvarNome.click(); });
 
-// ========== FUNÇÃO PEGAR SLUG DA URL (CORRIGIDA) ==========
+// ========== FUNÇÃO CORRIGIDA: PEGAR SLUG DA URL ==========
 function getSlugFromURL() {
     var path = window.location.pathname;
-    
-    // Remove a barra inicial e pega a primeira parte
     var slug = path.replace(/^\//, '').split('/')[0];
     
-    // Se estiver vazio ou for uma página especial, retorna null
     if (!slug || slug === '' || slug === 'index.html' || slug === 'admin.html' || slug === 'leilao.html') {
         return null;
     }
@@ -802,7 +799,7 @@ function getSlugFromURL() {
 
 var slugAtual = getSlugFromURL();
 
-// ========== FUNÇÃO CARREGAR CAMPANHA (CORRIGIDA) ==========
+// ========== FUNÇÃO CARREGAR CAMPANHA ==========
 async function carregarCampanha() {
     var slug = slugAtual;
 
@@ -813,7 +810,6 @@ async function carregarCampanha() {
             var res = await fetch('/api/campanha-ativa');
             var data = await res.json();
             if (data && data.slug) {
-                // Redireciona para a URL correta
                 window.location.href = '/' + data.slug;
                 return;
             } else {
