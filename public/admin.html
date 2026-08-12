@@ -252,7 +252,7 @@
         .modal {
             background:#FFFFFF;
             border-radius:16px;
-            max-width:560px;
+            max-width:700px;
             width:100%;
             max-height:90vh;
             overflow-y:auto;
@@ -275,7 +275,7 @@
             border:none;
         }
         .modal .close:hover { color:#0066FF; }
-        .modal h2 { font-size:20px; color:#1A2B4C; margin-bottom:20px; }
+        .modal h2 { font-size:20px; color:#1A2B4C; margin-bottom:20px; text-align:center; }
         .modal .form-group { margin-bottom:14px; }
         .modal .form-group label { display:block; font-size:13px; font-weight:500; color:#1A2B4C; margin-bottom:4px; }
         .modal .form-group input, 
@@ -426,6 +426,31 @@
             display:none;
         }
 
+        .upload-group {
+            display:flex;
+            gap:10px;
+            align-items:center;
+            flex-wrap:wrap;
+        }
+        .upload-group .preview-thumb {
+            max-height:60px;
+            max-width:80px;
+            border-radius:6px;
+            border:1px solid #E5E7EB;
+            object-fit:cover;
+        }
+        .upload-group .btn-upload {
+            background:#EDF2F7;
+            border:1px solid #E5E7EB;
+            padding:6px 14px;
+            border-radius:6px;
+            cursor:pointer;
+            font-size:0.8rem;
+            transition:0.2s;
+        }
+        .upload-group .btn-upload:hover { background:#E2E8F0; }
+        .upload-group input[type="file"] { display:none; }
+
         @media (max-width:768px) {
             .dashboard { grid-template-columns:1fr 1fr; }
             .seletor-campanha { flex-direction:column; align-items:stretch; }
@@ -575,33 +600,112 @@
         </div>
     </div>
 
+    <!-- ===== MODAL EDITAR (COMPLETO) ===== -->
     <div class="modal-overlay" id="modalEditar">
         <div class="modal">
             <button class="close" onclick="fecharModalEditar()">✕</button>
             <h2>✏️ Editar Campanha</h2>
-            <form onsubmit="salvarEdicao(event)">
+            <form id="formEditar" onsubmit="salvarEdicao(event)" enctype="multipart/form-data">
                 <input type="hidden" id="editCampanhaId">
+
                 <div class="form-group">
-                    <label>Nome da Campanha</label>
+                    <label>Nome da Campanha *</label>
                     <input type="text" id="editNome" required>
                 </div>
+
+                <div class="form-group">
+                    <label>Slug (URL)</label>
+                    <input type="text" id="editSlug" placeholder="Ex: dia-dos-pais">
+                    <small style="color:#6B7280;font-size:11px;">Se alterar, a URL do leilão mudará</small>
+                </div>
+
                 <div class="form-group">
                     <label>Descrição</label>
-                    <textarea id="editDesc" rows="2"></textarea>
+                    <textarea id="editDesc" rows="3"></textarea>
                 </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Meta (R$)</label>
+                        <input type="number" id="editMeta" step="0.01" min="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Duração (minutos)</label>
+                        <input type="number" id="editDuracao" min="1" max="43200" value="1440">
+                        <small style="color:#6B7280;font-size:10px;">Máx 43200 min (30 dias)</small>
+                    </div>
+                </div>
+
                 <div class="form-group">
-                    <label>Meta (R$)</label>
-                    <input type="number" id="editMeta" step="0.01" min="0.01" required>
+                    <label>Status</label>
+                    <select id="editStatus">
+                        <option value="ativa">🟢 Ativa</option>
+                        <option value="inativa">🔴 Inativa</option>
+                    </select>
                 </div>
+
+                <h4 style="margin-top:16px;margin-bottom:12px;color:#1A2B4C;font-size:15px;border-top:1px solid #E5E7EB;padding-top:12px;">📦 Item do Leilão</h4>
+
                 <div class="form-group">
-                    <label>Duração (minutos)</label>
-                    <input type="number" id="editDuracao" min="1" max="43200" value="1440">
+                    <label>Nome do Item *</label>
+                    <input type="text" id="editItemNome" required>
                 </div>
-                <button type="submit" class="btn btn-primary">💾 Salvar</button>
+
+                <div class="form-group">
+                    <label>Descrição do Item</label>
+                    <textarea id="editItemDesc" rows="2"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Categoria</label>
+                    <select id="editItemCategoria">
+                        <option value="Geral">Geral</option>
+                        <option value="Eletrônicos">Eletrônicos</option>
+                        <option value="Veículos">Veículos</option>
+                        <option value="Imóveis">Imóveis</option>
+                        <option value="Cozinha">Cozinha</option>
+                        <option value="Moda">Moda</option>
+                    </select>
+                </div>
+
+                <h4 style="margin-top:16px;margin-bottom:12px;color:#1A2B4C;font-size:15px;border-top:1px solid #E5E7EB;padding-top:12px;">🏆 Prêmio do Leilão</h4>
+
+                <div class="form-group">
+                    <label>Título do Prêmio</label>
+                    <input type="text" id="editPremioTitulo" placeholder="🏆 PRÊMIO DO LEILÃO">
+                </div>
+
+                <div class="form-group">
+                    <label>Imagem do Prêmio</label>
+                    <div class="upload-group">
+                        <input type="text" id="editPremioImagemUrl" placeholder="URL da imagem" style="flex:2;">
+                        <span id="editPreviewTexto" style="font-size:0.75rem;color:#6B7280;">Nenhuma</span>
+                        <img id="editPreviewImg" class="preview-thumb" src="" style="display:none;">
+                        <button type="button" class="btn-upload" onclick="document.getElementById('editFilePremio').click()">📤 Upload</button>
+                        <input type="file" id="editFilePremio" accept="image/*" onchange="uploadImagemEdicao()">
+                    </div>
+                    <small style="color:#6B7280;font-size:11px;">Cole uma URL ou faça upload de uma imagem</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Influencer/Responsável</label>
+                    <input type="text" id="editInfluencer" placeholder="Nome do influencer ou responsável">
+                </div>
+
+                <h4 style="margin-top:16px;margin-bottom:12px;color:#1A2B4C;font-size:15px;border-top:1px solid #E5E7EB;padding-top:12px;">🎯 Metas Internas</h4>
+
+                <div class="form-group">
+                    <label>Metas (JSON)</label>
+                    <textarea id="editMetasInternas" rows="4" style="font-family:monospace;font-size:13px;"></textarea>
+                    <small style="color:#6B7280;font-size:11px;">Formato: [{"meta":25,"premio":"R$ 100,00"},{"meta":50,"premio":"R$ 200,00"}]</small>
+                </div>
+
+                <button type="submit" class="btn btn-primary">💾 Salvar Alterações</button>
             </form>
         </div>
     </div>
 
+    <!-- ===== MODAL VISUALIZAR ===== -->
     <div class="modal-overlay" id="modalVisualizar">
         <div class="modal" style="max-width:600px;">
             <button class="close" onclick="fecharModalVisualizar()">✕</button>
@@ -622,16 +726,13 @@
         let atualizacaoInterval = null;
 
         // ============================================================
-        // FUNÇÃO PARA OBTER URL BASE (CORRIGIDA)
+        // FUNÇÃO PARA OBTER URL BASE
         // ============================================================
         function getBaseUrl() {
-            // Tenta window.location.origin primeiro
             let base = window.location.origin;
-            // Se estiver vazio ou undefined, usa fallback
             if (!base || base === 'undefined' || base === '') {
                 base = window.location.protocol + '//' + window.location.host;
             }
-            // Remove barra final se existir
             if (base.endsWith('/')) {
                 base = base.slice(0, -1);
             }
@@ -639,17 +740,15 @@
         }
 
         // ============================================================
-        // FUNÇÃO PARA COPIAR URL (CORRIGIDA)
+        // FUNÇÃO PARA COPIAR URL
         // ============================================================
         function copiarUrl(url) {
             const base = getBaseUrl();
-            // Garante que a URL comece com /
             if (!url.startsWith('/')) {
                 url = '/' + url;
             }
             const fullUrl = base + url;
             
-            // Fallback se a URL ainda estiver undefined
             if (fullUrl.includes('undefined')) {
                 const fallbackUrl = 'https://leilao-facil.onrender.com' + url;
                 navigator.clipboard.writeText(fallbackUrl).then(() => {
@@ -663,7 +762,6 @@
             navigator.clipboard.writeText(fullUrl).then(() => {
                 mostrarMsg('✅ URL copiada!', 'sucesso');
             }).catch(() => {
-                // Fallback para copiar manualmente
                 const input = document.createElement('input');
                 input.value = fullUrl;
                 document.body.appendChild(input);
@@ -675,7 +773,7 @@
         }
 
         // ============================================================
-        // FUNÇÃO PARA ABRIR LEILÃO (CORRIGIDA)
+        // FUNÇÃO PARA ABRIR LEILÃO
         // ============================================================
         function abrirLeilao(slug) {
             if (!slug || slug === 'undefined' || slug === '') {
@@ -908,7 +1006,7 @@
         }
 
         // ============================================================
-        // RENDERIZAR CAMPANHAS (CORRIGIDO)
+        // RENDERIZAR CAMPANHAS
         // ============================================================
         function renderizarCampanhas(campanhas) {
             const container = document.getElementById('campanhasList');
@@ -935,10 +1033,8 @@
                 const statusLabel = c.status === 'ativa' ? '🟢 Ativa' : '🔴 Inativa';
                 const tempoRestante = c.tempo_restante || 0;
                 
-                // GARANTE QUE O SLUG NÃO SEJA UNDEFINED
                 const slug = c.slug || 'slug-indisponivel';
                 const urlPath = '/' + slug;
-                const urlCompleta = getBaseUrl() + urlPath;
 
                 return `
                     <div class="campanha-card ${selecionada ? 'selecionada' : ''}" data-id="${c.id}">
@@ -990,7 +1086,6 @@
                             <button class="btn btn-secondary btn-sm" style="padding:2px 8px;font-size:11px;margin-left:4px;" onclick="copiarUrl('${slug}')">
                                 📋 Copiar
                             </button>
-                            <span style="font-size:10px;color:#9CA3AF;margin-left:4px;">(${urlCompleta})</span>
                         </div>
 
                         <div class="acoes">
@@ -1097,12 +1192,11 @@
                 const data = await res.json();
 
                 if (data.sucesso) {
-                    const urlCompleta = getBaseUrl() + '/' + slug;
                     mostrarMsg(`✅ Campanha "${nome}" criada com sucesso!`, 'sucesso');
                     document.getElementById('urlGeradaContainer').innerHTML = `
                         🔗 URL: <a href="/${slug}" target="_blank">/${slug}</a>
                         <button class="btn btn-secondary btn-sm" onclick="copiarUrl('${slug}')">📋 Copiar</button>
-                        <br><small style="color:#6B7280;">${urlCompleta}</small>
+                        <br><small style="color:#6B7280;">${getBaseUrl()}/${slug}</small>
                     `;
                     document.getElementById('urlGeradaContainer').style.display = 'block';
                     
@@ -1129,34 +1223,140 @@
         }
 
         // ============================================================
-        // EDITAR CAMPANHA
+        // EDITAR CAMPANHA - COMPLETO
         // ============================================================
         function editarCampanha(id) {
             const campanha = campanhasCache.find(c => c.id === id);
-            if (!campanha) return;
+            if (!campanha) {
+                mostrarMsg('❌ Campanha não encontrada', 'erro');
+                return;
+            }
+
+            console.log('📝 Editando campanha:', campanha);
 
             document.getElementById('editCampanhaId').value = id;
             document.getElementById('editNome').value = campanha.nome || '';
+            document.getElementById('editSlug').value = campanha.slug || '';
             document.getElementById('editDesc').value = campanha.descricao || '';
             document.getElementById('editMeta').value = campanha.meta_valor || 3.00;
             document.getElementById('editDuracao').value = campanha.duracao || 1440;
+            document.getElementById('editStatus').value = campanha.status || 'ativa';
+            document.getElementById('editItemNome').value = campanha.item_nome || '';
+            document.getElementById('editItemDesc').value = campanha.item_descricao || '';
+            document.getElementById('editItemCategoria').value = campanha.item_categoria || 'Geral';
+            document.getElementById('editPremioTitulo').value = campanha.premio_titulo || '🏆 PRÊMIO DO LEILÃO';
+            document.getElementById('editInfluencer').value = campanha.influencer || '';
+
+            // Imagem do prêmio
+            const imagemUrl = campanha.premio_imagem_url || campanha.premio_imagem || '';
+            document.getElementById('editPremioImagemUrl').value = imagemUrl;
+            const previewImg = document.getElementById('editPreviewImg');
+            const previewTexto = document.getElementById('editPreviewTexto');
+            if (imagemUrl && (imagemUrl.startsWith('http') || imagemUrl.startsWith('/uploads'))) {
+                previewImg.src = imagemUrl;
+                previewImg.style.display = 'block';
+                previewTexto.textContent = 'Imagem carregada';
+            } else if (imagemUrl && imagemUrl.length <= 4) {
+                previewImg.style.display = 'none';
+                previewTexto.textContent = imagemUrl;
+            } else {
+                previewImg.style.display = 'none';
+                previewTexto.textContent = 'Nenhuma';
+            }
+
+            // Metas internas
+            const metas = campanha.metas_internas || [
+                { meta: 25, premio: 'R$ 100,00' },
+                { meta: 50, premio: 'R$ 200,00' },
+                { meta: 75, premio: 'R$ 300,00' },
+                { meta: 100, premio: 'R$ 500,00' }
+            ];
+            document.getElementById('editMetasInternas').value = JSON.stringify(metas, null, 2);
+
             document.getElementById('modalEditar').classList.add('active');
         }
 
         function fecharModalEditar() {
             document.getElementById('modalEditar').classList.remove('active');
+            document.getElementById('editFilePremio').value = '';
         }
 
+        // ============================================================
+        // UPLOAD DE IMAGEM NA EDIÇÃO
+        // ============================================================
+        async function uploadImagemEdicao() {
+            const fileInput = document.getElementById('editFilePremio');
+            const file = fileInput.files[0];
+            if (!file) {
+                mostrarMsg('⚠️ Selecione uma imagem', 'erro');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('premio_imagem', file);
+
+            try {
+                const res = await fetch('/api/admin/upload-imagem', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer admin123' },
+                    body: formData
+                });
+
+                const data = await res.json();
+                if (data.sucesso) {
+                    document.getElementById('editPremioImagemUrl').value = data.url;
+                    const previewImg = document.getElementById('editPreviewImg');
+                    previewImg.src = data.url;
+                    previewImg.style.display = 'block';
+                    document.getElementById('editPreviewTexto').textContent = 'Imagem carregada';
+                    mostrarMsg('✅ Imagem enviada!', 'sucesso');
+                } else {
+                    mostrarMsg('❌ ' + (data.erro || 'Erro ao enviar imagem'), 'erro');
+                }
+            } catch (e) {
+                mostrarMsg('❌ Erro ao enviar imagem', 'erro');
+                console.error(e);
+            }
+
+            fileInput.value = '';
+        }
+
+        // ============================================================
+        // SALVAR EDIÇÃO - COMPLETO
+        // ============================================================
         async function salvarEdicao(e) {
             e.preventDefault();
+            
             const id = parseInt(document.getElementById('editCampanhaId').value);
             const nome = document.getElementById('editNome').value.trim();
+            const slug = document.getElementById('editSlug').value.trim();
             const descricao = document.getElementById('editDesc').value.trim();
             const metaValor = parseFloat(document.getElementById('editMeta').value) || 3.00;
             const duracao = parseInt(document.getElementById('editDuracao').value) || 1440;
+            const status = document.getElementById('editStatus').value;
+            const itemNome = document.getElementById('editItemNome').value.trim();
+            const itemDesc = document.getElementById('editItemDesc').value.trim();
+            const itemCategoria = document.getElementById('editItemCategoria').value;
+            const premioTitulo = document.getElementById('editPremioTitulo').value.trim();
+            const premioImagemUrl = document.getElementById('editPremioImagemUrl').value.trim();
+            const influencer = document.getElementById('editInfluencer').value.trim();
+            const metasInternasRaw = document.getElementById('editMetasInternas').value.trim();
 
-            if (!nome) {
-                mostrarMsg('⚠️ Nome é obrigatório', 'erro');
+            if (!nome || !itemNome) {
+                mostrarMsg('⚠️ Nome e nome do item são obrigatórios', 'erro');
+                return;
+            }
+
+            let metasInternas = [];
+            try {
+                metasInternas = metasInternasRaw ? JSON.parse(metasInternasRaw) : [
+                    { meta: 25, premio: 'R$ 100,00' },
+                    { meta: 50, premio: 'R$ 200,00' },
+                    { meta: 75, premio: 'R$ 300,00' },
+                    { meta: 100, premio: 'R$ 500,00' }
+                ];
+            } catch (e) {
+                mostrarMsg('⚠️ Formato de metas inválido. Use JSON válido.', 'erro');
                 return;
             }
 
@@ -1165,29 +1365,49 @@
             btn.textContent = '⏳ Salvando...';
 
             try {
+                const payload = {
+                    nome,
+                    slug,
+                    descricao,
+                    meta_valor: metaValor,
+                    duracao,
+                    status,
+                    item_nome: itemNome,
+                    item_descricao: itemDesc,
+                    item_categoria: itemCategoria,
+                    premio_titulo: premioTitulo,
+                    premio_imagem_url: premioImagemUrl,
+                    influencer,
+                    metas_internas: metasInternas
+                };
+
+                console.log('📤 Enviando payload:', payload);
+
                 const res = await fetch(`/api/admin/campanhas/${id}`, {
                     method: 'PUT',
                     headers: { 
                         'Content-Type': 'application/json',
                         'Authorization': 'Bearer admin123'
                     },
-                    body: JSON.stringify({ nome, descricao, meta_valor: metaValor, duracao })
+                    body: JSON.stringify(payload)
                 });
+
                 const data = await res.json();
+                
                 if (data.sucesso) {
-                    mostrarMsg('✅ Campanha atualizada!', 'sucesso');
+                    mostrarMsg('✅ Campanha atualizada com sucesso!', 'sucesso');
                     fecharModalEditar();
                     carregarCampanhas();
                 } else {
                     mostrarMsg('❌ ' + (data.erro || 'Erro ao atualizar'), 'erro');
                 }
             } catch (e) {
-                mostrarMsg('❌ Erro ao atualizar campanha', 'erro');
+                mostrarMsg('❌ Erro ao atualizar campanha: ' + e.message, 'erro');
                 console.error(e);
             }
 
             btn.disabled = false;
-            btn.textContent = '💾 Salvar';
+            btn.textContent = '💾 Salvar Alterações';
         }
 
         // ============================================================
@@ -1202,6 +1422,7 @@
                 <p><strong>Slug:</strong> ${campanha.slug || 'N/A'}</p>
                 <p><strong>Status:</strong> ${campanha.status === 'ativa' ? '🟢 Ativa' : '🔴 Inativa'}</p>
                 <p><strong>Meta:</strong> R$ ${(campanha.meta_valor || 3.00).toFixed(2)}</p>
+                <p><strong>Duração:</strong> ${campanha.duracao || 1440} minutos</p>
                 <p><strong>Lance Atual:</strong> R$ ${(campanha.lance_atual || 0).toFixed(2)}</p>
                 <p><strong>Total de Lances:</strong> ${campanha.total_lances || 0}</p>
                 <p><strong>Vencedor Atual:</strong> ${campanha.vencedor_atual ? campanha.vencedor_atual.nome : '—'}</p>
@@ -1210,7 +1431,13 @@
                 <hr>
                 <p><strong>Item:</strong> ${campanha.item_nome || 'N/A'}</p>
                 <p><strong>Descrição do Item:</strong> ${campanha.item_descricao || '—'}</p>
+                <p><strong>Categoria:</strong> ${campanha.item_categoria || 'Geral'}</p>
+                <p><strong>Prêmio:</strong> ${campanha.premio_titulo || '🏆 PRÊMIO DO LEILÃO'}</p>
+                <p><strong>Influencer:</strong> ${campanha.influencer || 'Não informado'}</p>
                 <p><strong>URL:</strong> <a href="/${campanha.slug}" target="_blank">/${campanha.slug}</a></p>
+                <hr>
+                <p><strong>Metas Internas:</strong></p>
+                <pre style="background:#F3F4F6;padding:10px;border-radius:6px;font-size:12px;overflow-x:auto;">${JSON.stringify(campanha.metas_internas || [], null, 2)}</pre>
             `;
             document.getElementById('modalVisualizar').classList.add('active');
         }
@@ -1282,6 +1509,12 @@
                 }
             });
         });
+
+        // ============================================================
+        // ROTA DE UPLOAD (FALLBACK - se o server.js não tiver)
+        // ============================================================
+        // O server.js já tem a rota /api/admin/criar-campanha com upload
+        // Esta função é apenas para a edição
     </script>
 </body>
 </html>
