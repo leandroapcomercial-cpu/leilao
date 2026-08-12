@@ -3,2052 +3,1298 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
-    <!-- ===== TAGS DINÂMICAS (SUBSTITUÍDAS PELO SERVER.JS) ===== -->
-    <title>{{OG_TITLE}}</title>
-    <meta name="description" content="{{OG_DESCRIPTION}}">
-
-    <!-- OPEN GRAPH TAGS (para Instagram, WhatsApp, Facebook, etc.) -->
-    <meta property="og:title" content="{{OG_TITLE}}" />
-    <meta property="og:description" content="{{OG_DESCRIPTION}}" />
-    <meta property="og:image" content="{{OG_IMAGE}}" />
-    <meta property="og:url" content="{{OG_URL}}" />
-    <meta property="og:type" content="website" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-
-    <!-- TWITTER CARD -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="{{OG_TITLE}}" />
-    <meta name="twitter:description" content="{{OG_DESCRIPTION}}" />
-    <meta name="twitter:image" content="{{OG_IMAGE}}" />
-    <!-- ========================================================== -->
-
-    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js" defer></script>
+    <title>Leilão Fácil</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin:0; padding:0; box-sizing:border-box; }
         body {
             font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
-            background: #F8F9FA;
+            background: #F0F2F5;
             color: #1A2B4C;
+            -webkit-font-smoothing: antialiased;
             min-height: 100vh;
             display: flex;
-            flex-direction: column;
-            -webkit-font-smoothing: antialiased;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 16px;
+        }
+        * { word-wrap: break-word; overflow-wrap: break-word; }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: #FFFFFF;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            margin: 0 auto;
         }
 
         .header {
-            background: #FFFFFF;
-            padding: 10px 16px;
-            border-bottom: 3px solid #0066FF;
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            flex-wrap: nowrap !important;
-            gap: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            min-height: 56px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 20px;
         }
-        .header h1 { 
-            font-size: 18px; 
-            color: #0066FF; 
-            text-align: left;
-            white-space: nowrap !important;
-            flex-shrink: 1;
-            min-width: 0;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .header h1 span { color: #1A2B4C; }
-        .header h1 .emoji-header { font-size: 16px; }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            flex-wrap: nowrap !important;
-            flex-shrink: 0;
-            justify-content: flex-end;
-            min-width: 0;
-        }
-        .ao-vivo {
-            font-weight: 700;
-            font-size: 11px;
-            color: #FF0000;
-            animation: piscar 1s infinite;
-            letter-spacing: 0.5px;
-            background: #FFE8E8;
-            padding: 3px 8px;
-            border-radius: 12px;
-            border: 1px solid #FF0000;
-            white-space: nowrap !important;
-            flex-shrink: 0;
-        }
-        @keyframes piscar {
-            0% { opacity: 1; }
-            50% { opacity: 0.3; }
-            100% { opacity: 1; }
-        }
-        .user-info .nome-usuario {
-            font-weight: 600;
-            color: #1A2B4C;
-            cursor: pointer;
-            padding: 3px 6px;
-            border-radius: 6px;
-            transition: all 0.3s;
-            border: 2px solid transparent;
-            font-size: 12px;
-            white-space: nowrap !important;
-            flex-shrink: 1;
-            min-width: 0;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 120px;
-        }
-        .user-info .nome-usuario:hover {
-            background: #F3F4F6;
-            border-color: #0066FF;
-        }
-        .user-info .btn-sair-header {
-            padding: 3px 10px;
-            border: 1px solid #DC2626;
-            border-radius: 6px;
-            background: transparent;
-            color: #DC2626;
-            cursor: pointer;
-            font-size: 11px;
-            font-weight: 600;
-            transition: all 0.3s;
-            white-space: nowrap !important;
-            flex-shrink: 0;
-        }
-        .user-info .btn-sair-header:hover { background: #DC2626; color: #fff; }
-
-        @media (max-width: 600px) {
-            .header { padding: 8px 12px; min-height: 48px; gap: 4px; }
-            .header h1 { font-size: 15px; }
-            .header h1 .emoji-header { font-size: 14px; }
-            .ao-vivo { font-size: 9px; padding: 2px 6px; letter-spacing: 0.3px; }
-            .user-info .nome-usuario { font-size: 11px; max-width: 80px; padding: 2px 4px; }
-            .user-info .btn-sair-header { font-size: 10px; padding: 2px 8px; }
-        }
-        @media (max-width: 420px) {
-            .header { padding: 6px 8px; min-height: 42px; gap: 3px; }
-            .header h1 { font-size: 13px; }
-            .header h1 .emoji-header { font-size: 12px; }
-            .ao-vivo { font-size: 8px; padding: 2px 5px; letter-spacing: 0px; }
-            .user-info { gap: 4px; }
-            .user-info .nome-usuario { font-size: 10px; max-width: 60px; padding: 2px 4px; }
-            .user-info .btn-sair-header { font-size: 9px; padding: 2px 6px; }
-        }
-        @media (max-width: 360px) {
-            .header h1 { font-size: 11px; }
-            .header h1 .emoji-header { font-size: 10px; }
-            .ao-vivo { font-size: 7px; padding: 1px 4px; }
-            .user-info .nome-usuario { font-size: 9px; max-width: 50px; }
-            .user-info .btn-sair-header { font-size: 8px; padding: 1px 5px; }
-        }
-
-        .btn {
-            padding: 6px 14px;
-            border: none;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .btn-primary { background: #0066FF; color: #fff; }
-        .btn-primary:hover { background: #0052CC; }
-        .btn-primary:active { transform: scale(0.97); }
-        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
-        .btn-secondary { background: #E9ECEF; color: #1A2B4C; border: 1px solid #DEE2E6; }
-        .btn-secondary:hover { background: #DEE2E6; }
-        .btn-success { background: #10B981; color: #fff; }
-        .btn-success:hover { background: #059669; }
-        .btn-success:active { transform: scale(0.97); }
-        .btn-danger-outline { background: transparent; color: #DC2626; border: 1px solid #DC2626; }
-        .btn-danger-outline:hover { background: #DC2626; color: #fff; }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
-
-        .container { 
-            max-width: 800px; 
-            margin: 0 auto; 
-            padding: 12px 16px; 
-            width: 100%; 
-            flex: 1;
+        .header-left {
             display: flex;
             flex-direction: column;
-            align-items: center;
+            align-items: flex-start;
         }
-
-        .popup-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 9999;
-            justify-content: center;
-            align-items: center;
-            padding: 16px;
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            animation: fadeIn 0.3s ease;
-        }
-        .popup-overlay.active { display: flex; }
-        .popup-overlay.hidden { display: none; }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        .popup {
-            background: #FFFFFF;
-            border-radius: 20px;
-            max-width: 420px;
-            width: 100%;
-            padding: 32px 28px;
-            box-shadow: 0 24px 64px rgba(0,0,0,0.2);
-            animation: slideUp 0.3s ease;
-            text-align: center;
-            max-height: 95vh;
-            overflow-y: auto;
-        }
-        @keyframes slideUp {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        .popup .logo { font-size: 48px; margin-bottom: 8px; }
-        .popup h2 { font-size: 24px; color: #1A2B4C; margin-bottom: 4px; }
-        .popup .subtitle { color: #6B7280; font-size: 14px; margin-bottom: 20px; }
-        .popup .form-group { margin-bottom: 12px; text-align: left; }
-        .popup .form-group label {
-            display: block;
-            font-size: 13px;
-            font-weight: 500;
-            color: #1A2B4C;
-            margin-bottom: 4px;
-            text-align: left;
-        }
-        .popup .form-group input {
-            width: 100%;
-            padding: 12px 14px;
-            border: 2px solid #E5E7EB;
-            border-radius: 10px;
-            font-size: 15px;
-            transition: border 0.3s;
-            -webkit-appearance: none;
-            text-align: left;
-        }
-        .popup .form-group input:focus { outline: none; border-color: #0066FF; }
-        .popup .btn { width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; }
-        .popup .btn:disabled { opacity: 0.5; }
-
-        .termo-simples {
-            background: #F8F9FA;
-            border-radius: 10px;
-            padding: 12px 14px;
-            margin: 12px 0;
-            text-align: left;
-            border: 1px solid #E5E7EB;
-        }
-        .termo-simples p {
-            font-size: 13px;
-            color: #4A5568;
-            line-height: 1.5;
-            margin-bottom: 4px;
-        }
-        .termo-simples .link-termo {
-            color: #0066FF;
-            text-decoration: underline;
-            cursor: pointer;
-            font-weight: 500;
-        }
-        .termo-aceite-simples {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 10px;
-            margin-top: 6px;
-            cursor: pointer;
-            border-radius: 8px;
-            transition: background 0.2s, border-color 0.2s;
-            background: #FFFFFF;
-            border: 2px solid #E5E7EB;
-        }
-        .termo-aceite-simples:hover {
-            background: #F0F7FF;
-            border-color: #0066FF;
-        }
-        .termo-aceite-simples.checked {
-            background: #E8F5E9;
-            border-color: #10B981;
-        }
-        .termo-aceite-simples input[type="checkbox"] {
-            width: 24px;
-            height: 24px;
-            accent-color: #0066FF;
-            cursor: pointer;
-            flex-shrink: 0;
-            border-radius: 4px;
-            border: 2px solid #0066FF;
-            transition: all 0.2s;
-            -webkit-appearance: none;
-            appearance: none;
-            background: #fff;
-            position: relative;
-        }
-        .termo-aceite-simples input[type="checkbox"]:checked {
-            background: #0066FF;
-            border-color: #0066FF;
-        }
-        .termo-aceite-simples input[type="checkbox"]:checked::after {
-            content: "✓";
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #fff;
-            font-size: 16px;
-            font-weight: 700;
-        }
-        .termo-aceite-simples input[type="checkbox"]:hover {
-            border-color: #0052CC;
-            box-shadow: 0 0 0 3px rgba(0,102,255,0.15);
-        }
-        .termo-aceite-simples label {
-            font-size: 14px;
-            color: #1A2B4C;
-            cursor: pointer;
-            font-weight: 500;
-            user-select: none;
-            flex: 1;
-        }
-        .termo-aceite-simples label .destaque {
-            color: #0066FF;
-            font-weight: 600;
-        }
-        .termo-aceite-simples label .obrigatorio {
-            color: #DC2626;
-            font-size: 12px;
+        .header-left .campanha-nome {
+            font-size: 0.8rem;
+            color: #6B7280;
             font-weight: 400;
-            margin-left: 4px;
         }
-        .termo-aceite-simples .status-icone {
-            font-size: 20px;
-            flex-shrink: 0;
-        }
-        .popup .info-text {
-            color: #9CA3AF;
-            font-size: 12px;
-            margin-top: 12px;
-            text-align: center;
-        }
-
-        .termo-modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 10000;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-        }
-        .termo-modal-overlay.active { display: flex; }
-        .termo-modal {
-            background: #FFFFFF;
-            border-radius: 16px;
-            max-width: 500px;
-            width: 100%;
-            max-height: 80vh;
-            overflow-y: auto;
-            padding: 28px 24px;
-            position: relative;
-            animation: slideUp 0.3s ease;
-            text-align: left;
-        }
-        .termo-modal .close {
-            position: sticky;
-            top: 0;
-            float: right;
-            font-size: 28px;
-            cursor: pointer;
-            color: #9CA3AF;
-            background: none;
-            border: none;
-            padding: 0 4px;
-        }
-        .termo-modal .close:hover { color: #0066FF; }
-        .termo-modal h2 { font-size: 20px; color: #1A2B4C; margin-bottom: 16px; text-align: center; }
-        .termo-modal .termo-texto {
-            font-size: 13px;
-            line-height: 1.6;
-            color: #4A5568;
-        }
-        .termo-modal .termo-texto strong { color: #1A2B4C; }
-        .termo-modal .termo-texto p { margin-bottom: 8px; }
-        .termo-modal .btn { width: 100%; }
-
-        .connection-status {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 8px;
-            text-align: center;
-            font-size: 12px;
-            z-index: 999;
-            display: none;
-        }
-        .connection-status.show { display: block; }
-        .connection-status.online { background: #D1FAE5; color: #059669; }
-        .connection-status.offline { background: #FEE2E2; color: #DC2626; }
-        .connection-status.poor { background: #FEF3C7; color: #D97706; }
-
-        .item-card {
-            background: #FFFFFF;
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-            border: 1px solid #E5E7EB;
-            margin-bottom: 20px;
-            transition: all 0.3s;
-            width: 100%;
-        }
-        .item-card .info { padding: 20px; text-align: center; }
-
-        .premio-container {
-            margin: 8px 0 16px 0;
-            text-align: center;
-        }
-        .premio-container .label-premio {
-            font-size: 13px;
-            color: #6B7280;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 8px;
-            display: block;
-        }
-        .premio-container .imagem-premio-wrapper {
-            position: relative;
-            display: inline-block;
-            cursor: pointer;
-            border-radius: 12px;
-            overflow: hidden;
-            border: 3px solid #E5E7EB;
-            transition: all 0.3s;
-            background: #F8F9FA;
-            max-width: 100%;
-        }
-        .premio-container .imagem-premio-wrapper:hover {
-            border-color: #0066FF;
-            box-shadow: 0 4px 20px rgba(0,102,255,0.15);
-            transform: scale(1.01);
-        }
-        .premio-container .imagem-premio-wrapper img {
-            display: block;
-            width: 100%;
-            height: auto;
-            max-height: 300px;
-            object-fit: contain;
-            background: #FFFFFF;
-            padding: 8px;
-        }
-        .premio-container .imagem-premio-wrapper .emoji-grande {
-            font-size: 80px;
-            padding: 20px;
-            display: block;
-            background: #F8F9FA;
-        }
-        .premio-container .imagem-premio-wrapper .zoom-hint {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            background: rgba(0,0,0,0.6);
-            color: #fff;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 500;
-            opacity: 0.8;
-            pointer-events: none;
-        }
-        .premio-container .valor-premio {
-            margin-top: 8px;
-            font-size: 16px;
-            color: #6B7280;
-        }
-        .premio-container .valor-premio strong {
-            color: #0066FF;
-            font-size: 20px;
-        }
-
-        .zoom-modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.85);
-            z-index: 10000;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            cursor: pointer;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-        }
-        .zoom-modal-overlay.active { display: flex; }
-        .zoom-modal-overlay .zoom-content {
-            max-width: 90vw;
-            max-height: 90vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            animation: zoomIn 0.3s ease;
-        }
-        @keyframes zoomIn {
-            from { transform: scale(0.8); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-        .zoom-modal-overlay .zoom-content img {
-            max-width: 90vw;
-            max-height: 90vh;
-            object-fit: contain;
-            border-radius: 12px;
-            border: 3px solid #FFD700;
-            box-shadow: 0 0 60px rgba(255,215,0,0.2);
-            background: #fff;
-            padding: 8px;
-        }
-        .zoom-modal-overlay .zoom-content .emoji-zoom {
-            font-size: 120px;
-            padding: 40px;
-            background: #fff;
-            border-radius: 12px;
-            border: 3px solid #FFD700;
-            box-shadow: 0 0 60px rgba(255,215,0,0.2);
-        }
-        .zoom-modal-overlay .fechar-zoom {
-            position: fixed;
-            top: 20px;
-            right: 30px;
-            font-size: 40px;
-            color: #fff;
-            cursor: pointer;
-            transition: all 0.3s;
-            z-index: 10001;
-            background: none;
-            border: none;
-            text-shadow: 0 0 20px rgba(0,0,0,0.5);
-        }
-        .zoom-modal-overlay .fechar-zoom:hover {
-            transform: rotate(90deg);
-            color: #FFD700;
-        }
-
-        /* ===== TIMER MELHORADO ===== */
-        .timer-destaque {
-            background: linear-gradient(135deg, #1A2B4C, #0066FF);
-            border-radius: 16px;
-            padding: 20px 24px;
-            margin: 12px 0;
-            color: #fff;
-            box-shadow: 0 4px 20px rgba(0,102,255,0.3);
-            text-align: center;
-            transition: background 0.5s ease;
-        }
-        .timer-destaque .label-tempo {
-            font-size: 13px;
-            opacity: 0.8;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 8px;
-        }
-        .timer-destaque .relogio {
-            font-size: 38px;
+        .header-left h1 {
+            font-size: 1.6rem;
             font-weight: 700;
-            letter-spacing: 1px;
-            font-family: 'Courier New', monospace;
-            text-shadow: 0 0 20px rgba(255,255,255,0.15);
+            color: #1A2B4C;
+            margin: 0;
+        }
+        .header-right {
             display: flex;
-            justify-content: center;
+            gap: 10px;
             align-items: center;
-            gap: 6px;
             flex-wrap: wrap;
+            margin-top: 4px;
         }
-        .timer-destaque .relogio .dias {
-            font-size: 42px;
-            color: #FFD700;
-            font-weight: 800;
-        }
-        .timer-destaque .relogio .dias-label {
-            font-size: 18px;
-            color: #FFD700;
-            font-weight: 600;
-            margin-right: 8px;
-        }
-        .timer-destaque .relogio .tempo-numero {
-            font-size: 36px;
+        .badge-status {
+            padding: 4px 14px;
+            border-radius: 30px;
+            font-size: 0.75rem;
             font-weight: 700;
-            min-width: 40px;
-            display: inline-block;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: #10B981;
+            color: #fff;
+            animation: piscar 1.2s infinite;
         }
-        .timer-destaque .relogio .tempo-separador {
-            font-size: 28px;
-            color: rgba(255,255,255,0.3);
-            font-weight: 300;
+        .badge-status.encerrado {
+            background: #6B7280;
+            animation: none;
         }
-        .timer-destaque .relogio .tempo-label {
-            font-size: 16px;
-            opacity: 0.7;
-            font-weight: 500;
-            margin: 0 2px;
-        }
-        .timer-destaque .relogio.encerrado .dias { color: #FF6B6B; }
-        .timer-destaque .relogio.encerrado .dias-label { color: #FF6B6B; }
-        .timer-destaque .lance-atual {
-            font-size: 18px;
-            margin-top: 12px;
-        }
-        .timer-destaque .lance-atual .valor {
-            font-size: 28px;
-            font-weight: 700;
-            color: #FFD700;
-        }
-        .timer-destaque .timer-status {
-            font-size: 14px;
-            margin-top: 10px;
-            opacity: 0.9;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-        .timer-destaque .timer-status.urgente {
-            animation: piscarTimer 0.8s infinite;
-            font-weight: 700;
-        }
-        @keyframes piscarTimer {
+        @keyframes piscar {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.4; }
         }
-
-        .item-card .info h2 { 
-            font-size: 24px; 
-            margin-bottom: 4px; 
-            color: #1A2B4C;
-            font-weight: 700;
-            text-align: center;
-        }
-        .item-card .info .desc { 
-            color: #6B7280; 
-            font-size: 14px; 
-            margin-bottom: 8px; 
-            line-height: 1.4;
-            text-align: center;
-        }
-        .item-card .info .lances-count {
-            color: #6B7280;
-            font-size: 13px;
-            text-align: center;
-        }
-
-        .item-card .info .lance-fixo {
-            margin-top: 16px;
-            padding: 16px 20px;
-            background: linear-gradient(135deg, #F0F7FF, #E8F0FE);
-            border-radius: 16px;
-            border: 2px solid #0066FF;
-            text-align: center;
-        }
-        .item-card .info .lance-fixo .label-proximo {
-            font-size: 14px;
-            color: #6B7280;
-            margin-bottom: 4px;
-        }
-        .item-card .info .lance-fixo .valor-proximo {
-            font-size: 32px;
-            font-weight: 800;
+        .usuario-badge {
+            background: #EBF5FF;
             color: #0066FF;
-            margin-bottom: 10px;
-        }
-        .item-card .info .lance-fixo .btn-lance-fixo {
-            width: 100%;
-            padding: 18px;
-            border: none;
-            border-radius: 14px;
-            background: linear-gradient(135deg, #10B981, #059669);
-            color: #fff;
-            font-size: 20px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.15s;
-            -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
-            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35);
-        }
-        .item-card .info .lance-fixo .btn-lance-fixo:active {
-            transform: scale(0.96);
-            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
-        }
-        .item-card .info .lance-fixo .btn-lance-fixo:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none !important;
-            background: #888;
-            box-shadow: none;
-        }
-        .item-card .info .lance-fixo .btn-lance-fixo .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 2px solid #fff;
-            border-top: 2px solid transparent;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            vertical-align: middle;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .item-card .info .lance-fixo .regra {
-            font-size: 12px;
-            color: #9CA3AF;
-            margin-top: 10px;
-        }
-        .item-card .info .lance-fixo .lance-rapido-hint {
-            font-size: 12px;
-            color: #0066FF;
-            margin-top: 6px;
-            font-weight: 500;
-        }
-
-        .item-card .info .ultimos-lances {
-            margin-top: 16px;
-            text-align: left;
-        }
-        .item-card .info .ultimos-lances h4 {
-            color: #1A2B4C;
-            margin-bottom: 8px;
-            font-size: 14px;
-            text-align: center;
-        }
-        .item-card .info .ultimos-lances .lance-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 12px;
-            border-bottom: 1px solid #F3F4F6;
-            font-size: 13px;
-            background: #FAFAFA;
-            border-radius: 4px;
-            margin-bottom: 2px;
-            text-align: left;
-        }
-        .item-card .info .ultimos-lances .lance-item .usuario {
-            font-weight: 500;
-            color: #1A2B4C;
-            flex: 1;
-            text-align: left;
-        }
-        .item-card .info .ultimos-lances .lance-item .valor {
-            color: #0066FF;
+            padding: 4px 14px;
+            border-radius: 30px;
+            font-size: 0.8rem;
             font-weight: 600;
-            text-align: center;
-            min-width: 80px;
-        }
-        .item-card .info .ultimos-lances .lance-item .data {
-            color: #9CA3AF;
-            font-size: 11px;
-            text-align: right;
-            min-width: 120px;
-        }
-        .item-card .info .btn-ver-ranking {
-            margin-top: 12px;
-            padding: 8px 16px;
-            border: 2px solid #0066FF;
-            border-radius: 8px;
-            background: transparent;
-            color: #0066FF;
             cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
-            transition: all 0.3s;
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
-            text-align: center;
+            border: 2px dashed #0066FF;
+            white-space: nowrap;
+            transition: 0.2s;
         }
-        .item-card .info .btn-ver-ranking:hover { background: #0066FF; color: #fff; }
+        .usuario-badge:hover { background: #D6EBFF; }
 
-        .celebracao-container {
-            background: linear-gradient(135deg, #FFD700, #FF6B00);
-            border-radius: 16px;
-            padding: 24px;
-            margin: 12px 0;
-            text-align: center;
-            border: 4px solid #FFD700;
-            box-shadow: 0 0 60px rgba(255, 215, 0, 0.4);
-            animation: pulse-gold 1.5s ease-in-out infinite alternate;
-        }
-        @keyframes pulse-gold {
-            0% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.3); transform: scale(1); }
-            100% { box-shadow: 0 0 80px rgba(255, 215, 0, 0.6); transform: scale(1.02); }
-        }
-        .celebracao-container .trofeu-grande { font-size: 72px; display: block; margin-bottom: 8px; }
-        .celebracao-container .titulo-celebracao { font-size: 28px; font-weight: 800; color: #5D3A00; text-transform: uppercase; letter-spacing: 2px; }
-        .celebracao-container .vencedor-nome { font-size: 32px; font-weight: 900; color: #2D1A00; margin: 8px 0; }
-        .celebracao-container .vencedor-valor { font-size: 24px; font-weight: 700; color: #2D1A00; }
-        .celebracao-container .vencedor-meta { font-size: 18px; color: #2D1A00; margin-top: 4px; opacity: 0.9; }
-        .celebracao-container .confetes { font-size: 40px; letter-spacing: 8px; display: block; margin-top: 8px; }
-
-        .ranking-section {
-            background: #FFFFFF;
+        .produto-card {
+            display: flex;
+            gap: 20px;
+            background: #F7FAFC;
             border-radius: 16px;
             padding: 20px;
-            margin-top: 20px;
-            border: 1px solid #E5E7EB;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-            width: 100%;
-        }
-        .ranking-section h2 {
-            font-size: 20px;
-            color: #1A2B4C;
-            margin-bottom: 12px;
-            text-align: center;
-        }
-        .ranking-section h2 span { color: #0066FF; }
-        .ranking-tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
+            margin-bottom: 20px;
+            align-items: center;
             flex-wrap: wrap;
             justify-content: center;
         }
-        .ranking-tabs button {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 8px;
-            background: #F3F4F6;
-            color: #6B7280;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: 600;
-            font-size: 13px;
+        .produto-card .imagem {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 12px;
+            border: 2px solid #E5E7EB;
+            background: #fff;
         }
-        .ranking-tabs button.active { background: #0066FF; color: #fff; }
-        .ranking-tabs button:hover:not(.active) { background: #E5E7EB; }
-        .ranking-list { display: grid; gap: 6px; }
-        .ranking-item {
+        .produto-card .imagem.emoji {
+            font-size: 64px;
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 8px 12px;
-            background: #F8F9FA;
-            border-radius: 8px;
-            transition: all 0.3s;
-            cursor: pointer;
-            text-align: left;
+            justify-content: center;
+            background: #F7FAFC;
         }
-        .ranking-item:hover { background: #F3F4F6; transform: translateX(4px); }
-        .ranking-item .pos {
-            font-weight: 700;
-            color: #0066FF;
-            font-size: 14px;
-            min-width: 32px;
+        .produto-info {
             text-align: center;
         }
-        .ranking-item .pos.gold { color: #F59E0B; }
-        .ranking-item .pos.silver { color: #9CA3AF; }
-        .ranking-item .pos.bronze { color: #D97706; }
-        .ranking-item .pos.vencedor { 
-            color: #FFD700; 
-            text-shadow: 0 0 10px rgba(255,215,0,0.5);
+        .produto-info h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #1A2B4C;
         }
-        .ranking-item .nome { flex: 1; font-weight: 500; color: #1A2B4C; font-size: 14px; text-align: left; }
-        .ranking-item .nome.vencedor {
-            color: #B8860B;
+        .produto-info p {
+            color: #6B7280;
+            font-size: 0.9rem;
+            margin-top: 4px;
+        }
+        .produto-info .preco-destaque {
+            font-size: 1.8rem;
             font-weight: 700;
+            color: #10B981;
+            margin-top: 6px;
         }
-        .ranking-item .valor { font-weight: 700; color: #0066FF; font-size: 14px; text-align: center; }
-        .ranking-item .valor.vencedor {
-            color: #FFD700;
-            text-shadow: 0 0 10px rgba(255,215,0,0.3);
+        .produto-info .preco-destaque.encerrado {
+            color: #DC2626;
         }
-        .ranking-item .extra { color: #6B7280; font-size: 12px; text-align: right; }
-        .ranking-item .trofeu { font-size: 18px; }
+
+        .timer {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .timer .bloco {
+            background: #F3F4F6;
+            border-radius: 12px;
+            padding: 8px 18px;
+            text-align: center;
+            min-width: 70px;
+        }
+        .timer .bloco .numero {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1A2B4C;
+            line-height: 1.2;
+        }
+        .timer .bloco .legenda {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            color: #6B7280;
+            letter-spacing: 0.5px;
+        }
+        .timer .bloco.encerrado .numero {
+            color: #DC2626;
+        }
+
+        .lance-area {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+        .btn {
+            padding: 12px 32px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.2s;
+            background: #0066FF;
+            color: #fff;
+        }
+        .btn:hover { background: #0052CC; transform: translateY(-2px); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-success { background: #10B981; }
+        .btn-success:hover { background: #059669; }
+        .btn-outline { background: transparent; border: 2px solid #0066FF; color: #0066FF; }
+        .btn-outline:hover { background: #0066FF; color: #fff; }
+
+        .premios-container {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+            margin-bottom: 24px;
+            width: 100%;
+        }
+        .premio-box {
+            flex: 1;
+            min-width: 160px;
+            max-width: 260px;
+            background: #F7FAFC;
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid #E5E7EB;
+            text-align: center;
+        }
+        .premio-box h3 {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #1A2B4C;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        .premio-box img {
+            width: 100%;
+            max-width: 100px;
+            border-radius: 10px;
+            border: 2px solid #E5E7EB;
+            margin: 0 auto 8px auto;
+            display: block;
+        }
+        .premio-box .premio-nome {
+            font-weight: 600;
+            color: #0066FF;
+            font-size: 0.9rem;
+            margin-top: 4px;
+            text-align: center;
+        }
+        .premio-box .premio-desc {
+            font-size: 0.75rem;
+            color: #6B7280;
+            text-align: center;
+        }
+        .premio-box .sem-premio {
+            color: #9CA3AF;
+            font-size: 0.8rem;
+            padding: 8px 0;
+        }
+
+        .rankings {
+            margin-top: 24px;
+            border-top: 2px solid #F3F4F6;
+            padding-top: 20px;
+            width: 100%;
+            text-align: center;
+        }
+        .rankings h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1A2B4C;
+            margin-bottom: 14px;
+            text-align: center;
+        }
+        .tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 14px;
+        }
+        .tab {
+            padding: 6px 16px;
+            border: 2px solid #E5E7EB;
+            border-radius: 30px;
+            background: #fff;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.8rem;
+            transition: 0.2s;
+            color: #4A5568;
+        }
+        .tab:hover { border-color: #0066FF; }
+        .tab.active { background: #0066FF; color: #fff; border-color: #0066FF; }
+
+        .ranking-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            width: 100%;
+        }
+        .ranking-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 14px;
+            background: #F7FAFC;
+            border-radius: 10px;
+            flex-wrap: wrap;
+            gap: 6px;
+            width: 100%;
+        }
+        .ranking-item .pos {
+            font-weight: 700;
+            color: #4A5568;
+            min-width: 30px;
+            font-size: 0.9rem;
+        }
+        .ranking-item .nome {
+            font-weight: 500;
+            color: #1A2B4C;
+            flex: 1;
+            cursor: pointer;
+            color: #0066FF;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+        .ranking-item .nome:hover { text-decoration: underline; }
+        .ranking-item .valor {
+            font-weight: 600;
+            color: #0066FF;
+            font-size: 0.9rem;
+        }
+        .ranking-item .premio-badge {
+            background: #FCD34D;
+            color: #78350F;
+            padding: 2px 10px;
+            border-radius: 30px;
+            font-size: 0.65rem;
+            font-weight: 600;
+        }
+        .ranking-item.top1 { background: #FEF3C7; border: 2px solid #FCD34D; }
+        .ranking-item.top2 { background: #F3F4F6; border: 2px solid #D1D5DB; }
+        .ranking-item.top3 { background: #FEF3C7; border: 2px solid #FDBA74; }
+
+        .rankings .legenda-clique {
+            margin-top: 10px;
+            font-size: 0.75rem;
+            color: #6B7280;
+            text-align: center;
+        }
 
         .modal-overlay {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.4);
-            z-index: 1000;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
             justify-content: center;
             align-items: center;
+            z-index: 1000;
             padding: 16px;
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
         }
-        .modal-overlay.active { display: flex; }
+        .modal-overlay.open { display: flex; }
         .modal {
-            background: #FFFFFF;
-            border-radius: 16px;
-            max-width: 440px;
+            background: #fff;
+            border-radius: 20px;
+            padding: 28px;
+            max-width: 520px;
             width: 100%;
             max-height: 90vh;
             overflow-y: auto;
-            padding: 24px;
-            position: relative;
-            animation: slideUp 0.3s ease;
-            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            animation: modalIn 0.3s ease;
+        }
+        @keyframes modalIn {
+            from { transform: scale(0.95) translateY(10px); opacity: 0; }
+            to { transform: scale(1) translateY(0); opacity: 1; }
         }
         .modal .close {
-            position: absolute;
-            top: 12px;
-            right: 16px;
-            font-size: 24px;
-            cursor: pointer;
-            color: #9CA3AF;
+            float: right;
             background: none;
             border: none;
-            transition: color 0.3s;
-            padding: 4px 8px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #9CA3AF;
+            padding: 0 4px;
         }
-        .modal .close:hover { color: #0066FF; }
-        .modal h2 { font-size: 22px; color: #1A2B4C; margin-bottom: 16px; text-align: center; }
-
-        .pix-area {
-            text-align: center;
-            padding: 16px;
-            background: #F8F9FA;
-            border-radius: 12px;
-        }
-        .pix-area .status-container {
-            margin: 0 0 12px 0;
-            padding: 12px;
-            border-radius: 8px;
-            background: #fff;
-            border: 1px solid #E5E7EB;
-        }
-        .pix-area .status-container .status-label {
-            font-size: 13px;
-            color: #6B7280;
-        }
-        .pix-area .status-container .status-text {
-            font-size: 16px;
-            font-weight: 600;
-            margin-top: 4px;
-        }
-        .pix-area .status-container .status-text.pendente { color: #FF8C00; }
-        .pix-area .status-container .status-text.confirmado { color: #10B981; }
-        .pix-area .status-container .status-text.erro { color: #DC2626; }
-        .pix-area .valor {
-            font-size: 30px;
+        .modal .close:hover { color: #1A2B4C; }
+        .modal h2 {
+            font-size: 1.3rem;
             font-weight: 700;
-            color: #0066FF;
-            margin: 12px 0;
-        }
-        .pix-area .qr-code {
-            margin: 12px auto;
-            max-width: 220px;
-            background: #fff;
-            padding: 10px;
-            border-radius: 12px;
-            border: 2px solid #E5E7EB;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .pix-area .qr-code img { width: 100%; display: block; border-radius: 4px; }
-        .pix-area .qr-code-fallback {
-            margin: 12px auto;
-            padding: 12px;
-            background: #fff;
-            border-radius: 12px;
-            border: 2px solid #E5E7EB;
-            font-family: monospace;
-            font-size: 10px;
-            line-height: 1.2;
             color: #1A2B4C;
+            margin-bottom: 6px;
             text-align: center;
-            white-space: pre-wrap;
-            word-break: break-all;
-            max-width: 220px;
         }
-        .pix-area .pix-label {
+        .modal .subtitle {
             color: #6B7280;
-            font-size: 13px;
-            margin: 12px 0 6px 0;
+            font-size: 0.85rem;
+            margin-bottom: 16px;
+            text-align: center;
         }
-        .pix-area .pix-link {
-            background: #fff;
-            padding: 8px 12px;
-            border-radius: 8px;
-            word-break: break-all;
-            font-size: 12px;
+        .modal .campo { margin-bottom: 12px; }
+        .modal .campo label {
+            display: block;
+            font-weight: 600;
             color: #1A2B4C;
-            border: 1px solid #E5E7EB;
-            margin: 0 auto 8px auto;
-            font-family: monospace;
-            cursor: pointer;
-            transition: all 0.3s;
-            max-width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            font-size: 0.8rem;
+            margin-bottom: 4px;
+            text-align: left;
         }
-        .pix-area .pix-link:hover { border-color: #0066FF; background: #F8F9FA; }
-        .pix-area .pix-link input {
+        .modal .campo label .obrigatorio { color: #DC2626; font-weight: 700; }
+        .modal .campo label .opcional { color: #6B7280; font-weight: 400; font-size: 0.75rem; }
+        .modal .campo input {
             width: 100%;
-            background: transparent;
-            border: none;
-            font-family: monospace;
-            font-size: 12px;
-            color: #1A2B4C;
-            outline: none;
-            text-align: center;
-        }
-        .pix-area .btn-copiar {
-            padding: 8px 20px;
-            border: none;
-            border-radius: 8px;
-            background: #10B981;
-            color: #fff;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 4px;
-        }
-        .pix-area .btn-copiar:hover { background: #059669; }
-        .pix-area .btn-confirmar {
-            padding: 10px 24px;
-            border: none;
-            border-radius: 8px;
-            background: #FF8C00;
-            color: #fff;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 8px;
-            display: none;
-        }
-        .pix-area .btn-confirmar:hover { background: #E67E00; }
-        .pix-area .btn-confirmar:disabled { opacity: 0.5; }
-        .pix-area .info-text {
-            color: #6B7280;
-            font-size: 12px;
-            margin-top: 12px;
-        }
-        .pix-area .loading-spinner {
-            display: inline-block;
-            width: 18px;
-            height: 18px;
-            border: 3px solid #F3F4F6;
-            border-top: 3px solid #FF8C00;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin: 8px auto;
-        }
-
-        .msg {
             padding: 10px 14px;
-            border-radius: 8px;
-            margin: 8px auto;
-            display: none;
-            max-width: 800px;
+            border: 2px solid #E5E7EB;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            transition: 0.2s;
             text-align: center;
-            font-size: 14px;
-            width: 100%;
         }
-        .msg.erro { display: block; background: #FEE2E2; color: #DC2626; border-left: 4px solid #DC2626; }
-        .msg.sucesso { display: block; background: #D1FAE5; color: #059669; border-left: 4px solid #10B981; }
-        .msg.info { display: block; background: #DBEAFE; color: #2563EB; border-left: 4px solid #0066FF; }
+        .modal .campo input:focus {
+            border-color: #0066FF;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0,102,255,0.15);
+        }
+        .modal .campo input.erro { border-color: #DC2626; }
+        .modal .campo .erro-msg {
+            color: #DC2626;
+            font-size: 0.75rem;
+            margin-top: 4px;
+            display: none;
+            text-align: left;
+        }
+        .modal .info-box {
+            background: #EBF5FF;
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin: 10px 0 16px 0;
+            font-size: 0.8rem;
+            color: #0066FF;
+            border-left: 4px solid #0066FF;
+            text-align: left;
+        }
+        .modal .info-box strong { color: #1A2B4C; }
+        .modal .btn { width: 100%; margin-top: 6px; text-align: center; }
+        .modal .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-        .footer { 
-            text-align: center; 
-            padding: 20px; 
-            color: #9CA3AF; 
-            font-size: 12px; 
-            width: 100%;
+        .modal-termos .termos-texto {
+            max-height: 250px;
+            overflow-y: auto;
+            background: #F7FAFC;
+            padding: 16px;
+            border-radius: 12px;
+            margin: 12px 0;
+            font-size: 0.85rem;
+            color: #4A5568;
+            text-align: left;
+            border: 1px solid #E5E7EB;
         }
+        .modal-termos .termos-texto strong { color: #1A2B4C; }
 
-        @media (max-width: 480px) {
-            .item-card .info { padding: 14px; }
-            .item-card .info h2 { font-size: 20px; }
-            .item-card .info .lance-fixo .valor-proximo { font-size: 24px; }
-            .item-card .info .lance-fixo .btn-lance-fixo { font-size: 17px; padding: 16px; border-radius: 12px; }
-            .modal { padding: 18px; margin: 8px; }
-            .pix-area .valor { font-size: 26px; }
-            .ranking-item { padding: 6px 10px; gap: 8px; font-size: 12px; }
-            .ranking-item .pos { min-width: 24px; font-size: 12px; }
-            .pix-area .pix-link input { font-size: 11px; }
-            .pix-area .pix-link { padding: 6px 10px; }
-            .pix-area .qr-code { max-width: 180px; padding: 8px; }
-            .timer-destaque .relogio { font-size: 28px; letter-spacing: 1px; }
-            .timer-destaque .relogio .dias { font-size: 28px; }
-            .timer-destaque .relogio .tempo-numero { font-size: 22px; min-width: 28px; }
-            .timer-destaque .relogio .tempo-label { font-size: 12px; }
-            .timer-destaque .lance-atual .valor { font-size: 22px; }
-            .item-card .info .ultimos-lances .lance-item { flex-wrap: wrap; gap: 4px; padding: 6px 10px; font-size: 12px; }
-            .item-card .info .ultimos-lances .lance-item .data { min-width: auto; width: 100%; text-align: left; font-size: 10px; }
-            .premio-container .imagem-premio-wrapper img { max-height: 200px; }
-            .premio-container .imagem-premio-wrapper .emoji-grande { font-size: 56px; padding: 16px; }
-            .zoom-modal-overlay .zoom-content .emoji-zoom { font-size: 80px; padding: 30px; }
-            .celebracao-container .trofeu-grande { font-size: 48px; }
-            .celebracao-container .titulo-celebracao { font-size: 20px; }
-            .celebracao-container .vencedor-nome { font-size: 24px; }
-            .termo-simples p { font-size: 12px; }
-            .termo-aceite-simples label { font-size: 13px; }
-            .termo-modal { padding: 20px; margin: 10px; }
-            .termo-modal h2 { font-size: 18px; }
-            .popup { padding: 24px 20px; max-height: 90vh; }
-            .popup h2 { font-size: 22px; }
+        .modal-qr .modal { text-align: center; }
+        .modal-qr img {
+            max-width: 200px;
+            margin: 12px auto;
+            display: block;
+            border-radius: 12px;
         }
-        @media (max-width: 380px) {
-            .item-card .info h2 { font-size: 18px; }
-            .item-card .info .lance-fixo .valor-proximo { font-size: 20px; }
-            .item-card .info .lance-fixo .btn-lance-fixo { font-size: 15px; padding: 14px; }
-            .pix-area .qr-code { max-width: 150px; }
-            .timer-destaque .relogio { font-size: 22px; }
-            .timer-destaque .relogio .dias { font-size: 22px; }
-            .timer-destaque .relogio .tempo-numero { font-size: 18px; min-width: 20px; }
-            .timer-destaque .relogio .tempo-label { font-size: 10px; }
-            .premio-container .imagem-premio-wrapper img { max-height: 150px; }
-            .premio-container .imagem-premio-wrapper .emoji-grande { font-size: 44px; padding: 12px; }
-            .zoom-modal-overlay .zoom-content .emoji-zoom { font-size: 60px; padding: 20px; }
-            .celebracao-container .trofeu-grande { font-size: 36px; }
-            .celebracao-container .titulo-celebracao { font-size: 16px; }
-            .celebracao-container .vencedor-nome { font-size: 20px; }
-        }
-
-        * { -webkit-tap-highlight-color: transparent; }
-        input, button, select, textarea {
-            -webkit-appearance: none;
-            appearance: none;
+        .modal-qr .pix-codigo {
+            background: #F7FAFC;
+            padding: 10px;
             border-radius: 8px;
+            word-break: break-all;
+            font-size: 0.7rem;
+            color: #4A5568;
+            margin: 8px 0;
+            text-align: center;
+        }
+        .modal-qr .status-pagamento {
+            margin-top: 10px;
+            font-weight: 500;
+            color: #6B7280;
+            text-align: center;
+        }
+
+        .historico-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #F3F4F6;
+            font-size: 0.9rem;
+        }
+        .historico-total {
+            font-weight: 700;
+            margin-top: 10px;
+            color: #0066FF;
+            text-align: center;
+        }
+
+        @media (max-width: 600px) {
+            .container { padding: 16px; }
+            .header { flex-direction: column; align-items: flex-start; gap: 6px; }
+            .header-right { align-self: flex-start; width: 100%; justify-content: flex-start; }
+            .produto-card { flex-direction: column; align-items: center; text-align: center; }
+            .produto-card .imagem { width: 80px; height: 80px; }
+            .produto-card .imagem.emoji { font-size: 48px; }
+            .btn { width: 100%; padding: 12px; font-size: 0.95rem; }
+            .timer .bloco { min-width: 55px; padding: 6px 12px; }
+            .timer .bloco .numero { font-size: 1.5rem; }
+            .header-left h1 { font-size: 1.3rem; }
+            .modal { padding: 20px; }
+            .ranking-item { flex-direction: column; align-items: center; text-align: center; }
+            .ranking-item .nome { text-align: center; }
+            .premios-container { flex-direction: column; align-items: center; }
+            .premio-box { max-width: 100%; min-width: unset; width: 100%; }
+        }
+        @media (min-width: 601px) and (max-width: 1024px) {
+            .container { padding: 20px; }
+            .produto-card .imagem { width: 100px; height: 100px; }
+        }
+        @media (min-width: 1025px) {
+            .container { padding: 28px; }
         }
     </style>
 </head>
 <body>
-    <header class="header">
-        <h1><span class="emoji-header">⚡</span> <span>Leilão</span> Fácil</h1>
-        <div class="user-info" id="userInfoHeader">
-            <span class="ao-vivo">🔴 AO VIVO</span>
-            <span class="nome-usuario" id="userNameHeader" onclick="abrirMudarNome()">👤 Convidado</span>
-            <button class="btn-sair-header" id="btnSair" onclick="fecharJanela()" style="display:none;">✕ Sair</button>
+
+<div class="container" id="app">
+    <div class="header">
+        <div class="header-left">
+            <span class="campanha-nome" id="campanhaNome">Carregando campanha...</span>
+            <h1 id="produtoTitulo">Carregando...</h1>
         </div>
-    </header>
-
-    <div id="connectionStatus" class="connection-status"></div>
-
-    <div class="container">
-        <div class="popup-overlay" id="popupInicial">
-            <div class="popup">
-                <div class="logo">⚡</div>
-                <h2>Identifique-se</h2>
-                <p class="subtitle">Digite seu nome e e-mail para participar e concorrer ao prêmio!</p>
-                <div class="form-group">
-                    <label>Como você gosta de ser chamado?</label>
-                    <input type="text" id="inputNome" placeholder="Ex: João Silva" maxlength="50">
-                </div>
-                <div class="form-group">
-                    <label>Seu melhor e-mail</label>
-                    <input type="email" id="inputEmail" placeholder="seu@email.com">
-                </div>
-
-                <div class="termo-simples">
-                    <p>
-                        Ao participar, você aceita os 
-                        <span class="link-termo" onclick="abrirTermoCompleto()">Termos de Participação</span> 
-                        (LGPD, regras do leilão e premiação com frete grátis).
-                    </p>
-                    <div class="termo-aceite-simples" id="termoAceiteBox" onclick="toggleCheckbox()">
-                        <input type="checkbox" id="aceiteTermo" required>
-                        <label for="aceiteTermo">
-                            <span class="destaque">Li e aceito</span> os termos de participação
-                            <span class="obrigatorio">*</span>
-                        </label>
-                        <span class="status-icone" id="statusIcone">☐</span>
-                    </div>
-                </div>
-
-                <button class="btn btn-primary" id="btnEntrarPopup" onclick="entrarPopup()" disabled>🎯 Participar do Leilão</button>
-                <p style="color:#9CA3AF;font-size:12px;margin-top:12px;text-align:center;">⚡ Sua identificação é usada apenas para o lance e premiação</p>
-            </div>
+        <div class="header-right">
+            <span class="badge-status" id="statusLeilao">AO VIVO</span>
+            <span class="usuario-badge" id="usuarioBadge" onclick="abrirModalNome()">
+                <span id="nomeUsuarioDisplay">Convidado</span>
+            </span>
         </div>
+    </div>
 
-        <div class="termo-modal-overlay" id="termoModal">
-            <div class="termo-modal">
-                <button class="close" onclick="fecharTermoCompleto()">✕</button>
-                <h2>📋 Termo de Participação</h2>
-                <div class="termo-texto">
-                    <p><strong>1. SOBRE ESTE TERMO</strong></p>
-                    <p>Este Termo de Participação regula a relação entre a plataforma <strong>Leilão Fácil</strong> e os participantes dos leilões realizados em nosso site. Ao participar, você declara ter lido, compreendido e aceito integralmente todas as cláusulas abaixo.</p>
-                    <br>
-                    <p><strong>2. DA LEGALIDADE E TRIBUTAÇÃO</strong></p>
-                    <p>O Leilão Fácil é uma plataforma digital que realiza leilões de produtos, sendo uma atividade comercial lícita, regida pela Lei Federal nº 10.406/2002 (Código Civil) e demais legislações aplicáveis.</p>
-                    <p>Todos os valores arrecadados estão sujeitos à tributação conforme a legislação brasileira, incluindo IRPJ, CSLL, PIS, COFINS e ISS, sendo de responsabilidade exclusiva do operador da plataforma o recolhimento dos tributos devidos.</p>
-                    <br>
-                    <p><strong>3. DA PROTEÇÃO DE DADOS (LGPD - Lei nº 13.709/2018)</strong></p>
-                    <p>A Leilão Fácil está em conformidade com a Lei Geral de Proteção de Dados (LGPD). Seus dados pessoais (nome, e-mail e endereço IP) serão coletados e tratados com finalidades específicas e legítimas:</p>
-                    <p>• Identificação dos participantes nos lances e histórico de participação;</p>
-                    <p>• Comunicação sobre o andamento do leilão e resultados;</p>
-                    <p>• Cumprimento de obrigações legais e fiscais;</p>
-                    <p>• Envio da premiação ao vencedor.</p>
-                    <p>Seus dados não serão compartilhados com terceiros sem seu consentimento expresso, exceto quando exigido por lei ou para cumprimento de obrigações contratuais (ex: transportadora para entrega do prêmio).</p>
-                    <p>Você pode solicitar a qualquer momento a correção, atualização ou exclusão de seus dados pessoais através do e-mail: <strong>contato@leilao.com.br</strong>. Garantimos a segurança e confidencialidade das informações coletadas.</p>
-                    <br>
-                    <p><strong>4. DAS REGRAS DO LEILÃO</strong></p>
-                    <p>4.1. <strong>Lances:</strong> Cada lance equivale a um acréscimo de R$ 0,01 (um centavo) sobre o valor atual do item. O lance é confirmado somente após a aprovação do pagamento via PIX.</p>
-                    <p>4.2. <strong>Duração:</strong> O leilão tem duração máxima de até 30 (trinta) dias a partir do primeiro lance. Caso o período máximo seja atingido sem que a meta seja alcançada, o leilão será encerrado e o item com maior lance será declarado vencedor.</p>
-                    <p>4.3. <strong>Vencedor:</strong> Será declarado vencedor o participante que, ao final do período do leilão, tiver realizado o maior lance. Em caso de empate, vencerá o lance mais antigo (primeiro a ser registrado).</p>
-                    <p>4.4. <strong>Valores:</strong> Os valores pagos em lances não são reembolsáveis, exceto em caso de falha comprovada da plataforma que impeça a realização do leilão de forma justa.</p>
-                    <br>
-                    <p><strong>5. DA PREMIAÇÃO E ENTREGA</strong></p>
-                    <p>5.1. <strong>Prêmio:</strong> O prêmio descrito na campanha será entregue ao vencedor conforme as especificações divulgadas no anúncio do leilão.</p>
-                    <p>5.2. <strong>Frete:</strong> O valor do frete para entrega do prêmio será <strong>integralmente custeado pela plataforma Leilão Fácil</strong>, sem nenhum custo adicional para o vencedor. A entrega será realizada em até 7 (sete) dias úteis após a confirmação do lance vencedor.</p>
-                    <p>5.3. <strong>Endereço:</strong> O vencedor deverá fornecer endereço completo e dados de contato para que a entrega seja realizada. Caso o vencedor não forneça as informações no prazo de 5 (cinco) dias úteis, a plataforma entrará em contato para regularização, sob pena de cancelamento da premiação.</p>
-                    <p>5.4. <strong>Transportadora:</strong> A entrega será realizada via correio ou transportadora parceira, com rastreamento disponibilizado ao vencedor.</p>
-                    <br>
-                    <p><strong>6. DAS RESPONSABILIDADES DA PLATAFORMA</strong></p>
-                    <p>6.1. A Leilão Fácil se compromete a manter a integridade e transparência do sistema, garantindo a lisura de todo o processo.</p>
-                    <p>6.2. A plataforma se responsabiliza pela entrega da premiação ao vencedor, arcando com todos os custos de frete.</p>
-                    <p>6.3. Em caso de problemas técnicos que impeçam o andamento normal do leilão, a plataforma se compromete a comunicar os participantes e adotar as medidas corretivas cabíveis.</p>
-                    <br>
-                    <p><strong>7. DAS RESPONSABILIDADES DO PARTICIPANTE</strong></p>
-                    <p>7.1. O participante é responsável pela veracidade e precisão das informações fornecidas durante o cadastro e participação no leilão.</p>
-                    <p>7.2. O participante declara ter capacidade legal para participar do leilão, sendo maior de 18 (dezoito) anos ou devidamente autorizado por seus responsáveis legais.</p>
-                    <p>7.3. O participante reconhece que os valores dos lances são definitivos e não passíveis de estorno, exceto nas situações previstas neste termo.</p>
-                    <br>
-                    <p><strong>8. DA COMUNICAÇÃO</strong></p>
-                    <p>8.1. A plataforma se compromete a comunicar todos os participantes sobre o resultado do leilão, enviando e-mail ao vencedor e atualizando o ranking publicamente.</p>
-                    <p>8.2. O vencedor será contatado através do e-mail cadastrado para combinar os detalhes da entrega.</p>
-                    <br>
-                    <p><strong>9. DA CONCORRÊNCIA DESLEAL E FRAUDE</strong></p>
-                    <p>9.1. É expressamente proibido o uso de qualquer mecanismo automático (bots, scripts ou softwares) para realizar lances de forma automatizada.</p>
-                    <p>9.2. A plataforma monitora continuamente o sistema para identificar e prevenir tentativas de fraude. Caso seja identificada qualquer irregularidade, o participante poderá ser excluído do leilão e ter seus lances cancelados, sem direito a reembolso.</p>
-                    <br>
-                    <p><strong>10. DA ALTERAÇÃO DAS REGRAS</strong></p>
-                    <p>A Leilão Fácil se reserva o direito de atualizar este Termo de Participação a qualquer momento, notificando os participantes sobre as alterações através do site e/ou e-mail. As alterações entram em vigor a partir da data de publicação.</p>
-                    <br>
-                    <p><strong>11. DA ACEITAÇÃO</strong></p>
-                    <p>Ao marcar a caixa "Li e aceito os termos" e clicar em "Participar do Leilão", você declara ter lido, compreendido e aceito integralmente todos os termos acima, concordando com as regras, políticas e condições estabelecidas.</p>
-                    <br>
-                    <p style="text-align:center; color:#0066FF; font-weight:600;">📧 contato@leilao.com.br • Última atualização: Agosto/2026</p>
-                </div>
-                <button class="btn btn-primary" onclick="fecharTermoCompleto()" style="margin-top:16px;width:100%;">✅ Li e estou de acordo</button>
-            </div>
+    <div class="produto-card">
+        <div id="produtoImagemContainer">
+            <img id="produtoImagem" class="imagem" src="" alt="Produto" style="display:none;">
+            <div id="produtoEmoji" class="imagem emoji" style="display:none;">📦</div>
         </div>
-
-        <div class="popup-overlay hidden" id="popupMudarNome">
-            <div class="popup">
-                <h2>✏️ Mudar Nome</h2>
-                <p>Digite o novo nome que será exibido.</p>
-                <div class="form-group">
-                    <label>Novo nome</label>
-                    <input type="text" id="inputNovoNome" placeholder="Ex: João Silva" maxlength="50">
-                </div>
-                <div class="form-group" style="text-align:center; color:#6B7280; font-size:13px;">
-                    E-mail: <span id="emailAtualDisplay">carregando...</span>
-                </div>
-                <button class="btn btn-primary" id="btnMudarNome" onclick="confirmarMudarNome()">✅ Confirmar</button>
-                <button class="btn btn-secondary" onclick="fecharMudarNome()" style="margin-top:8px;width:100%;">Cancelar</button>
-            </div>
+        <div class="produto-info">
+            <h2 id="produtoNome">Carregando...</h2>
+            <p id="produtoDescricao"></p>
+            <div class="preco-destaque" id="lanceAtual">R$ 0,01</div>
         </div>
+    </div>
 
-        <div id="msgArea" class="msg"></div>
-        <div id="itemContainer" style="width:100%;">
-            <div style="text-align:center; padding:30px; color:#6B7280;">Carregando...</div>
+    <div class="timer" id="timerContainer">
+        <div class="bloco"><div class="numero" id="horas">--</div><div class="legenda">Horas</div></div>
+        <div class="bloco"><div class="numero" id="minutos">--</div><div class="legenda">Min</div></div>
+        <div class="bloco"><div class="numero" id="segundos">--</div><div class="legenda">Seg</div></div>
+    </div>
+
+    <div class="lance-area">
+        <button class="btn btn-success" id="btnLance" disabled>Dar lance (R$ 0,01)</button>
+    </div>
+
+    <div class="premios-container" id="premiosContainer">
+        <div class="premio-box">
+            <h3>Maior Lance</h3>
+            <img id="premio1Imagem" src="" alt="Premio 1" style="display:none;">
+            <div class="premio-nome" id="premio1Nome">Carregando...</div>
+            <div class="premio-desc" id="premio1Descricao"></div>
         </div>
+        <div class="premio-box">
+            <h3>Mais Lances</h3>
+            <img id="premio2Imagem" src="" alt="Premio 2" style="display:none;">
+            <div class="premio-nome" id="premio2Nome">Carregando...</div>
+            <div class="premio-desc" id="premio2Descricao"></div>
+        </div>
+        <div class="premio-box">
+            <h3>Menos Lances</h3>
+            <img id="premio3Imagem" src="" alt="Premio 3" style="display:none;">
+            <div class="premio-nome" id="premio3Nome">Carregando...</div>
+            <div class="premio-desc" id="premio3Descricao"></div>
+        </div>
+    </div>
 
-        <div class="ranking-section" id="rankingSection" style="display:none;">
-            <h2>🏆 <span>Ranking</span> (Top 10)</h2>
-            <div class="ranking-tabs">
-                <button class="active" onclick="carregarRanking('maior_lance')">Maior Lance</button>
-                <button onclick="carregarRanking('mais_lances')">Mais Lances</button>
-                <button onclick="carregarRanking('menos_lances')">Menos Lances</button>
-            </div>
+    <div class="rankings">
+        <h3>Rankings</h3>
+        <div class="tabs">
+            <button class="tab active" data-tab="valor">Maior Lance</button>
+            <button class="tab" data-tab="quantidade">Mais Lances</button>
+            <button class="tab" data-tab="menos">Menos Lances</button>
+        </div>
+        <div id="rankingContainer">
             <div class="ranking-list" id="rankingList">
-                <div style="text-align:center; color:#6B7280; padding:16px;">Carregando...</div>
+                <div style="text-align:center; color:#9CA3AF; padding:20px;">Carregando rankings...</div>
             </div>
         </div>
-
-        <div class="footer">Leilão Fácil • PIX integrado • Transparente</div>
+        <div class="legenda-clique">Clique no nome do usuario para ver historico</div>
     </div>
+</div>
 
-    <div class="modal-overlay" id="modalPix">
-        <div class="modal">
-            <button class="close" onclick="fecharPix()">✕</button>
-            <h2>💰 Pagamento PIX</h2>
-            <div class="pix-area">
-                <div id="pixStatusContainer" class="status-container">
-                    <div class="status-label">Status do Pagamento</div>
-                    <div class="status-text pendente" id="pixStatusText">⏳ Aguardando pagamento...</div>
-                </div>
-                <div class="valor" id="pixValor">R$ 0,00</div>
-                <div id="pixQrContainer">
-                    <div class="qr-code" id="qrCodeContainer" style="display:none;">
-                        <img id="qrCodeImage" src="" alt="QR Code PIX" style="width:100%;">
-                    </div>
-                    <div id="qrCodeFallback" style="display:none; padding:10px; background:#f0f0f0; border-radius:8px; margin:10px auto; max-width:220px; color:#555; font-size:13px;text-align:center;">QR Code disponível abaixo</div>
-                </div>
-                <p class="pix-label">Código para pagar (copia e cola):</p>
-                <div class="pix-link" onclick="copiarPix()">
-                    <input type="text" id="pixCodeInput" readonly value="Carregando...">
-                </div>
-                <button class="btn-copiar" onclick="copiarPix()">📋 Copiar Código</button>
-                <br>
-                <button class="btn-confirmar" id="btnConfirmarPix" onclick="confirmarPagamentoManual()">✅ Confirmar Pagamento</button>
-                <div id="verificandoContainer" style="margin-top:12px;">
-                    <div class="loading-spinner"></div>
-                    <p style="color:#FF8C00; font-size:14px; margin-top:4px;">⏳ Verificando pagamento...</p>
-                    <p style="color:#6B7280; font-size:12px;">Aguardando confirmação</p>
-                </div>
-                <p class="info-text" id="pixInfoText">⏱️ Após pagar, o sistema confirma automaticamente</p>
-            </div>
+<div class="modal-overlay modal-termos" id="termosAceiteModal">
+    <div class="modal">
+        <h2>Termos da Campanha</h2>
+        <p class="subtitle">Leia e aceite os termos para participar deste leilao.</p>
+        <div class="termos-texto" id="termosTexto">
+            <strong>Regras do Leilao</strong><br>
+            O lance minimo e de <strong>R$ 0,01</strong> por tentativa.<br>
+            O pagamento e realizado via <strong>Pix</strong> e e de responsabilidade do participante.<br>
+            O vencedor sera notificado por <strong>e-mail</strong> e tera <strong>24 horas</strong> para finalizar a compra.<br>
+            Nao havera reembolso apos a confirmacao do lance.<br>
+            Seus dados serao usados exclusivamente para contato sobre a premiacao.<br>
+            Ao participar, voce concorda com todas as regras estabelecidas.
         </div>
+        <button class="btn btn-success" id="btnAceitarTermos">Aceito e quero participar</button>
     </div>
+</div>
 
-    <div class="modal-overlay" id="modalHistorico">
-        <div class="modal" style="max-width:440px;">
-            <button class="close" onclick="fecharHistorico()">✕</button>
-            <h2 id="historicoTitle">👤 Histórico</h2>
-            <div id="historicoContent"></div>
+<div class="modal-overlay" id="nomeModal">
+    <div class="modal">
+        <button class="close" onclick="fecharNomeModal()">X</button>
+        <h2>Identificacao</h2>
+        <p class="subtitle">Preencha seus dados para participar do leilao.</p>
+        <div class="info-box">
+            <strong>Por que precisamos desses dados?</strong><br>
+            Se voce for o vencedor, utilizaremos seu <strong>e-mail</strong> para notificacao. O WhatsApp e opcional.
         </div>
-    </div>
-
-    <div class="zoom-modal-overlay" id="zoomModal" onclick="fecharZoom()">
-        <button class="fechar-zoom" onclick="fecharZoom()">✕</button>
-        <div class="zoom-content" id="zoomContent">
-            <img id="zoomImg" src="" alt="Prêmio Ampliado" style="display:none;">
-            <span id="zoomEmoji" class="emoji-zoom" style="display:none;"></span>
+        <div class="campo">
+            <label>Nome ou apelido <span class="obrigatorio">*</span></label>
+            <input type="text" id="nomeInput" placeholder="Como voce quer ser chamado" maxlength="30">
+            <div class="erro-msg" id="nomeErro">Digite um nome com pelo menos 2 caracteres.</div>
         </div>
+        <div class="campo">
+            <label>E-mail <span class="obrigatorio">*</span></label>
+            <input type="email" id="emailInput" placeholder="seu@email.com">
+            <div class="erro-msg" id="emailErro">Informe um e-mail valido.</div>
+        </div>
+        <div class="campo">
+            <label>WhatsApp <span class="opcional">(opcional)</span></label>
+            <input type="text" id="whatsappInput" placeholder="(11) 99999-9999">
+        </div>
+        <button class="btn btn-success" id="btnSalvarNome">Salvar e participar</button>
     </div>
+</div>
 
-    <script>
-        let socket = null, usuario = null, itemAtual = null, pagamentoAtual = null;
-        let timerInterval = null, verificacaoInterval = null, loadingItem = false;
-        let META_VALOR = 3.00, LEILAO_ENCERRADO = false, lastLanceCount = 0;
-        let refreshInterval = 15000;
-        let aguardandoLance = false;
+<div class="modal-overlay" id="historicoModal">
+    <div class="modal">
+        <button class="close" onclick="fecharHistorico()">X</button>
+        <h2 id="historicoNome">Usuario</h2>
+        <div id="historicoLista"></div>
+        <div class="historico-total" id="historicoTotal">Total investido: R$ 0,00</div>
+    </div>
+</div>
 
-        function toggleCheckbox() {
-            const checkbox = document.getElementById('aceiteTermo');
-            const box = document.getElementById('termoAceiteBox');
-            const icone = document.getElementById('statusIcone');
-            
-            checkbox.checked = !checkbox.checked;
-            
-            if (checkbox.checked) {
-                box.classList.add('checked');
-                icone.textContent = '✅';
+<div class="modal-overlay modal-qr" id="qrModal">
+    <div class="modal">
+        <button class="close" onclick="fecharQR()">X</button>
+        <h3>Escaneie o QR Code</h3>
+        <img id="qrCodeImagem" src="" alt="QR Code">
+        <p>Valor: <strong id="qrValor">R$ 0,01</strong></p>
+        <div class="pix-codigo" id="pixCodigo">Aguardando...</div>
+        <button class="btn" onclick="copiarPix()">Copiar codigo Pix</button>
+        <div class="status-pagamento" id="statusPagamento">Aguardando pagamento...</div>
+        <button class="btn btn-outline" onclick="fecharQR()" style="margin-top:8px;">Fechar</button>
+    </div>
+</div>
+
+<script>
+var lanceAtual = 0.01;
+var usuarioNome = '';
+var usuarioEmail = '';
+var usuarioWhatsapp = '';
+var termosAceitos = false;
+var campanhaSlugAtual = null;
+var campanhaAtual = null;
+var produtoAtual = null;
+var tempoRestante = null;
+var primeiroLanceRegistrado = false;
+var verificacaoInterval = null;
+var dadosRankings = null;
+var paymentIdAtual = null;
+var atualizacaoInterval = null;
+
+var btnLance = document.getElementById('btnLance');
+var nomeInput = document.getElementById('nomeInput');
+var emailInput = document.getElementById('emailInput');
+var whatsappInput = document.getElementById('whatsappInput');
+var btnSalvarNome = document.getElementById('btnSalvarNome');
+var nomeModal = document.getElementById('nomeModal');
+var nomeErro = document.getElementById('nomeErro');
+var emailErro = document.getElementById('emailErro');
+var nomeDisplay = document.getElementById('nomeUsuarioDisplay');
+var lanceAtualDisplay = document.getElementById('lanceAtual');
+var produtoImagem = document.getElementById('produtoImagem');
+var produtoEmoji = document.getElementById('produtoEmoji');
+var produtoNome = document.getElementById('produtoNome');
+var produtoDescricao = document.getElementById('produtoDescricao');
+var produtoTitulo = document.getElementById('produtoTitulo');
+var campanhaNome = document.getElementById('campanhaNome');
+var rankingList = document.getElementById('rankingList');
+var statusLeilao = document.getElementById('statusLeilao');
+var termosAceiteModal = document.getElementById('termosAceiteModal');
+var btnAceitarTermos = document.getElementById('btnAceitarTermos');
+var qrModal = document.getElementById('qrModal');
+var timerContainer = document.getElementById('timerContainer');
+
+var premio1Imagem = document.getElementById('premio1Imagem');
+var premio1Nome = document.getElementById('premio1Nome');
+var premio1Descricao = document.getElementById('premio1Descricao');
+var premio2Imagem = document.getElementById('premio2Imagem');
+var premio2Nome = document.getElementById('premio2Nome');
+var premio2Descricao = document.getElementById('premio2Descricao');
+var premio3Imagem = document.getElementById('premio3Imagem');
+var premio3Nome = document.getElementById('premio3Nome');
+var premio3Descricao = document.getElementById('premio3Descricao');
+
+var nomeSalvo = localStorage.getItem('leilao_nome');
+var emailSalvo = localStorage.getItem('leilao_email');
+var whatsappSalvo = localStorage.getItem('leilao_whatsapp');
+
+function validarEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
+function validarNome(nome) { return nome.trim().length >= 2; }
+
+if (nomeSalvo && emailSalvo) {
+    usuarioNome = nomeSalvo;
+    usuarioEmail = emailSalvo;
+    usuarioWhatsapp = whatsappSalvo || '';
+    nomeDisplay.textContent = usuarioNome;
+}
+
+function abrirModalNome() {
+    nomeInput.value = usuarioNome || '';
+    emailInput.value = usuarioEmail || '';
+    whatsappInput.value = usuarioWhatsapp || '';
+    nomeErro.style.display = 'none';
+    emailErro.style.display = 'none';
+    nomeModal.classList.add('open');
+}
+
+function fecharNomeModal() {
+    nomeModal.classList.remove('open');
+}
+
+nomeInput.addEventListener('input', function() {
+    if (validarNome(this.value)) { this.classList.remove('erro'); nomeErro.style.display = 'none'; }
+});
+emailInput.addEventListener('input', function() {
+    if (validarEmail(this.value)) { this.classList.remove('erro'); emailErro.style.display = 'none'; }
+});
+
+btnSalvarNome.addEventListener('click', function() {
+    var nome = nomeInput.value.trim();
+    var email = emailInput.value.trim();
+    var whatsapp = whatsappInput.value.trim();
+    var valido = true;
+
+    if (!validarNome(nome)) {
+        nomeInput.classList.add('erro');
+        nomeErro.style.display = 'block';
+        valido = false;
+    } else {
+        nomeInput.classList.remove('erro');
+        nomeErro.style.display = 'none';
+    }
+
+    if (!validarEmail(email)) {
+        emailInput.classList.add('erro');
+        emailErro.style.display = 'block';
+        valido = false;
+    } else {
+        emailInput.classList.remove('erro');
+        emailErro.style.display = 'none';
+    }
+
+    if (!valido) return;
+
+    usuarioNome = nome;
+    usuarioEmail = email;
+    usuarioWhatsapp = whatsapp;
+    localStorage.setItem('leilao_nome', nome);
+    localStorage.setItem('leilao_email', email);
+    if (whatsapp) localStorage.setItem('leilao_whatsapp', whatsapp);
+    nomeDisplay.textContent = nome;
+    nomeModal.classList.remove('open');
+
+    if (termosAceitos) {
+        btnLance.disabled = false;
+    }
+});
+
+nomeInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') btnSalvarNome.click(); });
+emailInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') btnSalvarNome.click(); });
+whatsappInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') btnSalvarNome.click(); });
+
+// ========== FUNÇÃO CORRIGIDA: PEGAR SLUG DA URL ==========
+function getSlugFromURL() {
+    var path = window.location.pathname;
+    
+    // Remove a barra inicial e pega a primeira parte
+    var slug = path.replace(/^\//, '').split('/')[0];
+    
+    // Se estiver vazio ou for uma página especial, retorna null
+    if (!slug || slug === '' || slug === 'index.html' || slug === 'admin.html' || slug === 'leilao.html') {
+        return null;
+    }
+    
+    return slug;
+}
+
+var slugAtual = getSlugFromURL();
+
+// ========== FUNÇÃO CORRIGIDA: CARREGAR CAMPANHA ==========
+async function carregarCampanha() {
+    var slug = slugAtual;
+
+    // Se não tem slug na URL, tenta buscar a campanha ativa
+    if (!slug) {
+        try {
+            console.log('🔍 Nenhum slug na URL. Buscando campanha ativa...');
+            var res = await fetch('/api/campanha-ativa');
+            var data = await res.json();
+            if (data && data.slug) {
+                // Redireciona para a URL correta
+                window.location.href = '/' + data.slug;
+                return;
             } else {
-                box.classList.remove('checked');
-                icone.textContent = '☐';
-            }
-            
-            checkbox.dispatchEvent(new Event('change'));
-        }
-
-        function carregarUsuarioSalvo() {
-            try {
-                const saved = localStorage.getItem('leilao_usuario');
-                if (saved) {
-                    usuario = JSON.parse(saved);
-                    document.getElementById('userNameHeader').textContent = `👤 ${usuario.nome}`;
-                    document.getElementById('btnSair').style.display = 'inline-block';
-                    return true;
-                }
-            } catch (e) {}
-            return false;
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('popupInicial').classList.remove('hidden');
-            document.getElementById('popupInicial').style.display = 'flex';
-            
-            carregarUsuarioSalvo();
-            if (usuario) {
-                document.getElementById('inputNome').value = usuario.nome || '';
-                document.getElementById('inputEmail').value = usuario.email || '';
-                document.getElementById('aceiteTermo').checked = true;
-                document.getElementById('btnEntrarPopup').disabled = false;
-                document.getElementById('termoAceiteBox').classList.add('checked');
-                document.getElementById('statusIcone').textContent = '✅';
-            }
-
-            conectarSocket();
-            carregarItem();
-            
-            document.getElementById('inputEmail').addEventListener('keypress', (e) => { if (e.key === 'Enter') entrarPopup(); });
-            document.getElementById('inputNome').addEventListener('keypress', (e) => { if (e.key === 'Enter') document.getElementById('inputEmail').focus(); });
-            document.getElementById('inputNovoNome').addEventListener('keypress', (e) => { if (e.key === 'Enter') confirmarMudarNome(); });
-
-            document.getElementById('aceiteTermo').addEventListener('change', function() {
-                const box = document.getElementById('termoAceiteBox');
-                const icone = document.getElementById('statusIcone');
-                if (this.checked) {
-                    box.classList.add('checked');
-                    icone.textContent = '✅';
-                } else {
-                    box.classList.remove('checked');
-                    icone.textContent = '☐';
-                }
-                validarCampos();
-            });
-            document.getElementById('inputNome').addEventListener('input', validarCampos);
-            document.getElementById('inputEmail').addEventListener('input', validarCampos);
-
-            function validarCampos() {
-                const btn = document.getElementById('btnEntrarPopup');
-                const email = document.getElementById('inputEmail').value.trim();
-                const nome = document.getElementById('inputNome').value.trim();
-                const aceite = document.getElementById('aceiteTermo').checked;
-                btn.disabled = !(aceite && nome && email && email.includes('@'));
-            }
-        });
-
-        function abrirTermoCompleto() { document.getElementById('termoModal').classList.add('active'); }
-        function fecharTermoCompleto() { document.getElementById('termoModal').classList.remove('active'); }
-
-        function fecharJanela() {
-            if (confirm('Deseja realmente sair do leilão?')) { 
-                localStorage.removeItem('leilao_usuario');
-                window.location.reload();
-            }
-        }
-
-        function updateConnectionStatus(status, message) {
-            const el = document.getElementById('connectionStatus');
-            el.textContent = message || status;
-            el.className = 'connection-status show ' + status;
-            if (status === 'online') { setTimeout(() => { el.className = 'connection-status'; }, 3000); }
-        }
-
-        if ('connection' in navigator) {
-            navigator.connection.addEventListener('change', () => {
-                if (navigator.connection.effectiveType === '2g' || navigator.connection.effectiveType === '3g') {
-                    updateConnectionStatus('poor', '📶 Conexão lenta - Modo econômico');
-                    clearInterval(window.refreshInterval);
-                    window.refreshInterval = setInterval(carregarItem, 30000);
-                } else {
-                    updateConnectionStatus('online', '✅ Conexão restaurada');
-                    clearInterval(window.refreshInterval);
-                    window.refreshInterval = setInterval(carregarItem, 15000);
-                }
-            });
-        }
-
-        window.addEventListener('online', () => { updateConnectionStatus('online', '✅ Conectado'); carregarItem(); });
-        window.addEventListener('offline', () => { updateConnectionStatus('offline', '⚠️ Sem conexão'); });
-
-        function conectarSocket() {
-            try {
-                socket = io({ reconnection: true, reconnectionAttempts: 10, reconnectionDelay: 1000, timeout: 20000 });
-                socket.on('connect', () => { updateConnectionStatus('online', '✅ Conectado'); });
-                socket.on('disconnect', () => { updateConnectionStatus('offline', '⚠️ Reconectando...'); });
-                socket.on('connect_error', () => { updateConnectionStatus('poor', '📶 Tentando reconectar...'); });
-                socket.on('novo_lance', () => { carregarItem(); carregarRanking(document.querySelector('.ranking-tabs .active')?.textContent?.trim() || 'maior_lance'); });
-                socket.on('pagamento_confirmado', (data) => {
-                    if (pagamentoAtual && (pagamentoAtual.transacao_id === data.transacao_id || pagamentoAtual.mp_id === data.mp_id)) {
-                        document.getElementById('pixStatusText').textContent = '✅ Pagamento confirmado!';
-                        document.getElementById('pixStatusText').className = 'status-text confirmado';
-                        document.getElementById('verificandoContainer').innerHTML = `<div style="color:#10B981;font-size:24px;">✅</div><p style="color:#10B981;font-size:16px;font-weight:600;">Pagamento confirmado!</p><p style="color:#6B7280;font-size:13px;">🔄 Registrando seu lance...</p>`;
-                        document.getElementById('pixInfoText').textContent = '🔄 Registrando lance...';
-                        confirmarPagamentoAutomatico(data.transacao_id || data.mp_id);
-                    }
-                });
-            } catch (e) { console.log('⚠️ Socket off'); setTimeout(conectarSocket, 5000); }
-        }
-
-        function entrarPopup() {
-            if (!document.getElementById('aceiteTermo').checked) { mostrarMsg('⚠️ Aceite os termos!', 'erro'); return; }
-            const nome = document.getElementById('inputNome').value.trim(), email = document.getElementById('inputEmail').value.trim();
-            if (!nome || !email || !email.includes('@')) { mostrarMsg('Preencha nome e e-mail válido!', 'erro'); return; }
-            const btn = document.getElementById('btnEntrarPopup');
-            btn.disabled = true; btn.innerHTML = '<span class="loading-spinner" style="display:inline-block;width:16px;height:16px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:8px;"></span> Entrando...';
-            fetch('/api/usuario', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nome, email })
-            }).then(res => res.json()).then(data => {
-                if (data.sucesso) {
-                    usuario = data.usuario;
-                    localStorage.setItem('leilao_usuario', JSON.stringify(usuario));
-                    document.getElementById('popupInicial').classList.add('hidden');
-                    document.getElementById('popupInicial').style.display = 'none';
-                    document.getElementById('userNameHeader').textContent = `👤 ${nome}`;
-                    document.getElementById('btnSair').style.display = 'inline-block';
-                    mostrarMsg(`✅ Bem-vindo(a), ${nome}!`, 'sucesso');
-                    
-                    if (aguardandoLance) {
-                        aguardandoLance = false;
-                        setTimeout(() => { iniciarPagamentoFixo(); }, 500);
-                    }
-                    carregarItem();
-                } else { mostrarMsg('❌ ' + (data.erro || 'Erro ao entrar'), 'erro'); }
-            }).catch(() => mostrarMsg('❌ Erro ao entrar', 'erro')).finally(() => { btn.disabled = false; btn.innerHTML = '🎯 Participar do Leilão'; });
-        }
-
-        function abrirMudarNome() {
-            if (!usuario) { 
-                document.getElementById('popupInicial').classList.remove('hidden');
-                document.getElementById('popupInicial').style.display = 'flex';
-                return; 
-            }
-            document.getElementById('inputNovoNome').value = '';
-            document.getElementById('emailAtualDisplay').textContent = usuario.email;
-            document.getElementById('popupMudarNome').classList.remove('hidden');
-            document.getElementById('popupMudarNome').style.display = 'flex';
-        }
-
-        function fecharMudarNome() { 
-            document.getElementById('popupMudarNome').classList.add('hidden');
-            document.getElementById('popupMudarNome').style.display = 'none';
-        }
-
-        function confirmarMudarNome() {
-            const novoNome = document.getElementById('inputNovoNome').value.trim();
-            if (!novoNome) { mostrarMsg('Digite um nome válido!', 'erro'); return; }
-            const btn = document.getElementById('btnMudarNome');
-            btn.disabled = true; btn.innerHTML = '⏳ Atualizando...';
-            fetch('/api/usuario', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nome: novoNome, email: usuario.email })
-            }).then(res => res.json()).then(data => {
-                if (data.sucesso) {
-                    usuario = data.usuario;
-                    localStorage.setItem('leilao_usuario', JSON.stringify(usuario));
-                    document.getElementById('userNameHeader').textContent = `👤 ${novoNome}`;
-                    fecharMudarNome();
-                    mostrarMsg(`✅ Nome alterado para "${novoNome}"!`, 'sucesso');
-                    carregarItem(); carregarRanking('maior_lance');
-                } else { mostrarMsg('❌ ' + (data.erro || 'Erro ao alterar'), 'erro'); }
-            }).catch(() => mostrarMsg('❌ Erro ao alterar nome', 'erro')).finally(() => { btn.disabled = false; btn.textContent = '✅ Confirmar'; });
-        }
-
-        function abrirZoom(imagemSrc, isEmoji, emojiText) {
-            const modal = document.getElementById('zoomModal'), img = document.getElementById('zoomImg'), emoji = document.getElementById('zoomEmoji');
-            if (isEmoji && emojiText) { img.style.display = 'none'; emoji.style.display = 'block'; emoji.textContent = emojiText; }
-            else if (imagemSrc) { img.style.display = 'block'; emoji.style.display = 'none'; img.src = imagemSrc; }
-            modal.classList.add('active');
-        }
-        function fecharZoom() { document.getElementById('zoomModal').classList.remove('active'); }
-
-        // ===== TIMER CORRIGIDO - CALCULA DIAS CORRETAMENTE =====
-        function iniciarTimer(dataFim) {
-            if (timerInterval) clearInterval(timerInterval);
-            
-            function atualizarTimer() {
-                const agora = new Date();
-                const fim = new Date(dataFim);
-                const diff = fim - agora;
-                
-                const timerContainer = document.getElementById('timerContainer');
-                const statusEl = document.getElementById('timerStatus');
-                const diasEl = document.getElementById('diasRestantes');
-                const horasEl = document.getElementById('horasRestantes');
-                const minutosEl = document.getElementById('minutosRestantes');
-                const segundosEl = document.getElementById('segundosRestantes');
-                
-                if (diff <= 0) {
-                    if (diasEl) diasEl.textContent = '00';
-                    if (horasEl) horasEl.textContent = '00';
-                    if (minutosEl) minutosEl.textContent = '00';
-                    if (segundosEl) segundosEl.textContent = '00';
-                    if (statusEl) {
-                        statusEl.textContent = '⏰ LEILÃO ENCERRADO!';
-                        statusEl.className = 'timer-status urgente';
-                        statusEl.style.color = '#FF6B6B';
-                    }
-                    if (timerContainer) {
-                        timerContainer.style.background = '#4a4a4a';
-                    }
-                    clearInterval(timerInterval);
-                    return;
-                }
-                
-                const totalSegundos = Math.floor(diff / 1000);
-                const dias = Math.floor(totalSegundos / 86400);
-                const horas = Math.floor((totalSegundos % 86400) / 3600);
-                const minutos = Math.floor((totalSegundos % 3600) / 60);
-                const segundos = totalSegundos % 60;
-                
-                // Atualiza os elementos do DOM
-                if (diasEl) diasEl.textContent = String(dias).padStart(2, '0');
-                if (horasEl) horasEl.textContent = String(horas).padStart(2, '0');
-                if (minutosEl) minutosEl.textContent = String(minutos).padStart(2, '0');
-                if (segundosEl) segundosEl.textContent = String(segundos).padStart(2, '0');
-                
-                // Mensagem amigável
-                if (statusEl) {
-                    let mensagem = '';
-                    let cor = '';
-                    let classe = '';
-                    
-                    if (dias > 0) {
-                        mensagem = `📅 ${dias} dia${dias > 1 ? 's' : ''} restantes`;
-                        cor = '#90EE90';
-                        classe = '';
-                    } else if (horas > 6) {
-                        mensagem = `⏰ ${horas}h ${minutos}m restantes`;
-                        cor = '#FFD700';
-                        classe = '';
-                    } else if (horas > 1) {
-                        mensagem = `🔥 ${horas}h ${minutos}m restantes - Últimas horas!`;
-                        cor = '#FF8C00';
-                        classe = 'urgente';
-                    } else if (horas > 0) {
-                        mensagem = `⚡ Menos de 1 hora! Corra!`;
-                        cor = '#FF4500';
-                        classe = 'urgente';
-                    } else if (minutos > 0) {
-                        mensagem = `🔥 ${minutos}m ${segundos}s - Últimos minutos!`;
-                        cor = '#FF0000';
-                        classe = 'urgente';
-                    } else {
-                        mensagem = `⏰ ${segundos}s - Últimos segundos!`;
-                        cor = '#FF0000';
-                        classe = 'urgente';
-                    }
-                    
-                    statusEl.textContent = mensagem;
-                    statusEl.style.color = cor;
-                    statusEl.className = 'timer-status' + (classe ? ' ' + classe : '');
-                }
-            }
-            
-            atualizarTimer();
-            timerInterval = setInterval(atualizarTimer, 1000);
-        }
-
-        function carregarItem() {
-            if (loadingItem) return;
-            loadingItem = true;
-            const slug = window.location.pathname === '/' ? 'campanha-padrao' : window.location.pathname.replace('/', '');
-            fetch(`/api/campanha/${slug}`).then(res => res.json()).then(data => {
-                if (!data.item) {
-                    document.getElementById('itemContainer').innerHTML = `<div style="text-align:center;padding:40px 16px;color:#6B7280;width:100%;"><div style="font-size:40px;margin-bottom:12px;">📭</div><h3 style="color:#1A2B4C;">Nenhum leilão ativo</h3><p style="color:#6B7280;">Volte em breve!</p></div>`;
-                    document.getElementById('rankingSection').style.display = 'none';
-                    loadingItem = false; return;
-                }
-                const item = data.item, campanha = data.campanha;
-                itemAtual = item;
-                document.title = `${campanha.nome} - Leilão Fácil`;
-                META_VALOR = campanha.meta_valor || 3.00;
-                const lances = item.ultimos_lances || [], lanceAtual = item.lance_atual || 0, totalLances = item.total_lances || 0;
-                const encerrado = item.encerrado || new Date(item.data_fim) < new Date();
-                const temLanceInicial = item.tem_lance_inicial || false;
-                const proximoLance = parseFloat((lanceAtual + 0.01).toFixed(2));
-                const metaAtingida = lanceAtual >= META_VALOR && totalLances > 0;
-                const leilaoFinalizado = encerrado || metaAtingida;
-                const ultimoLance = item.ultimo_lance;
-                const newLanceCount = totalLances;
-                if (newLanceCount === lastLanceCount && document.querySelector('.item-card')) { loadingItem = false; return; }
-                lastLanceCount = newLanceCount;
-
-                const premioImagem = item.premio_imagem || '🏆', premioImagemUrl = item.premio_imagem_url || '', premioTitulo = item.premio_titulo || '🏆 PRÊMIO DO LEILÃO';
-                let premioHtml = '';
-                const temUrl = premioImagemUrl && premioImagemUrl.trim() !== '', temUpload = premioImagem && premioImagem.startsWith('/uploads/'), isEmoji = !temUrl && !temUpload && premioImagem && !premioImagem.startsWith('http');
-                if (temUrl) {
-                    premioHtml = `<div class="premio-container"><span class="label-premio">${premioTitulo}</span><div class="imagem-premio-wrapper" onclick="abrirZoom('${premioImagemUrl}',false,'')"><img src="${premioImagemUrl}" alt="Prêmio" loading="lazy" onerror="this.style.display='none';this.parentElement.innerHTML='<span class=\\'emoji-grande\\'>🏆</span>'"><span class="zoom-hint">🔍 Clique para ampliar</span></div><div class="valor-premio">Meta: <strong>R$ ${META_VALOR.toFixed(2)}</strong></div></div>`;
-                } else if (temUpload) {
-                    const srcImagem = premioImagem.startsWith('/uploads/') ? premioImagem : `/${premioImagem}`;
-                    premioHtml = `<div class="premio-container"><span class="label-premio">${premioTitulo}</span><div class="imagem-premio-wrapper" onclick="abrirZoom('${srcImagem}',false,'')"><img src="${srcImagem}" alt="Prêmio" loading="lazy" onerror="this.style.display='none';this.parentElement.innerHTML='<span class=\\'emoji-grande\\'>🏆</span>'"><span class="zoom-hint">🔍 Clique para ampliar</span></div><div class="valor-premio">Meta: <strong>R$ ${META_VALOR.toFixed(2)}</strong></div></div>`;
-                } else if (isEmoji) {
-                    premioHtml = `<div class="premio-container"><span class="label-premio">${premioTitulo}</span><div class="imagem-premio-wrapper" onclick="abrirZoom('',true,'${premioImagem}')"><span class="emoji-grande">${premioImagem}</span><span class="zoom-hint">🔍 Clique para ampliar</span></div><div class="valor-premio">Meta: <strong>R$ ${META_VALOR.toFixed(2)}</strong></div></div>`;
-                } else {
-                    premioHtml = `<div class="premio-container"><span class="label-premio">${premioTitulo}</span><div class="imagem-premio-wrapper" onclick="abrirZoom('',true,'🏆')"><span class="emoji-grande">🏆</span><span class="zoom-hint">🔍 Clique para ampliar</span></div><div class="valor-premio">Meta: <strong>R$ ${META_VALOR.toFixed(2)}</strong></div></div>`;
-                }
-
-                let tempoHtml = '';
-                if (encerrado) {
-                    tempoHtml = `
-                        <div class="timer-destaque" id="timerContainer" style="background:#4a4a4a;">
-                            <div class="label-tempo">⏰ LEILÃO ENCERRADO</div>
-                            <div class="relogio encerrado">
-                                <span style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:center;">
-                                    <span style="display:flex; align-items:center; gap:4px;">
-                                        <span class="dias" style="font-size:42px; font-weight:800; color:#FF6B6B;">00</span>
-                                        <span style="font-size:18px; font-weight:600; color:#FF6B6B;">dias</span>
-                                    </span>
-                                    <span style="font-size:32px; color:rgba(255,255,255,0.3);">|</span>
-                                    <span style="display:flex; align-items:center; gap:4px;">
-                                        <span class="tempo-numero" style="font-size:36px; font-weight:700;">00</span>
-                                        <span style="font-size:16px; font-weight:500; opacity:0.7;">horas</span>
-                                    </span>
-                                    <span style="font-size:28px; color:rgba(255,255,255,0.3);">:</span>
-                                    <span style="display:flex; align-items:center; gap:4px;">
-                                        <span class="tempo-numero" style="font-size:36px; font-weight:700;">00</span>
-                                        <span style="font-size:16px; font-weight:500; opacity:0.7;">min</span>
-                                    </span>
-                                    <span style="font-size:28px; color:rgba(255,255,255,0.3);">:</span>
-                                    <span style="display:flex; align-items:center; gap:4px;">
-                                        <span class="tempo-numero" style="font-size:36px; font-weight:700;">00</span>
-                                        <span style="font-size:16px; font-weight:500; opacity:0.7;">seg</span>
-                                    </span>
-                                </span>
-                            </div>
-                            ${lanceAtual > 0 ? `<div class="lance-atual">💰 Lance final: <span class="valor">R$ ${lanceAtual.toFixed(2)}</span></div>` : ''}
-                            <div class="timer-status" style="color:#FF6B6B;">⏰ LEILÃO ENCERRADO!</div>
-                        </div>
-                    `;
-                } else if (metaAtingida && totalLances > 0) {
-                    tempoHtml = `
-                        <div class="timer-destaque" style="background:#10B981;">
-                            <div class="label-tempo">🎯 META ATINGIDA!</div>
-                            <div class="relogio" style="color:#FFD700;">R$ ${lanceAtual.toFixed(2)}</div>
-                            <div class="lance-atual">🏆 Leilão concluído com sucesso!</div>
-                        </div>
-                    `;
-                } else if (temLanceInicial && item.started_at) {
-                    tempoHtml = `
-                        <div class="timer-destaque" id="timerContainer">
-                            <div class="label-tempo">⏱️ TEMPO RESTANTE</div>
-                            <div class="relogio" id="tempoRestante">
-                                <span style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:center;">
-                                    <span style="display:flex; align-items:center; gap:4px;">
-                                        <span class="dias" id="diasRestantes" style="font-size:42px; font-weight:800; color:#FFD700;">--</span>
-                                        <span style="font-size:18px; font-weight:600; color:#FFD700;">dias</span>
-                                    </span>
-                                    <span style="font-size:32px; color:rgba(255,255,255,0.3);">|</span>
-                                    <span style="display:flex; align-items:center; gap:4px;">
-                                        <span class="tempo-numero" id="horasRestantes" style="font-size:36px; font-weight:700;">--</span>
-                                        <span style="font-size:16px; font-weight:500; opacity:0.7;">horas</span>
-                                    </span>
-                                    <span style="font-size:28px; color:rgba(255,255,255,0.3);">:</span>
-                                    <span style="display:flex; align-items:center; gap:4px;">
-                                        <span class="tempo-numero" id="minutosRestantes" style="font-size:36px; font-weight:700;">--</span>
-                                        <span style="font-size:16px; font-weight:500; opacity:0.7;">min</span>
-                                    </span>
-                                    <span style="font-size:28px; color:rgba(255,255,255,0.3);">:</span>
-                                    <span style="display:flex; align-items:center; gap:4px;">
-                                        <span class="tempo-numero" id="segundosRestantes" style="font-size:36px; font-weight:700;">--</span>
-                                        <span style="font-size:16px; font-weight:500; opacity:0.7;">seg</span>
-                                    </span>
-                                </span>
-                            </div>
-                            <div class="lance-atual">💰 Lance atual: <span class="valor" id="lanceAtualValor">R$ ${lanceAtual.toFixed(2)}</span></div>
-                            <div class="timer-status" id="timerStatus">⏳ Carregando...</div>
-                        </div>
-                    `;
-                    iniciarTimer(item.data_fim);
-                } else {
-                    tempoHtml = `
-                        <div class="timer-destaque" style="background:#10B981;">
-                            <div class="label-tempo">⏳ AGUARDANDO</div>
-                            <div class="relogio">R$ 0,01</div>
-                            <div class="lance-atual">💡 Primeiro lance inicia a contagem!</div>
-                        </div>
-                    `;
-                }
-
-                const ultimosHtml = lances.length > 0 ? lances.map(l => `<div class="lance-item"><span class="usuario">👤 ${l.nome}</span><span class="valor">R$ ${l.valor.toFixed(2)}</span><span class="data">${new Date(l.data).toLocaleString()}</span></div>`).join('') : '<div style="color:#6B7280;text-align:center;padding:8px;">Nenhum lance ainda</div>';
-                const primeiroLanceMsg = !temLanceInicial ? '<div style="color:#10B981;font-weight:500;margin-bottom:8px;text-align:center;">💡 Primeiro lance: R$ 0,01</div>' : '';
-
-                let botaoLanceHtml = '';
-                if (!encerrado && item.status === 'ativo' && !metaAtingida) {
-                    botaoLanceHtml = `
-                        <div class="lance-fixo">
-                            <div class="label-proximo">💎 Próximo lance</div>
-                            <div class="valor-proximo">R$ ${proximoLance.toFixed(2)}</div>
-                            <button class="btn-lance-fixo" id="btnLanceFixo" onclick="iniciarPagamentoFixo()">
-                                🚀 Dar lance (R$ ${proximoLance.toFixed(2)})
-                            </button>
-                            <div class="regra">⬆️ Cada lance aumenta R$ 0,01</div>
-                            <div class="lance-rapido-hint">⚡ Clique e pague via PIX</div>
-                        </div>
-                    `;
-                } else {
-                    botaoLanceHtml = `<div class="lance-fixo"><div style="text-align:center;padding:12px;background:#FEE2E2;border-radius:8px;color:#DC2626;font-weight:600;font-size:14px;">⛔ Leilão encerrado</div></div>`;
-                }
-
-                let celebracaoHtml = '';
-                if (leilaoFinalizado && ultimoLance) {
-                    const mensagemMeta = metaAtingida ? '🎯 Meta atingida!' : '';
-                    celebracaoHtml = `<div class="celebracao-container"><span class="trofeu-grande">🏆</span><div class="titulo-celebracao">🎉 LEILÃO ENCERRADO! 🎉</div><div class="vencedor-nome">${ultimoLance.usuario}</div><div class="vencedor-valor">💰 Lance vencedor: R$ ${ultimoLance.valor.toFixed(2)}</div><div class="vencedor-meta">🎯 Meta: R$ ${META_VALOR.toFixed(2)} ${mensagemMeta}</div><span class="confetes">🎊🎉✨🎊🎉✨</span></div>`;
-                    LEILAO_ENCERRADO = true;
-                    setTimeout(() => { const btn = document.getElementById('btnLanceFixo'); if (btn) { btn.disabled = true; btn.textContent = '⛔ Leilão encerrado'; } }, 100);
-                }
-
-                document.getElementById('itemContainer').innerHTML = `<div class="item-card"><div class="info"><h2>${item.nome}</h2><div class="desc">${item.descricao || 'Participe e concorra!'}</div>${premioHtml}${celebracaoHtml}${tempoHtml}<div class="lances-count">📊 ${totalLances} participantes</div>${primeiroLanceMsg}${botaoLanceHtml}<div class="ultimos-lances"><h4>📊 Últimos Lances</h4>${ultimosHtml}<button class="btn-ver-ranking" onclick="carregarRanking('maior_lance')">🏆 Ver Ranking Completo (Top 10)</button></div></div></div>`;
-                document.getElementById('rankingSection').style.display = 'block';
-                carregarRanking('maior_lance');
-                loadingItem = false;
-            }).catch(err => {
-                console.error('Erro ao carregar item:', err);
-                if (!document.querySelector('.item-card')) { document.getElementById('itemContainer').innerHTML = `<div style="text-align:center;padding:30px;color:#DC2626;width:100%;">❌ Erro ao carregar. Tentando novamente...</div>`; }
-                loadingItem = false;
-                setTimeout(carregarItem, 5000);
-            });
-        }
-
-        function iniciarPagamentoFixo() {
-            if (!usuario) {
-                aguardandoLance = true;
-                document.getElementById('popupInicial').classList.remove('hidden');
-                document.getElementById('popupInicial').style.display = 'flex';
-                mostrarMsg('🔑 Identifique-se para dar o lance!', 'info');
+                campanhaNome.textContent = 'Nenhuma campanha ativa';
+                produtoTitulo.textContent = 'Aguarde...';
+                document.getElementById('produtoNome').textContent = 'Nenhum leilão ativo';
+                document.getElementById('produtoDescricao').textContent = 'Crie uma campanha no admin ou aguarde.';
                 return;
             }
-            
-            if (!itemAtual || LEILAO_ENCERRADO) { mostrarMsg('⛔ Leilão já encerrado!', 'erro'); return; }
-
-            const slug = window.location.pathname === '/' ? 'campanha-padrao' : window.location.pathname.replace('/', '');
-            const btn = document.getElementById('btnLanceFixo');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="loading"></span> Gerando PIX...';
-
-            fetch(`/api/campanha/${slug}`).then(res => res.json()).then(data => {
-                if (!data.item) { mostrarMsg('⚠️ Leilão não encontrado', 'erro'); btn.disabled = false; btn.innerHTML = '🚀 Tentar novamente'; return; }
-                const lanceAtualizado = data.item.lance_atual || 0;
-                const valor = parseFloat((lanceAtualizado + 0.01).toFixed(2));
-                itemAtual = data.item;
-                pagamentoAtual = null;
-                if (verificacaoInterval) { clearInterval(verificacaoInterval); verificacaoInterval = null; }
-                document.getElementById('pixStatusText').textContent = '⏳ Aguardando pagamento...';
-                document.getElementById('pixStatusText').className = 'status-text pendente';
-                document.getElementById('verificandoContainer').innerHTML = `<div class="loading-spinner"></div><p style="color:#FF8C00;font-size:14px;margin-top:4px;">⏳ Verificando pagamento...</p><p style="color:#6B7280;font-size:12px;">Aguardando confirmação</p>`;
-                document.getElementById('verificandoContainer').style.display = 'block';
-                document.getElementById('btnConfirmarPix').style.display = 'none';
-                document.getElementById('pixInfoText').textContent = '⏱️ Após pagar, o sistema confirma automaticamente';
-                document.getElementById('qrCodeContainer').style.display = 'none';
-                document.getElementById('qrCodeImage').src = '';
-                document.getElementById('qrCodeFallback').style.display = 'none';
-                document.getElementById('pixCodeInput').value = 'Carregando...';
-                document.getElementById('pixValor').textContent = 'R$ 0,00';
-
-                fetch('/api/criar-pagamento', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ item_id: itemAtual.id, campanha_id: 1, usuario_id: usuario.id, nome: usuario.nome, email: usuario.email, valor: valor })
-                }).then(res => res.json()).then(data => {
-                    if (data.sucesso) {
-                        pagamentoAtual = data.pagamento;
-                        mostrarPix(data.pagamento);
-                        if (data.is_primeiro_lance) { mostrarMsg('🎉 Primeiro lance! 24h iniciadas!', 'sucesso'); }
-                    } else {
-                        mostrarMsg('❌ ' + (data.erro || 'Erro ao gerar PIX'), 'erro');
-                        const proximoLance = parseFloat((itemAtual.lance_atual + 0.01).toFixed(2));
-                        btn.innerHTML = `🚀 Dar lance (R$ ${proximoLance.toFixed(2)})`;
-                        btn.disabled = false;
-                    }
-                }).catch(() => {
-                    mostrarMsg('❌ Erro ao gerar PIX', 'erro');
-                    btn.disabled = false;
-                    const proximoLance = parseFloat((itemAtual.lance_atual + 0.01).toFixed(2));
-                    btn.innerHTML = `🚀 Dar lance (R$ ${proximoLance.toFixed(2)})`;
-                });
-            }).catch(err => { console.error('Erro:', err); mostrarMsg('❌ Erro ao processar lance', 'erro'); btn.disabled = false; btn.innerHTML = '🚀 Tentar novamente'; });
+        } catch (e) {
+            console.error('Erro ao buscar campanha ativa:', e);
+            campanhaNome.textContent = 'Erro ao carregar';
+            return;
         }
+    }
 
-        function mostrarPix(pagamento) {
-            document.getElementById('pixStatusText').textContent = '⏳ Aguardando pagamento...';
-            document.getElementById('pixStatusText').className = 'status-text pendente';
-            document.getElementById('verificandoContainer').style.display = 'block';
-            document.getElementById('btnConfirmarPix').style.display = 'none';
-            document.getElementById('pixInfoText').textContent = '⏱️ O sistema verificará automaticamente';
-            document.getElementById('pixValor').textContent = `R$ ${pagamento.valor.toFixed(2)}`;
-
-            const qrContainer = document.getElementById('qrCodeContainer'), qrImg = document.getElementById('qrCodeImage'), qrFallback = document.getElementById('qrCodeFallback');
-            qrContainer.style.display = 'none'; qrImg.src = ''; qrFallback.style.display = 'none'; qrFallback.textContent = '';
-
-            if (pagamento.pix_qr_code_base64) {
-                qrImg.src = `data:image/png;base64,${pagamento.pix_qr_code_base64}`;
-                qrContainer.style.display = 'block';
-            } else if (pagamento.pix_qr_code && typeof pagamento.pix_qr_code === 'string') {
-                fetch('/api/gerar-qr', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ texto: pagamento.pix_qr_code }) })
-                .then(res => res.json()).then(data => {
-                    if (data.qr_code) { qrImg.src = `data:image/png;base64,${data.qr_code}`; qrContainer.style.display = 'block'; }
-                    else { qrContainer.style.display = 'none'; qrFallback.style.display = 'block'; qrFallback.textContent = 'QR Code disponível no link abaixo'; }
-                }).catch(() => { qrContainer.style.display = 'none'; qrFallback.style.display = 'block'; qrFallback.textContent = 'QR Code disponível no link abaixo'; });
-            } else { qrContainer.style.display = 'none'; qrFallback.style.display = 'block'; qrFallback.textContent = 'QR Code indisponível. Use o código abaixo.'; }
-
-            const codeInput = document.getElementById('pixCodeInput');
-            if (pagamento.pix_qr_code && typeof pagamento.pix_qr_code === 'string') codeInput.value = pagamento.pix_qr_code;
-            else if (pagamento.pix_link) codeInput.value = pagamento.pix_link;
-            else codeInput.value = 'Link indisponível';
-
-            document.getElementById('modalPix').classList.add('active');
-            if (!verificacaoInterval) iniciarVerificacaoPagamento(pagamento.mp_id || pagamento.transacao_id);
-        }
-
-        function iniciarVerificacaoPagamento(identificador) {
-            if (verificacaoInterval) clearInterval(verificacaoInterval);
-            let tentativas = 0;
-            verificacaoInterval = setInterval(() => {
-                tentativas++;
-                fetch(`/api/consultar-pagamento/${identificador}`).then(res => res.json()).then(data => {
-                    if (data.status === 'confirmado' || data.confirmado === true) {
-                        clearInterval(verificacaoInterval); verificacaoInterval = null;
-                        document.getElementById('pixStatusText').textContent = '✅ Pagamento confirmado!';
-                        document.getElementById('pixStatusText').className = 'status-text confirmado';
-                        document.getElementById('verificandoContainer').innerHTML = `<div style="color:#10B981;font-size:24px;">✅</div><p style="color:#10B981;font-size:16px;font-weight:600;">Pagamento confirmado!</p><p style="color:#6B7280;font-size:13px;">🔄 Registrando seu lance...</p>`;
-                        document.getElementById('pixInfoText').textContent = '🔄 Registrando lance...';
-                        confirmarPagamentoAutomatico(identificador);
-                    } else if (tentativas >= 60) {
-                        clearInterval(verificacaoInterval); verificacaoInterval = null;
-                        document.getElementById('pixStatusText').textContent = '⏰ Tempo esgotado';
-                        document.getElementById('pixStatusText').className = 'status-text erro';
-                        document.getElementById('verificandoContainer').innerHTML = `<p style="color:#DC2626;font-size:14px;font-weight:600;">⏰ Tempo de pagamento esgotado</p><p style="color:#6B7280;font-size:13px;">Clique em "Confirmar" se já pagou</p>`;
-                        document.getElementById('btnConfirmarPix').style.display = 'inline-block';
-                        document.getElementById('pixInfoText').textContent = 'Clique em "Confirmar Pagamento" manualmente';
-                    }
-                }).catch(err => {
-                    console.error('Erro na verificação:', err);
-                    if (tentativas >= 60) {
-                        clearInterval(verificacaoInterval); verificacaoInterval = null;
-                        document.getElementById('btnConfirmarPix').style.display = 'inline-block';
-                        document.getElementById('pixInfoText').textContent = 'Erro na verificação. Confirme manualmente.';
-                    }
-                });
-            }, 3000);
-        }
-
-        function confirmarPagamentoAutomatico(identificador) {
-            fetch('/api/confirmar-pagamento', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ transacao_id: identificador })
-            }).then(res => res.json()).then(data => {
-                if (data.sucesso) {
-                    mostrarMsg('✅ Lance confirmado com sucesso!', 'sucesso');
-                    fecharPix();
-                    carregarItem();
-                    carregarRanking('maior_lance');
-                } else {
-                    mostrarMsg('❌ ' + (data.erro || 'Erro ao registrar lance'), 'erro');
-                    document.getElementById('btnConfirmarPix').style.display = 'inline-block';
-                    document.getElementById('pixInfoText').textContent = 'Clique em "Confirmar" manualmente';
+    try {
+        console.log('🔍 Carregando campanha com slug:', slug);
+        var res = await fetch('/api/campanha/' + slug);
+        
+        if (!res.ok) {
+            if (res.status === 404) {
+                console.log('❌ Campanha não encontrada. Tentando buscar campanha ativa...');
+                // Tenta redirecionar para campanha ativa
+                var redirectRes = await fetch('/api/campanha-ativa');
+                var redirectData = await redirectRes.json();
+                if (redirectData && redirectData.slug) {
+                    window.location.href = '/' + redirectData.slug;
+                    return;
                 }
-            }).catch(err => {
-                console.error('Erro ao confirmar:', err);
-                mostrarMsg('❌ Erro ao registrar lance', 'erro');
-                document.getElementById('btnConfirmarPix').style.display = 'inline-block';
-                document.getElementById('pixInfoText').textContent = 'Clique em "Confirmar" manualmente';
+                throw new Error('Campanha não encontrada e nenhuma campanha ativa disponível');
+            }
+            throw new Error('Erro ao buscar campanha: ' + res.status);
+        }
+        
+        var data = await res.json();
+        campanhaAtual = data.campanha;
+        campanhaSlugAtual = slug;
+
+        campanhaNome.textContent = data.campanha.nome || 'Leilao';
+        produtoTitulo.textContent = data.item?.nome || 'Produto';
+
+        var termosStorage = localStorage.getItem('termos_' + slug);
+        if (termosStorage === 'true') {
+            termosAceitos = true;
+            termosAceiteModal.classList.remove('open');
+            if (usuarioNome && usuarioEmail) {
+                btnLance.disabled = false;
+            }
+        } else {
+            termosAceitos = false;
+            termosAceiteModal.classList.add('open');
+            btnLance.disabled = true;
+        }
+
+        var item = data.item;
+        if (item) {
+            produtoAtual = item;
+            var imagem = item.imagem || '';
+            if (imagem && (imagem.startsWith('http') || imagem.startsWith('/uploads'))) {
+                produtoImagem.src = imagem;
+                produtoImagem.style.display = 'block';
+                produtoEmoji.style.display = 'none';
+            } else if (imagem && imagem.length <= 4) {
+                produtoEmoji.textContent = imagem || '📦';
+                produtoEmoji.style.display = 'flex';
+                produtoImagem.style.display = 'none';
+            } else {
+                produtoEmoji.textContent = '📦';
+                produtoEmoji.style.display = 'flex';
+                produtoImagem.style.display = 'none';
+            }
+            produtoNome.textContent = item.nome || 'Produto';
+            produtoDescricao.textContent = item.descricao || '';
+
+            lanceAtual = item.lance_atual || 0.01;
+            lanceAtualDisplay.textContent = 'R$ ' + lanceAtual.toFixed(2);
+            btnLance.textContent = 'Dar lance (R$ ' + lanceAtual.toFixed(2) + ')';
+
+            if (item.data_fim) {
+                var agora = new Date();
+                var dataFim = new Date(item.data_fim);
+                tempoRestante = Math.max(0, Math.floor((dataFim - agora) / 1000));
+                primeiroLanceRegistrado = true;
+            } else {
+                tempoRestante = null;
+                primeiroLanceRegistrado = false;
+            }
+
+            if (item.encerrado || item.status !== 'ativo') {
+                statusLeilao.textContent = 'ENCERRADO';
+                statusLeilao.classList.add('encerrado');
+                btnLance.disabled = true;
+                btnLance.textContent = 'Leilao encerrado';
+                lanceAtualDisplay.classList.add('encerrado');
+            } else {
+                statusLeilao.textContent = 'AO VIVO';
+                statusLeilao.classList.remove('encerrado');
+                lanceAtualDisplay.classList.remove('encerrado');
+                if (termosAceitos && usuarioNome && usuarioEmail) {
+                    btnLance.disabled = false;
+                }
+            }
+
+            var premios = data.campanha?.premios || {};
+            if (premios.maiorLance) {
+                premio1Nome.textContent = premios.maiorLance.nome || 'Premio Maior Lance';
+                premio1Descricao.textContent = premios.maiorLance.descricao || '';
+                if (premios.maiorLance.imagem) {
+                    premio1Imagem.src = premios.maiorLance.imagem;
+                    premio1Imagem.style.display = 'block';
+                }
+            }
+            if (premios.maisLances) {
+                premio2Nome.textContent = premios.maisLances.nome || 'Premio Mais Lances';
+                premio2Descricao.textContent = premios.maisLances.descricao || '';
+                if (premios.maisLances.imagem) {
+                    premio2Imagem.src = premios.maisLances.imagem;
+                    premio2Imagem.style.display = 'block';
+                }
+            }
+            if (premios.menosLances) {
+                premio3Nome.textContent = premios.menosLances.nome || 'Premio Menos Lances';
+                premio3Descricao.textContent = premios.menosLances.descricao || '';
+                if (premios.menosLances.imagem) {
+                    premio3Imagem.src = premios.menosLances.imagem;
+                    premio3Imagem.style.display = 'block';
+                }
+            }
+
+            await carregarRankings(slug);
+        }
+    } catch (e) {
+        console.error('Erro ao carregar campanha:', e);
+        campanhaNome.textContent = 'Campanha nao encontrada';
+        produtoTitulo.textContent = '404';
+        document.getElementById('produtoNome').textContent = 'Campanha não encontrada';
+        document.getElementById('produtoDescricao').textContent = 'Verifique o link ou crie uma nova campanha no admin.';
+    }
+}
+
+btnAceitarTermos.addEventListener('click', function() {
+    termosAceitos = true;
+    localStorage.setItem('termos_' + campanhaSlugAtual, 'true');
+    termosAceiteModal.classList.remove('open');
+
+    if (usuarioNome && usuarioEmail) {
+        btnLance.disabled = false;
+    } else {
+        abrirModalNome();
+    }
+
+    fetch('/api/campanha/' + campanhaSlugAtual + '/termos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    }).catch(function(e) { console.error('Erro ao registrar termos:', e); });
+});
+
+function atualizarTimer() {
+    var horasEl = document.getElementById('horas');
+    var minutosEl = document.getElementById('minutos');
+    var segundosEl = document.getElementById('segundos');
+
+    if (tempoRestante === null || !primeiroLanceRegistrado) {
+        horasEl.textContent = '--';
+        minutosEl.textContent = '--';
+        segundosEl.textContent = '--';
+        return;
+    }
+
+    if (tempoRestante <= 0) {
+        horasEl.textContent = '00';
+        minutosEl.textContent = '00';
+        segundosEl.textContent = '00';
+        timerContainer.querySelectorAll('.bloco').forEach(function(b) { b.classList.add('encerrado'); });
+        btnLance.disabled = true;
+        btnLance.textContent = 'Leilao encerrado';
+        statusLeilao.textContent = 'ENCERRADO';
+        statusLeilao.classList.add('encerrado');
+        return;
+    }
+
+    var h = Math.floor(tempoRestante / 3600);
+    var m = Math.floor((tempoRestante % 3600) / 60);
+    var s = Math.floor(tempoRestante % 60);
+
+    horasEl.textContent = String(h).padStart(2, '0');
+    minutosEl.textContent = String(m).padStart(2, '0');
+    segundosEl.textContent = String(s).padStart(2, '0');
+
+    tempoRestante--;
+}
+
+setInterval(atualizarTimer, 1000);
+
+async function carregarRankings(slug) {
+    try {
+        var url = slug ? '/api/rankings?slug=' + slug : '/api/rankings';
+        var res = await fetch(url);
+        dadosRankings = await res.json();
+        var tabAtiva = document.querySelector('.tab.active');
+        var tipo = tabAtiva ? tabAtiva.dataset.tab : 'valor';
+        renderizarRanking(tipo);
+    } catch (e) {
+        console.error('Erro ao carregar rankings:', e);
+        rankingList.innerHTML = '<div style="text-align:center;color:#DC2626;padding:20px;">Erro ao carregar rankings</div>';
+    }
+}
+
+function renderizarRanking(tipo) {
+    if (!dadosRankings) {
+        rankingList.innerHTML = '<div style="text-align:center;color:#9CA3AF;padding:20px;">Nenhum dado disponivel</div>';
+        return;
+    }
+
+    var key = tipo === 'valor' ? 'ranking_maior_lance' : tipo === 'quantidade' ? 'ranking_mais_lances' : 'ranking_menos_lances';
+    var dados = dadosRankings[key] || [];
+    var lista = rankingList;
+    lista.innerHTML = '';
+
+    if (dados.length === 0) {
+        lista.innerHTML = '<div style="text-align:center;color:#9CA3AF;padding:20px;">Nenhum lance registrado ainda</div>';
+        return;
+    }
+
+    dados.forEach(function(item, idx) {
+        var pos = idx + 1;
+        var cls = '';
+        if (pos === 1) cls = 'top1';
+        else if (pos === 2) cls = 'top2';
+        else if (pos === 3) cls = 'top3';
+
+        var valorHtml = '';
+        if (tipo === 'valor') {
+            valorHtml = '<span class="valor">R$ ' + (item.valor || 0).toFixed(2) + '</span>';
+        } else if (tipo === 'quantidade') {
+            valorHtml = '<span class="valor">' + (item.lances || 0) + ' lances</span>';
+        } else {
+            valorHtml = '<span class="valor">' + (item.lances || 0) + ' lances</span>';
+        }
+
+        var nome = item.usuario || 'Anonimo';
+
+        lista.innerHTML += `
+            <div class="ranking-item ${cls}">
+                <span class="pos">${pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : '#' + pos}</span>
+                <span class="nome" onclick="verHistorico('${encodeURIComponent(nome)}')">${nome}</span>
+                ${valorHtml}
+            </div>
+        `;
+    });
+}
+
+document.querySelectorAll('.tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+        document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+        this.classList.add('active');
+        renderizarRanking(this.dataset.tab);
+    });
+});
+
+async function verHistorico(nomeEncoded) {
+    var nome = decodeURIComponent(nomeEncoded);
+    try {
+        var slug = campanhaSlugAtual || '';
+        var res = await fetch('/api/usuarios/' + encodeURIComponent(nome) + '/historico?slug=' + slug);
+        var data = await res.json();
+
+        document.getElementById('historicoNome').textContent = 'Historico de ' + nome;
+        var lista = document.getElementById('historicoLista');
+        lista.innerHTML = '';
+
+        if (data.lances && data.lances.length > 0) {
+            data.lances.slice().reverse().forEach(function(l) {
+                var dataStr = new Date(l.data).toLocaleString('pt-BR');
+                lista.innerHTML += `
+                    <div class="historico-item">
+                        <span>${dataStr}</span>
+                        <span>R$ ${(l.valor || 0).toFixed(2)}</span>
+                    </div>
+                `;
             });
+        } else {
+            lista.innerHTML = '<div style="color:#9CA3AF;padding:10px;text-align:center;">Nenhum lance encontrado</div>';
         }
 
-        function confirmarPagamentoManual() {
-            if (!pagamentoAtual) { mostrarMsg('❌ Nenhum pagamento', 'erro'); return; }
-            const btn = document.getElementById('btnConfirmarPix');
-            btn.disabled = true; btn.innerHTML = '⏳ Confirmando...';
-            fetch('/api/confirmar-pagamento', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ transacao_id: pagamentoAtual.mp_id || pagamentoAtual.transacao_id })
-            }).then(res => res.json()).then(data => {
-                if (data.sucesso) { mostrarMsg('✅ Lance confirmado!', 'sucesso'); fecharPix(); carregarItem(); carregarRanking('maior_lance'); }
-                else { mostrarMsg('❌ ' + (data.erro || 'Erro ao confirmar'), 'erro'); }
-            }).catch(() => mostrarMsg('❌ Erro ao confirmar', 'erro')).finally(() => { btn.disabled = false; btn.textContent = '✅ Confirmar Pagamento'; });
-        }
+        document.getElementById('historicoTotal').textContent = 'Total investido: R$ ' + (data.totalGasto || 0).toFixed(2);
+        document.getElementById('historicoModal').classList.add('open');
+    } catch (e) {
+        alert('Erro ao carregar historico');
+        console.error(e);
+    }
+}
 
-        function fecharPix() {
-            if (verificacaoInterval) { clearInterval(verificacaoInterval); verificacaoInterval = null; }
-            document.getElementById('modalPix').classList.remove('active');
-            document.getElementById('pixStatusText').textContent = '⏳ Aguardando pagamento...';
-            document.getElementById('pixStatusText').className = 'status-text pendente';
-            document.getElementById('verificandoContainer').innerHTML = `<div class="loading-spinner"></div><p style="color:#FF8C00;font-size:14px;margin-top:4px;">⏳ Verificando pagamento...</p><p style="color:#6B7280;font-size:12px;">Aguardando confirmação</p>`;
-            document.getElementById('verificandoContainer').style.display = 'block';
-            document.getElementById('btnConfirmarPix').style.display = 'none';
-            document.getElementById('pixInfoText').textContent = '⏱️ Após pagar, o sistema confirma automaticamente';
-            document.getElementById('qrCodeContainer').style.display = 'none';
-            document.getElementById('qrCodeImage').src = '';
-            document.getElementById('qrCodeFallback').style.display = 'none';
-            document.getElementById('pixCodeInput').value = 'Carregando...';
-            document.getElementById('pixValor').textContent = 'R$ 0,00';
-            pagamentoAtual = null;
-            const btn = document.getElementById('btnLanceFixo');
-            if (btn && !LEILAO_ENCERRADO) {
-                btn.disabled = false;
-                const proximoLance = parseFloat((itemAtual?.lance_atual || 0) + 0.01).toFixed(2);
-                btn.innerHTML = `🚀 Dar lance (R$ ${proximoLance})`;
-            }
-        }
+function fecharHistorico() {
+    document.getElementById('historicoModal').classList.remove('open');
+}
 
-        function copiarPix() {
-            const code = document.getElementById('pixCodeInput').value;
-            if (code && code !== 'Carregando...' && code !== 'Link indisponível') {
-                navigator.clipboard.writeText(code).then(() => mostrarMsg('✅ Código copiado!', 'sucesso'))
-                .catch(() => { document.getElementById('pixCodeInput').select(); document.execCommand('copy'); mostrarMsg('✅ Código copiado!', 'sucesso'); });
-            }
-        }
+btnLance.addEventListener('click', async function() {
+    if (!termosAceitos) {
+        termosAceiteModal.classList.add('open');
+        return;
+    }
+    if (!usuarioNome || !usuarioEmail) {
+        abrirModalNome();
+        return;
+    }
 
-        function carregarRanking(tipo) {
-            if (!itemAtual) { document.getElementById('rankingList').innerHTML = '<div style="text-align:center;color:#6B7280;padding:16px;">Aguardando...</div>'; return; }
-            document.querySelectorAll('.ranking-tabs button').forEach(b => b.classList.remove('active'));
-            const tabs = document.querySelectorAll('.ranking-tabs button'), tipos = ['maior_lance','mais_lances','menos_lances'];
-            const idx = tipos.indexOf(tipo);
-            if (tabs[idx]) tabs[idx].classList.add('active');
-            fetch(`/api/ranking/${itemAtual.id}`).then(res => res.json()).then(data => {
-                const list = document.getElementById('rankingList');
-                let rankingData = [];
-                if (tipo === 'maior_lance') rankingData = data.ranking_maior_lance || data.lances || [];
-                else if (tipo === 'mais_lances') rankingData = data.ranking_mais_lances || [];
-                else if (tipo === 'menos_lances') rankingData = data.ranking_menos_lances || [];
-                if (!rankingData || rankingData.length === 0) { list.innerHTML = '<div style="text-align:center;color:#6B7280;padding:16px;">Nenhum dado disponível</div>'; return; }
-                list.innerHTML = rankingData.map((item, index) => {
-                    const pos = index + 1;
-                    let posClass = '', posEmoji = `#${pos}`;
-                    if (pos === 1) { posClass = 'gold'; posEmoji = '🥇'; }
-                    else if (pos === 2) { posClass = 'silver'; posEmoji = '🥈'; }
-                    else if (pos === 3) { posClass = 'bronze'; posEmoji = '🥉'; }
-                    const isVencedor = item.is_vencedor || (pos === 1 && tipo === 'maior_lance');
-                    let valorDisplay = '', extraInfo = '';
-                    if (tipo === 'maior_lance') { valorDisplay = `R$ ${item.valor.toFixed(2)}`; extraInfo = `${item.lances || 0} lances • R$ ${(item.total_investido || 0).toFixed(2)} investido`; }
-                    else if (tipo === 'mais_lances') { valorDisplay = `${item.lances} lances`; extraInfo = `💰 R$ ${(item.total_investido || 0).toFixed(2)} investido • Maior: R$ ${(item.valor || 0).toFixed(2)}`; }
-                    else if (tipo === 'menos_lances') { valorDisplay = `${item.lances} lances`; extraInfo = `💰 R$ ${(item.total_investido || 0).toFixed(2)} investido • Maior: R$ ${(item.valor || 0).toFixed(2)}`; }
-                    const vencedorClass = isVencedor ? 'vencedor' : '';
-                    const trofeuHtml = isVencedor ? '<span class="trofeu">🏆</span> ' : '';
-                    return `<div class="ranking-item" onclick="abrirHistorico('${item.usuario}')"><span class="pos ${posClass} ${vencedorClass}">${posEmoji}</span><span class="nome ${vencedorClass}">${trofeuHtml}${item.usuario}</span><span class="valor ${vencedorClass}">${valorDisplay}</span><span class="extra">${extraInfo}</span></div>`;
-                }).join('');
-            }).catch(err => { console.error('Erro ao carregar ranking:', err); document.getElementById('rankingList').innerHTML = '<div style="text-align:center;color:#DC2626;padding:16px;">❌ Erro ao carregar ranking</div>'; });
-        }
+    this.disabled = true;
+    this.textContent = 'Gerando pagamento...';
 
-        function abrirHistorico(nome) {
-            if (!itemAtual) return;
-            fetch(`/api/ranking/${itemAtual.id}`).then(res => res.json()).then(data => {
-                const lancesUsuario = data.lances.filter(l => l.usuario === nome);
-                const modal = document.getElementById('modalHistorico');
-                document.getElementById('historicoTitle').textContent = `👤 ${nome}`;
-                if (lancesUsuario.length === 0) { document.getElementById('historicoContent').innerHTML = '<p style="color:#6B7280;text-align:center;padding:16px;">Nenhum lance</p>'; }
-                else {
-                    const totalInvestido = lancesUsuario.reduce((s, l) => s + l.valor, 0);
-                    document.getElementById('historicoContent').innerHTML = `<div class="historico-resumo" style="background:#F8F9FA;border-radius:8px;padding:12px;text-align:center;margin-bottom:12px;"><div><span style="color:#6B7280;font-size:13px;">Total de lances</span><br><span style="font-size:26px;font-weight:700;color:#0066FF;">${lancesUsuario.length}</span></div><div style="margin-top:8px;"><span style="color:#6B7280;font-size:13px;">Total investido</span><br><span style="font-size:26px;font-weight:700;color:#0066FF;">R$ ${totalInvestido.toFixed(2)}</span></div></div>${lancesUsuario.map(l => `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F3F4F6;font-size:13px;text-align:left;"><span style="color:#0066FF;font-weight:600;">R$ ${l.valor.toFixed(2)}</span><span style="color:#9CA3AF;font-size:11px;">${new Date(l.data_hora).toLocaleString()}</span></div>`).join('')}`;
-                }
-                modal.classList.add('active');
-            }).catch(() => mostrarMsg('Erro ao carregar histórico', 'erro'));
-        }
+    try {
+        var slug = campanhaSlugAtual || '';
+        var valor = lanceAtual;
 
-        function fecharHistorico() { document.getElementById('modalHistorico').classList.remove('active'); }
-
-        function mostrarMsg(texto, tipo) {
-            const area = document.getElementById('msgArea');
-            area.textContent = texto;
-            area.className = 'msg ' + tipo;
-            setTimeout(() => { area.className = 'msg'; }, 5000);
-        }
-
-        document.querySelectorAll('.modal-overlay').forEach(el => {
-            el.addEventListener('click', (e) => { if (e.target === el) el.classList.remove('active'); });
+        var res = await fetch('/api/criar-pagamento', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                item_id: produtoAtual?.id,
+                campanha_id: campanhaAtual?.id,
+                usuario_id: null,
+                nome: usuarioNome,
+                email: usuarioEmail,
+                valor: valor
+            })
         });
 
-        window.refreshInterval = setInterval(carregarItem, refreshInterval);
-        document.querySelector('.termo-modal-overlay')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) fecharTermoCompleto(); });
-    </script>
+        var dados = await res.json();
+
+        if (!res.ok) {
+            throw new Error(dados.erro || 'Erro ao gerar pagamento');
+        }
+
+        if (!dados.sucesso) {
+            throw new Error(dados.erro || 'Erro ao gerar pagamento');
+        }
+
+        paymentIdAtual = dados.pagamento.mp_id;
+
+        var qrBase64 = dados.pagamento.pix_qr_code_base64;
+        if (qrBase64) {
+            document.getElementById('qrCodeImagem').src = 'data:image/png;base64,' + qrBase64;
+        } else {
+            document.getElementById('qrCodeImagem').src = '';
+        }
+
+        document.getElementById('qrValor').textContent = 'R$ ' + valor.toFixed(2);
+        document.getElementById('pixCodigo').textContent = dados.pagamento.pix_qr_code || 'Codigo nao disponivel';
+        document.getElementById('statusPagamento').textContent = 'Aguardando pagamento...';
+        document.getElementById('statusPagamento').style.color = '#6B7280';
+
+        qrModal.classList.add('open');
+
+        this.disabled = false;
+        this.textContent = 'Dar lance (R$ ' + lanceAtual.toFixed(2) + ')';
+
+        iniciarVerificacao(dados.pagamento.mp_id, valor, slug);
+
+    } catch (e) {
+        alert('Erro ao gerar pagamento: ' + e.message);
+        this.disabled = false;
+        this.textContent = 'Dar lance (R$ ' + lanceAtual.toFixed(2) + ')';
+    }
+});
+
+function iniciarVerificacao(paymentId, valor, slug) {
+    var tentativas = 0;
+    var maxTentativas = 60;
+    if (verificacaoInterval) clearInterval(verificacaoInterval);
+
+    verificacaoInterval = setInterval(async function() {
+        tentativas++;
+        try {
+            var res = await fetch('/api/consultar-pagamento/' + paymentId);
+            var data = await res.json();
+
+            if (data.status === 'approved' || data.confirmado) {
+                clearInterval(verificacaoInterval);
+                document.getElementById('statusPagamento').textContent = 'Pagamento confirmado! Registrando lance...';
+                document.getElementById('statusPagamento').style.color = '#10B981';
+
+                try {
+                    var regRes = await fetch('/api/confirmar-pagamento', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ transacao_id: paymentId })
+                    });
+
+                    var regData = await regRes.json();
+
+                    if (regData.sucesso) {
+                        document.getElementById('statusPagamento').textContent = 'Lance registrado com sucesso!';
+                        setTimeout(function() {
+                            qrModal.classList.remove('open');
+                            carregarCampanha();
+                            carregarRankings(campanhaSlugAtual || '');
+                        }, 2000);
+                    } else {
+                        document.getElementById('statusPagamento').textContent = regData.erro || 'Erro ao registrar lance';
+                        document.getElementById('statusPagamento').style.color = '#D97706';
+                    }
+                } catch (e) {
+                    console.error('Erro ao registrar lance:', e);
+                    document.getElementById('statusPagamento').textContent = 'Pagamento confirmado, mas erro ao registrar. Contate o suporte.';
+                    document.getElementById('statusPagamento').style.color = '#D97706';
+                }
+
+            } else if (data.status === 'rejected' || data.status === 'cancelled') {
+                clearInterval(verificacaoInterval);
+                document.getElementById('statusPagamento').textContent = 'Pagamento recusado ou cancelado';
+                document.getElementById('statusPagamento').style.color = '#DC2626';
+                setTimeout(function() { qrModal.classList.remove('open'); }, 3000);
+            }
+
+            if (tentativas >= maxTentativas) {
+                clearInterval(verificacaoInterval);
+                document.getElementById('statusPagamento').textContent = 'Tempo esgotado. Verifique no app do banco.';
+                document.getElementById('statusPagamento').style.color = '#D97706';
+                setTimeout(function() { qrModal.classList.remove('open'); }, 5000);
+            }
+        } catch (e) {
+            console.error('Erro na verificacao:', e);
+        }
+    }, 10000);
+}
+
+function fecharQR() {
+    if (verificacaoInterval) {
+        clearInterval(verificacaoInterval);
+        verificacaoInterval = null;
+    }
+    qrModal.classList.remove('open');
+}
+
+function copiarPix() {
+    var texto = document.getElementById('pixCodigo').textContent;
+    if (!texto || texto === 'Aguardando...') return;
+
+    navigator.clipboard.writeText(texto).then(function() {
+        alert('Codigo Pix copiado!');
+    }).catch(function() {
+        var range = document.createRange();
+        range.selectNode(document.getElementById('pixCodigo'));
+        window.getSelection().removeAllRanges();
+        window.getSelection().addRange(range);
+        alert('Selecione o codigo e copie (Ctrl+C)');
+    });
+}
+
+function iniciarAtualizacaoAutomatica() {
+    if (atualizacaoInterval) clearInterval(atualizacaoInterval);
+    atualizacaoInterval = setInterval(function() {
+        if (campanhaSlugAtual) {
+            carregarCampanha();
+        }
+    }, 15000);
+}
+
+async function iniciar() {
+    await carregarCampanha();
+    iniciarAtualizacaoAutomatica();
+
+    document.querySelectorAll('.modal-overlay').forEach(function(modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.remove('open');
+            }
+        });
+    });
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay.open').forEach(function(modal) {
+            modal.classList.remove('open');
+        });
+    }
+});
+
+iniciar();
+</script>
 </body>
 </html>
