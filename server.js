@@ -124,6 +124,7 @@ function criarCampanhaPadrao() {
         db._nextId.itens = 2;
         db._nextId.campanhas = 2;
         console.log('✅ Campanha padrão criada como fallback');
+        saveDB();
     }
 }
 
@@ -199,6 +200,7 @@ async function loadDB() {
 }
 
 async function saveDB() {
+    // 1. SEMPRE SALVA NO JSON (FALLBACK)
     try {
         fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
         console.log('✅ Dados salvos no JSON');
@@ -206,6 +208,7 @@ async function saveDB() {
         console.error('❌ Erro ao salvar JSON:', e);
     }
 
+    // 2. DEPOIS SALVA NO SUPABASE
     if (useSupabase) {
         try {
             console.log('📤 Salvando dados no Supabase...');
