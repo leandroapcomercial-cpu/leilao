@@ -78,13 +78,62 @@ let db = {
     _nextId: { usuarios: 1, campanhas: 1, itens: 1, lances: 1, pagamentos: 1 }
 };
 
-// ========== REMOVIDO: Criação automática de campanha padrão ==========
-// Agora o sistema começa vazio se não houver dados
+// ========== FUNÇÃO PARA CRIAR CAMPANHA PADRÃO (APENAS FALLBACK) ==========
+function criarCampanhaPadrao() {
+    const now = new Date();
+    const fim = new Date(now);
+    fim.setDate(fim.getDate() + 7);
 
+    const campanhaExistente = db.campanhas.find(c => c.id === 1);
+    if (!campanhaExistente) {
+        db.campanhas.push({
+            id: 1,
+            nome: 'Campanha Padrão',
+            slug: 'campanha-padrao',
+            descricao: 'Leilão de produtos selecionados',
+            status: 'ativa',
+            meta_valor: 3.00,
+            premio_imagem: '🏆',
+            premio_imagem_url: '',
+            premio_titulo: '🏆 PRÊMIO DO LEILÃO',
+            influencer: 'Não informado',
+            metas_internas: [
+                { meta: 25, premio: 'R$ 100,00' },
+                { meta: 50, premio: 'R$ 200,00' },
+                { meta: 75, premio: 'R$ 300,00' },
+                { meta: 100, premio: 'R$ 500,00' }
+            ],
+            duracao: 1440,
+            created_at: now.toISOString()
+        });
+
+        db.itens.push({
+            id: 1,
+            campanha_id: 1,
+            nome: 'Kit Churrasco Luxo',
+            descricao: 'Maleta com faca, garfo, pegador e tábua personalizada',
+            imagem: '🥩',
+            categoria: 'Cozinha',
+            lance_inicial: 0.00,
+            lance_minimo: 0.00,
+            incremento_minimo: 0.01,
+            data_fim: fim.toISOString(),
+            status: 'ativo',
+            started_at: null,
+            created_at: now.toISOString()
+        });
+        db._nextId.itens = 2;
+        db._nextId.campanhas = 2;
+        console.log('✅ Campanha padrão criada como fallback');
+    }
+}
+
+// ========== CARREGAR BANCO DE DADOS ==========
 async function loadDB() {
     // PRIORIZA SUPABASE
     if (useSupabase) {
         try {
+            console.log('📤 Carregando dados do Supabase...');
             const [campanhas, itens, usuarios, lances, pagamentos] = await Promise.all([
                 supabase.from('campanhas').select('*'),
                 supabase.from('itens').select('*'),
@@ -100,6 +149,7 @@ async function loadDB() {
                 db.lances = lances.data || [];
                 db.pagamentos = pagamentos.data || [];
 
+                // CORRIGE DATAS DOS ITENS
                 db.itens.forEach(item => {
                     if (item.started_at && !item.data_fim) {
                         const fim = new Date(item.started_at);
@@ -108,7 +158,7 @@ async function loadDB() {
                     }
                 });
 
-                // Atualiza _nextId com base nos dados existentes
+                // ATUALIZA nextId
                 db._nextId = {
                     usuarios: (db.usuarios.length || 0) + 1,
                     campanhas: (db.campanhas.length || 0) + 1,
@@ -118,7 +168,12 @@ async function loadDB() {
                 };
 
                 console.log(`✅ Dados carregados do Supabase: ${db.campanhas.length} campanhas, ${db.itens.length} itens, ${db.lances.length} lances`);
+                
+                // SALVA NO JSON COMO BACKUP
+                await saveDB();
                 return;
+            } else {
+                console.log('📭 Nenhuma campanha encontrada no Supabase.');
             }
         } catch (e) {
             console.log('⚠️ Erro no Supabase:', e.message);
@@ -128,11 +183,11 @@ async function loadDB() {
     // FALLBACK: JSON
     try {
         if (fs.existsSync(DB_FILE)) {
+            console.log('📤 Carregando dados do JSON...');
             const raw = fs.readFileSync(DB_FILE, 'utf8');
             db = JSON.parse(raw);
             console.log(`✅ Banco carregado do JSON: ${db.campanhas.length} campanhas`);
             
-            // Atualiza _nextId com base nos dados existentes
             db._nextId = {
                 usuarios: (db.usuarios.length || 0) + 1,
                 campanhas: (db.campanhas.length || 0) + 1,
@@ -146,53 +201,77 @@ async function loadDB() {
         console.error('Erro ao carregar DB:', e);
     }
 
-    // ========== NENHUM DADO ENCONTRADO - COMEÇA VAZIO ==========
-    console.log('📭 Nenhum dado encontrado. Sistema vazio. Crie uma campanha pelo admin.');
-    db = {
-        usuarios: [],
-        campanhas: [],
-        itens: [],
-        lances: [],
-        pagamentos: [],
-        _nextId: { usuarios: 1, campanhas: 1, itens: 1, lances: 1, pagamentos: 1 }
-    };
-    saveDB();
+    // NENHUM DADO ENCONTRADO - CRIA CAMPANHA PADRÃO
+    console.log('📭 Nenhum dado encontrado. Criando campanha padrão...');
+    criarCampanhaPadrao();
+    
+    // SALVA IMEDIATAMENTE
+    await saveDB();
 }
 
+// ========== SALVAR BANCO DE DADOS ==========
 async function saveDB() {
-    if (useSupabase) {
-        try {
-            // Salva cada tabela individualmente
-            for (const item of db.campanhas) {
-                await supabase.from('campanhas').upsert(item);
-            }
-            for (const item of db.itens) {
-                await supabase.from('itens').upsert(item);
-            }
-            for (const item of db.usuarios) {
-                await supabase.from('usuarios').upsert(item);
-            }
-            for (const item of db.lances) {
-                await supabase.from('lances').upsert(item);
-            }
-            for (const item of db.pagamentos) {
-                await supabase.from('pagamentos').upsert(item);
-            }
-            console.log('✅ Dados salvos no Supabase');
-            return;
-        } catch (e) {
-            console.log('⚠️ Erro ao salvar no Supabase:', e.message);
-        }
-    }
-
+    // SEMPRE SALVA NO JSON PRIMEIRO (FALLBACK)
     try {
         fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
         console.log('✅ Dados salvos no JSON');
     } catch (e) {
-        console.error('Erro ao salvar DB:', e);
+        console.error('❌ Erro ao salvar JSON:', e);
+    }
+
+    // DEPOIS SALVA NO SUPABASE
+    if (useSupabase) {
+        try {
+            console.log('📤 Salvando dados no Supabase...');
+            
+            // SALVA CAMPANHAS
+            for (const item of db.campanhas) {
+                const { error } = await supabase
+                    .from('campanhas')
+                    .upsert(item, { onConflict: 'id' });
+                if (error) console.error('❌ Erro ao salvar campanha:', error.message);
+            }
+            
+            // SALVA ITENS
+            for (const item of db.itens) {
+                const { error } = await supabase
+                    .from('itens')
+                    .upsert(item, { onConflict: 'id' });
+                if (error) console.error('❌ Erro ao salvar item:', error.message);
+            }
+            
+            // SALVA USUÁRIOS
+            for (const item of db.usuarios) {
+                const { error } = await supabase
+                    .from('usuarios')
+                    .upsert(item, { onConflict: 'id' });
+                if (error) console.error('❌ Erro ao salvar usuário:', error.message);
+            }
+            
+            // SALVA LANCES
+            for (const item of db.lances) {
+                const { error } = await supabase
+                    .from('lances')
+                    .upsert(item, { onConflict: 'id' });
+                if (error) console.error('❌ Erro ao salvar lance:', error.message);
+            }
+            
+            // SALVA PAGAMENTOS
+            for (const item of db.pagamentos) {
+                const { error } = await supabase
+                    .from('pagamentos')
+                    .upsert(item, { onConflict: 'id' });
+                if (error) console.error('❌ Erro ao salvar pagamento:', error.message);
+            }
+            
+            console.log('✅ Dados salvos no Supabase');
+        } catch (e) {
+            console.log('⚠️ Erro ao salvar no Supabase:', e.message);
+        }
     }
 }
 
+// ========== FUNÇÕES DO BANCO ==========
 function findOne(table, filter) {
     return db[table].find(item => {
         return Object.keys(filter).every(key => item[key] === filter[key]);
@@ -204,7 +283,10 @@ function insert(table, data) {
     data.id = id;
     db._nextId[table] = id + 1;
     db[table].push(data);
-    saveDB(); // Salva imediatamente
+    
+    // SALVA IMEDIATAMENTE
+    saveDB();
+    
     return { lastID: id };
 }
 
@@ -212,17 +294,19 @@ function update(table, id, data) {
     const index = db[table].findIndex(item => item.id === id);
     if (index !== -1) {
         db[table][index] = { ...db[table][index], ...data };
-        saveDB(); // Salva imediatamente
+        saveDB();
         return true;
     }
     return false;
 }
 
+// ========== MIDDLEWARES ==========
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
 app.use('/uploads', express.static(UPLOAD_DIR));
 
+// ========== ADMIN MIDDLEWARE ==========
 const verificarAdmin = (req, res, next) => {
     const auth = req.headers.authorization;
     if (!auth) {
@@ -235,6 +319,7 @@ const verificarAdmin = (req, res, next) => {
     next();
 };
 
+// ========== ADMIN - VERIFICAR SENHA ==========
 app.post('/api/admin/verificar', (req, res) => {
     const { senha } = req.body;
     if (senha === ADMIN_PASSWORD) {
@@ -244,6 +329,7 @@ app.post('/api/admin/verificar', (req, res) => {
     }
 });
 
+// ========== FUNÇÃO PIX ==========
 async function criarPagamentoPIX(valor, descricao, usuario, item, campanha) {
     try {
         console.log(`💰 Criando PIX: R$ ${valor} para ${usuario.nome}`);
@@ -325,6 +411,7 @@ async function criarPagamentoPIX(valor, descricao, usuario, item, campanha) {
     }
 }
 
+// ========== ROTA QR CODE ==========
 app.post('/api/gerar-qr', async (req, res) => {
     const { texto } = req.body;
     if (!texto) return res.status(400).json({ erro: 'Texto é obrigatório' });
@@ -342,6 +429,7 @@ app.post('/api/gerar-qr', async (req, res) => {
     }
 });
 
+// ========== ROTAS DE USUÁRIO ==========
 app.post('/api/usuario', (req, res) => {
     const { nome, email } = req.body;
     if (!nome || !email) return res.status(400).json({ erro: 'Nome e email são obrigatórios' });
@@ -353,12 +441,20 @@ app.post('/api/usuario', (req, res) => {
     res.json({ sucesso: true, usuario: { id: usuario.id, nome: usuario.nome, email: usuario.email } });
 });
 
+// ========== ROTA DE CAMPANHA (PÚBLICA) ==========
 app.get('/api/campanha/:slug', (req, res) => {
     try {
+        console.log(`🔍 Buscando campanha com slug: ${req.params.slug}`);
         const campanha = findOne('campanhas', { slug: req.params.slug });
-        if (!campanha) return res.status(404).json({ erro: 'Campanha não encontrada' });
+        if (!campanha) {
+            console.log(`❌ Campanha não encontrada: ${req.params.slug}`);
+            return res.status(404).json({ erro: 'Campanha não encontrada' });
+        }
         const item = db.itens.find(i => i.campanha_id === campanha.id);
-        if (!item) return res.json({ campanha, item: null });
+        if (!item) {
+            console.log(`⚠️ Item não encontrado para campanha: ${campanha.id}`);
+            return res.json({ campanha, item: null });
+        }
         const lances = db.lances.filter(l => l.item_id === item.id && l.status === 'confirmado');
         const maiorLance = lances.length > 0 ? Math.max(...lances.map(l => l.valor)) : item.lance_inicial;
         const encerrado = new Date(item.data_fim) < new Date() || item.status !== 'ativo';
@@ -390,6 +486,7 @@ app.get('/api/campanha/:slug', (req, res) => {
                 return { nome: user ? user.nome : 'Anônimo', valor: l.valor, data: l.data_hora };
             })
         };
+        console.log(`✅ Campanha encontrada: ${campanha.nome}`);
         res.json({ campanha, item: resultado });
     } catch (e) {
         console.error('Erro /api/campanha/:slug:', e);
@@ -397,6 +494,7 @@ app.get('/api/campanha/:slug', (req, res) => {
     }
 });
 
+// ========== CRIAR PAGAMENTO ==========
 app.post('/api/criar-pagamento', async (req, res) => {
     const { item_id, campanha_id, usuario_id, nome, email, valor } = req.body;
     if (!item_id || valor === undefined || valor < 0) {
@@ -493,6 +591,7 @@ app.post('/api/criar-pagamento', async (req, res) => {
     }
 });
 
+// ========== CONSULTAR PAGAMENTO ==========
 app.get('/api/consultar-pagamento/:mp_id', async (req, res) => {
     const mp_id = req.params.mp_id;
     try {
@@ -523,6 +622,7 @@ app.get('/api/consultar-pagamento/:mp_id', async (req, res) => {
     }
 });
 
+// ========== CONFIRMAR PAGAMENTO ==========
 app.post('/api/confirmar-pagamento', (req, res) => {
     const { transacao_id } = req.body;
     try {
@@ -576,6 +676,7 @@ app.post('/api/confirmar-pagamento', (req, res) => {
     }
 });
 
+// ========== RANKING ==========
 app.get('/api/ranking/:item_id', (req, res) => {
     try {
         const item_id = parseInt(req.params.item_id);
@@ -673,10 +774,12 @@ app.get('/api/ranking/:item_id', (req, res) => {
     }
 });
 
+// ========== ADMIN - EXPORTAR DADOS ==========
 app.get('/api/admin/exportar-dados', verificarAdmin, (req, res) => {
     res.json(db);
 });
 
+// ========== ADMIN - CRIAR CAMPANHA ==========
 app.post('/api/admin/criar-campanha', verificarAdmin, upload.single('premio_imagem'), (req, res) => {
     const {
         nome, descricao, slug,
@@ -692,6 +795,7 @@ app.post('/api/admin/criar-campanha', verificarAdmin, upload.single('premio_imag
         return res.status(400).json({ erro: 'Nome, slug e nome do item são obrigatórios' });
     }
 
+    // VERIFICA SE O SLUG JÁ EXISTE
     if (findOne('campanhas', { slug })) {
         return res.status(400).json({ erro: 'Slug já existe. Escolha outro.' });
     }
@@ -736,6 +840,7 @@ app.post('/api/admin/criar-campanha', verificarAdmin, upload.single('premio_imag
         }
         if (duracaoMinutos < 1) duracaoMinutos = 1;
 
+        // CRIA A CAMPANHA
         const campResult = insert('campanhas', {
             nome,
             descricao: descricao || '',
@@ -761,6 +866,7 @@ app.post('/api/admin/criar-campanha', verificarAdmin, upload.single('premio_imag
             dataFim = fim.toISOString();
         }
 
+        // CRIA O ITEM DA CAMPANHA
         const itemResult = insert('itens', {
             campanha_id: campResult.lastID,
             nome: item_nome,
@@ -778,6 +884,27 @@ app.post('/api/admin/criar-campanha', verificarAdmin, upload.single('premio_imag
 
         console.log(`✅ Item criado com ID: ${itemResult.lastID}`);
 
+        // VERIFICA SE A CAMPANHA PADRÃO (ID 1) EXISTE E DEVE SER REMOVIDA
+        const campanhaPadrao = db.campanhas.find(c => c.id === 1 && c.slug === 'campanha-padrao');
+        if (campanhaPadrao && db.campanhas.length > 1) {
+            // REMOVE A CAMPANHA PADRÃO SE EXISTIREM OUTRAS CAMPANHAS
+            const index = db.campanhas.findIndex(c => c.id === 1);
+            if (index !== -1) {
+                db.campanhas.splice(index, 1);
+                // REMOVE O ITEM ASSOCIADO
+                const itemIndex = db.itens.findIndex(i => i.campanha_id === 1);
+                if (itemIndex !== -1) {
+                    db.itens.splice(itemIndex, 1);
+                }
+                console.log('🗑️ Campanha padrão removida (substituída por nova campanha)');
+                saveDB();
+            }
+        }
+
+        // CONSTRÓI A URL CORRETA
+        const baseUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+        const urlCompleta = `${baseUrl}/${slug}`;
+
         res.json({
             sucesso: true,
             campanha: { id: campResult.lastID, nome, slug },
@@ -790,6 +917,7 @@ app.post('/api/admin/criar-campanha', verificarAdmin, upload.single('premio_imag
     }
 });
 
+// ========== ADMIN - LISTAR CAMPANHAS COMPLETAS ==========
 app.get('/api/admin/campanhas-completas', verificarAdmin, (req, res) => {
     try {
         const campanhasCompletas = db.campanhas.map(campanha => {
@@ -853,6 +981,7 @@ app.get('/api/admin/campanhas-completas', verificarAdmin, (req, res) => {
     }
 });
 
+// ========== ADMIN - EDITAR CAMPANHA ==========
 app.put('/api/admin/campanhas/:id', verificarAdmin, upload.single('premio_imagem'), (req, res) => {
     const id = parseInt(req.params.id);
     const {
@@ -963,6 +1092,7 @@ app.put('/api/admin/campanhas/:id', verificarAdmin, upload.single('premio_imagem
     }
 });
 
+// ========== ADMIN - ALTERAR STATUS ==========
 app.put('/api/admin/campanhas/:id/status', verificarAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     const { status } = req.body;
@@ -986,6 +1116,7 @@ app.put('/api/admin/campanhas/:id/status', verificarAdmin, (req, res) => {
     }
 });
 
+// ========== ADMIN - RESETAR LEILÃO ==========
 app.post('/api/admin/resetar-leilao/:campanha_id', verificarAdmin, (req, res) => {
     const campanha_id = parseInt(req.params.campanha_id);
     const item = db.itens.find(i => i.campanha_id === campanha_id);
@@ -1008,6 +1139,7 @@ app.post('/api/admin/resetar-leilao/:campanha_id', verificarAdmin, (req, res) =>
     }
 });
 
+// ========== ADMIN - EXCLUIR CAMPANHAS ==========
 app.delete('/api/admin/campanhas', verificarAdmin, (req, res) => {
     const { ids } = req.body;
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
@@ -1035,6 +1167,7 @@ app.delete('/api/admin/campanhas', verificarAdmin, (req, res) => {
     }
 });
 
+// ========== ROTA CAMPANHA ATIVA ==========
 app.get('/api/campanha-ativa', (req, res) => {
     try {
         const campanha = db.campanhas.find(c => c.status === 'ativa');
@@ -1048,6 +1181,7 @@ app.get('/api/campanha-ativa', (req, res) => {
     }
 });
 
+// ========== ROTA RANKINGS GLOBAL ==========
 app.get('/api/rankings', (req, res) => {
     try {
         const slug = req.query.slug;
@@ -1152,6 +1286,7 @@ app.get('/api/rankings', (req, res) => {
     }
 });
 
+// ========== ROTA HISTÓRICO DO USUÁRIO ==========
 app.get('/api/usuarios/:nome/historico', (req, res) => {
     try {
         const nome = decodeURIComponent(req.params.nome);
@@ -1184,6 +1319,7 @@ app.get('/api/usuarios/:nome/historico', (req, res) => {
     }
 });
 
+// ========== WEBSOCKET ==========
 io.on('connection', (socket) => {
     console.log('✅ Cliente conectado:', socket.id);
     socket.on('join_item', (item_id) => {
@@ -1194,6 +1330,7 @@ io.on('connection', (socket) => {
     });
 });
 
+// ========== INICIA O SERVIDOR ==========
 loadDB().then(() => {
     server.listen(PORT, () => {
         console.log(`🚀 Servidor: http://localhost:${PORT}`);
