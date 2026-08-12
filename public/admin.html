@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Leilao Facil</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --secondary: #f59e0b;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --dark: #1e293b;
+      --gray: #64748b;
+      --light: #f8fafc;
+      --white: #ffffff;
+      --border: #e2e8f0;
+      --sidebar: #0f172a;
+      --sidebar-hover: #1e293b;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--light);
+      color: var(--dark);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    .app {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: 100vh;
+    }
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .sidebar.mobile-open { display: block; position: fixed; inset: 0; z-index: 100; }
+    }
+    .sidebar {
+      background: var(--sidebar);
+      color: white;
+      padding: 1.5rem 1rem;
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar-logo {
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .sidebar-logo span { color: var(--secondary); }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: rgba(255,255,255,0.7);
+      font-weight: 500;
+      font-size: 0.875rem;
+    }
+    .nav-item:hover, .nav-item.active {
+      background: var(--sidebar-hover);
+      color: white;
+    }
+    .nav-item.active {
+      border-left: 3px solid var(--primary);
+    }
+    .sidebar-footer {
+      margin-top: auto;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.5);
+    }
+    .main {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+    }
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+    .header-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+    }
+    .header-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1.25rem;
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-secondary {
+      background: var(--white);
+      color: var(--dark);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { background: var(--light); }
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+    }
+    .btn-success {
+      background: var(--success);
+      color: white;
+    }
+    .btn-sm { padding: 0.375rem 0.75rem; font-size: 0.75rem; }
+    .card {
+      background: var(--white);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+    .card-title {
+      font-size: 1.125rem;
+      font-weight: 700;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 900px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .stat-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+    .stat-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .stat-icon.blue { background: #dbeafe; }
+    .stat-icon.green { background: #d1fae5; }
+    .stat-icon.yellow { background: #fef3c7; }
+    .stat-icon.red { background: #fee2e2; }
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 0.25rem;
+    }
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .table-container {
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+    th, td {
+      padding: 0.875rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      font-weight: 600;
+      color: var(--gray);
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+    }
+    tr:hover { background: var(--light); }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.625rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #d1fae5; color: #065f46; }
+    .badge-yellow { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-gray { background: #f3f4f6; color: #4b5563; }
+    .form-group { margin-bottom: 1rem; }
+    .form-label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 0.375rem;
+    }
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      padding: 0.625rem 0.875rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.875rem;
+      transition: border-color 0.2s;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .form-textarea { resize: vertical; min-height: 80px; }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+    @media (max-width: 640px) {
+      .form-grid { grid-template-columns: 1fr; }
+    }
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 1rem;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s;
+    }
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    .modal {
+      background: var(--white);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      transform: scale(0.95);
+      transition: transform 0.3s;
+    }
+    .modal-overlay.active .modal {
+      transform: scale(1);
+    }
+    .modal-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-title { font-size: 1.125rem; font-weight: 700; }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--gray);
+    }
+    .modal-body { padding: 1.5rem; }
+    .modal-footer {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+    }
+    .toast-container {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      z-index: 1001;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .toast {
+      background: var(--dark);
+      color: white;
+      padding: 1rem 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      animation: slideIn 0.3s ease;
+      max-width: 400px;
+    }
+    .toast.success { background: var(--success); }
+    .toast.error { background: var(--danger); }
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .login-page {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    }
+    .login-box {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+    }
+    .login-logo {
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 2rem;
+      color: var(--primary);
+    }
+    .login-logo span { color: var(--secondary); }
+    .chart-container {
+      position: relative;
+      height: 300px;
+    }
+    .section { display: none; }
+    .section.active { display: block; }
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: var(--gray);
+    }
+    .campanha-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      transition: all 0.2s;
+    }
+    .campanha-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .campanha-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.75rem;
+    }
+    .campanha-nome {
+      font-weight: 700;
+      font-size: 1rem;
+    }
+    .campanha-meta {
+      font-size: 0.75rem;
+      color: var(--gray);
+      margin-top: 0.25rem;
+    }
+    .campanha-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: var(--light);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 0.75rem;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+  </style>
+</head>
+<body>
+  <!-- Login -->
+  <div class="login-page" id="loginPage">
+    <div class="login-box">
+      <div class="login-logo">Leilao<span>Facil</span> Admin</div>
+      <div class="form-group">
+        <label class="form-label">Senha de Administrador</label>
+        <input type="password" class="form-input" id="loginSenha" placeholder="Digite a senha">
+      </div>
+      <button class="btn btn-primary" style="width:100%;" onclick="fazerLogin()">
+        🔓 Entrar no Painel
+      </button>
+      <p style="text-align:center;margin-top:1rem;font-size:0.875rem;color:var(--gray);">
+        Acesso restrito ao administrador
+      </p>
+    </div>
+  </div>
+
+  <!-- App -->
+  <div class="app" id="appPage" style="display:none;">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">Leilao<span>Facil</span></div>
+      <nav>
+        <div class="nav-item active" onclick="mostrarSecao('dashboard')" data-secao="dashboard">
+          📊 Dashboard
+        </div>
+        <div class="nav-item" onclick="mostrarSecao('campanhas')" data-secao="campanhas">
+          🏷️ Campanhas
+        </div>
+        <div class="nav-item" onclick="mostrarSecao('influencers')" data-secao="influencers">
+          👥 Influencers
+        </div>
+        <div class="nav-item" onclick="mostrarSecao('usuarios')" data-secao="usuarios">
+          👤 Usuarios
+        </div>
+        <div class="nav-item" onclick="mostrarSecao('configuracoes')" data-secao="configuracoes">
+          ⚙️ Configuracoes
+        </div>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="nav-item" onclick="logout()">
+          🚪 Sair
+        </div>
+        <p style="margin-top:0.5rem;">v2.0.0</p>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <!-- Dashboard -->
+      <div class="section active" id="sec-dashboard">
+        <div class="header-bar">
+          <h1 class="header-title">📊 Dashboard</h1>
+          <div class="header-actions">
+            <button class="btn btn-secondary" onclick="carregarDashboard()">🔄 Atualizar</button>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon blue">👥</div>
+            <div class="stat-value" id="dashUsuarios">0</div>
+            <div class="stat-label">Usuarios</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon green">🏷️</div>
+            <div class="stat-value" id="dashCampanhas">0</div>
+            <div class="stat-label">Campanhas Ativas</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon yellow">💰</div>
+            <div class="stat-value" id="dashArrecadado">R$ 0</div>
+            <div class="stat-label">Arrecadado</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon red">🎯</div>
+            <div class="stat-value" id="dashLances">0</div>
+            <div class="stat-label">Lances</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">📈 Campanhas Recentes</h3>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Status</th>
+                  <th>Lances</th>
+                  <th>Arrecadado</th>
+                  <th>Acoes</th>
+                </tr>
+              </thead>
+              <tbody id="dashCampanhasRecentes"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Campanhas -->
+      <div class="section" id="sec-campanhas">
+        <div class="header-bar">
+          <h1 class="header-title">🏷️ Campanhas</h1>
+          <div class="header-actions">
+            <button class="btn btn-primary" onclick="abrirModalCampanha()">➕ Nova Campanha</button>
+          </div>
+        </div>
+        <div id="campanhasList"></div>
+      </div>
+
+      <!-- Influencers -->
+      <div class="section" id="sec-influencers">
+        <div class="header-bar">
+          <h1 class="header-title">👥 Influencers</h1>
+          <div class="header-actions">
+            <button class="btn btn-primary" onclick="abrirModalInfluencer()">➕ Novo Influencer</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Codigo</th>
+                  <th>Comissao</th>
+                  <th>Cliques</th>
+                  <th>Gerado</th>
+                  <th>Acoes</th>
+                </tr>
+              </thead>
+              <tbody id="influencersList"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Usuarios -->
+      <div class="section" id="sec-usuarios">
+        <div class="header-bar">
+          <h1 class="header-title">👤 Usuarios</h1>
+        </div>
+        <div class="card">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nome</th>
+                  <th>Email</th>
+                  <th>CPF</th>
+                  <th>Lances</th>
+                  <th>Gasto</th>
+                </tr>
+              </thead>
+              <tbody id="usuariosList"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Configuracoes -->
+      <div class="section" id="sec-configuracoes">
+        <div class="header-bar">
+          <h1 class="header-title">⚙️ Configuracoes</h1>
+        </div>
+        <div class="card">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Lance Inicial Padrao (R$)</label>
+              <input type="number" step="0.01" class="form-input" id="configLanceInicial" value="0.01">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Lance Minimo Padrao (R$)</label>
+              <input type="number" step="0.01" class="form-input" id="configLanceMinimo" value="0.01">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Duracao Padrao (horas)</label>
+              <input type="number" class="form-input" id="configDuracao" value="24">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Comissao Padrao (%)</label>
+              <input type="number" class="form-input" id="configComissao" value="10">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nome do Site</label>
+            <input type="text" class="form-input" id="configSiteNome" value="Leilao Facil">
+          </div>
+          <div class="form-group">
+            <label class="form-label">URL do Site</label>
+            <input type="url" class="form-input" id="configSiteUrl" value="https://leilaofacil.com.br">
+          </div>
+          <button class="btn btn-primary" onclick="salvarConfiguracoes()">💾 Salvar Configuracoes</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Nova Campanha -->
+  <div class="modal-overlay" id="modalCampanha">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">➕ Nova Campanha</h3>
+        <button class="modal-close" onclick="fecharModal('modalCampanha')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Nome da Campanha *</label>
+          <input type="text" class="form-input" id="campNome" placeholder="Ex: Leilao de Celular">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Descricao</label>
+          <textarea class="form-textarea" id="campDescricao" placeholder="Descricao do premio..."></textarea>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Duracao (horas)</label>
+            <input type="number" class="form-input" id="campDuracao" value="24">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Lance Inicial (R$)</label>
+            <input type="number" step="0.01" class="form-input" id="campLanceInicial" value="0.01">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Lance Minimo (R$)</label>
+            <input type="number" step="0.01" class="form-input" id="campLanceMinimo" value="0.01">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Meta de Arrecadacao (R$)</label>
+            <input type="number" step="0.01" class="form-input" id="campMeta" value="0">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nome do Premio</label>
+          <input type="text" class="form-input" id="campPremioNome" placeholder="Ex: iPhone 15 Pro">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Descricao do Premio</label>
+          <input type="text" class="form-input" id="campPremioDesc" placeholder="Ex: 256GB, Cor Preta">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Valor do Premio (R$)</label>
+          <input type="number" step="0.01" class="form-input" id="campPremioValor" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Imagem do Premio</label>
+          <input type="file" class="form-input" id="campImagem" accept="image/*">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="fecharModal('modalCampanha')">Cancelar</button>
+        <button class="btn btn-primary" onclick="criarCampanha()">✅ Criar Campanha</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Influencer -->
+  <div class="modal-overlay" id="modalInfluencer">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">➕ Novo Influencer</h3>
+        <button class="modal-close" onclick="fecharModal('modalInfluencer')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Nome *</label>
+          <input type="text" class="form-input" id="infNome" placeholder="Nome do influencer">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email *</label>
+          <input type="email" class="form-input" id="infEmail" placeholder="email@exemplo.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Codigo de Referencia *</label>
+          <input type="text" class="form-input" id="infCodigo" placeholder="ex: joao2024">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Comissao (%)</label>
+          <input type="number" class="form-input" id="infComissao" value="10">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Chave PIX</label>
+          <input type="text" class="form-input" id="infPix" placeholder="CPF, Email ou Chave PIX">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="fecharModal('modalInfluencer')">Cancelar</button>
+        <button class="btn btn-primary" onclick="criarInfluencer()">✅ Criar Influencer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    const API_URL = window.location.origin;
+    let token = localStorage.getItem('lf_admin_token');
+    let campanhasData = [];
+    let influencersData = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (token) {
+        verificarToken();
+      }
+    });
+
+    async function verificarToken() {
+      try {
+        const response = await fetch(API_URL + '/api/admin/verificar', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (response.ok) {
+          mostrarApp();
+          carregarDashboard();
+        } else {
+          logout();
+        }
+      } catch (err) {
+        logout();
+      }
+    }
+
+    async function fazerLogin() {
+      const senha = document.getElementById('loginSenha').value;
+      if (!senha) {
+        mostrarToast('Digite a senha', 'error');
+        return;
+      }
+      try {
+        const response = await fetch(API_URL + '/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ senha })
+        });
+        const data = await response.json();
+        if (data.sucesso) {
+          token = data.token;
+          localStorage.setItem('lf_admin_token', token);
+          mostrarApp();
+          carregarDashboard();
+          mostrarToast('Login realizado com sucesso!', 'success');
+        } else {
+          mostrarToast(data.erro || 'Senha incorreta', 'error');
+        }
+      } catch (err) {
+        mostrarToast('Erro de conexao', 'error');
+      }
+    }
+
+    function mostrarApp() {
+      document.getElementById('loginPage').style.display = 'none';
+      document.getElementById('appPage').style.display = 'grid';
+    }
+
+    function logout() {
+      localStorage.removeItem('lf_admin_token');
+      token = null;
+      document.getElementById('appPage').style.display = 'none';
+      document.getElementById('loginPage').style.display = 'flex';
+    }
+
+    function mostrarSecao(secao) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById('sec-' + secao).classList.add('active');
+      document.querySelector('[data-secao="' + secao + '"]').classList.add('active');
+
+      if (secao === 'campanhas') carregarCampanhas();
+      if (secao === 'influencers') carregarInfluencers();
+      if (secao === 'usuarios') carregarUsuarios();
+      if (secao === 'configuracoes') carregarConfiguracoes();
+    }
+
+    async function carregarDashboard() {
+      try {
+        const response = await fetch(API_URL + '/api/admin/dashboard', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await response.json();
+        if (data.sucesso) {
+          document.getElementById('dashUsuarios').textContent = data.stats.totalUsuarios;
+          document.getElementById('dashCampanhas').textContent = data.stats.campanhasAtivas + '/' + data.stats.totalCampanhas;
+          document.getElementById('dashArrecadado').textContent = formatarMoeda(data.stats.totalArrecadado);
+          document.getElementById('dashLances').textContent = data.stats.totalLances;
+
+          const tbody = document.getElementById('dashCampanhasRecentes');
+          tbody.innerHTML = data.campanhasRecentes.map(c => {
+            let badgeClass = 'badge-gray';
+            let badgeText = c.status;
+            if (c.status === 'ativo') { badgeClass = 'badge-green'; badgeText = 'Ativo'; }
+            else if (c.status === 'finalizado') { badgeClass = 'badge-red'; badgeText = 'Finalizado'; }
+            else if (c.status === 'pendente') { badgeClass = 'badge-yellow'; badgeText = 'Pendente'; }
+            return '<tr><td>' + c.nome + '</td><td><span class="badge ' + badgeClass + '">' + badgeText + '</span></td><td>' + (c.total_lances || 0) + '</td><td>' + formatarMoeda(c.total_arrecadado || 0) + '</td><td><button class="btn btn-sm btn-primary" onclick="verCampanha(' + c.id + ')">Ver</button></td></tr>';
+          }).join('');
+        }
+      } catch (err) {
+        mostrarToast('Erro ao carregar dashboard', 'error');
+      }
+    }
+
+    async function carregarCampanhas() {
+      try {
+        const response = await fetch(API_URL + '/api/admin/campanhas', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await response.json();
+        if (data.sucesso) {
+          campanhasData = data.campanhas;
+          const container = document.getElementById('campanhasList');
+          if (campanhasData.length === 0) {
+            container.innerHTML = '<div class="empty-state"><h3>Nenhuma campanha criada</h3><p>Crie sua primeira campanha para comecar.</p></div>';
+            return;
+          }
+          container.innerHTML = campanhasData.map(c => {
+            let statusClass = 'badge-gray';
+            let statusText = c.status;
+            if (c.status === 'ativo') { statusClass = 'badge-green'; statusText = '🔴 Ativo'; }
+            else if (c.status === 'finalizado') { statusClass = 'badge-red'; statusText = '🔒 Finalizado'; }
+            else if (c.status === 'pendente') { statusClass = 'badge-yellow'; statusText = '⏳ Pendente'; }
+            else if (c.status === 'pausado') { statusClass = 'badge-yellow'; statusText = '⏸️ Pausado'; }
+
+            let acoes = '';
+            if (c.status === 'pendente') {
+              acoes += '<button class="btn btn-sm btn-success" onclick="ativarCampanha(' + c.id + ')">▶️ Ativar</button>';
+            } else if (c.status === 'ativo') {
+              acoes += '<button class="btn btn-sm btn-secondary" onclick="pausarCampanha(' + c.id + ')">⏸️ Pausar</button>';
+              acoes += '<button class="btn btn-sm btn-danger" onclick="finalizarCampanha(' + c.id + ')">🏁 Finalizar</button>';
+            } else if (c.status === 'pausado') {
+              acoes += '<button class="btn btn-sm btn-success" onclick="ativarCampanha(' + c.id + ')">▶️ Retomar</button>';
+            }
+            acoes += '<button class="btn btn-sm btn-secondary" onclick="exportarCampanha(' + c.id + ')">📥 Exportar</button>';
+            acoes += '<button class="btn btn-sm btn-danger" onclick="resetarCampanha(' + c.id + ')">🔄 Resetar</button>';
+
+            const progresso = c.meta_valor > 0 ? Math.min(100, ((c.total_arrecadado || 0) / c.meta_valor) * 100) : 0;
+
+            return '<div class="campanha-card"><div class="campanha-header"><div><div class="campanha-nome">' + c.nome + '</div><div class="campanha-meta">Slug: ' + c.slug + ' | Duracao: ' + c.duracao_horas + 'h | Lance min: R$ ' + (c.lance_minimo || 0.01) + '</div></div><span class="badge ' + statusClass + '">' + statusText + '</span></div><div style="display:flex;gap:2rem;font-size:0.875rem;margin:0.75rem 0;"><div>💰 <strong>' + formatarMoeda(c.total_arrecadado || 0) + '</strong> arrecadado</div><div>🎯 <strong>' + (c.total_lances || 0) + '</strong> lances</div><div>👥 <strong>' + (c.total_participantes || 0) + '</strong> participantes</div></div>' + (c.meta_valor > 0 ? '<div class="progress-bar"><div class="progress-fill" style="width:' + progresso + '%"></div></div><div style="font-size:0.75rem;color:var(--gray);margin-top:0.25rem;">Meta: ' + formatarMoeda(c.meta_valor) + ' (' + Math.round(progresso) + '%)</div>' : '') + '<div class="campanha-actions">' + acoes + '</div></div>';
+          }).join('');
+        }
+      } catch (err) {
+        mostrarToast('Erro ao carregar campanhas', 'error');
+      }
+    }
+
+    async function carregarInfluencers() {
+      try {
+        const response = await fetch(API_URL + '/api/admin/influencers', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await response.json();
+        if (data.sucesso) {
+          influencersData = data.influencers;
+          const tbody = document.getElementById('influencersList');
+          tbody.innerHTML = influencersData.map(i => {
+            return '<tr><td>' + i.nome + '</td><td><code>' + i.codigo_ref + '</code></td><td>' + i.comissao_percentual + '%</td><td>' + (i.total_cliques || 0) + '</td><td>' + formatarMoeda(i.total_gerado || 0) + '</td><td><button class="btn btn-sm btn-secondary" onclick="copiarLink(' + i.id + ')">📋 Link</button></td></tr>';
+          }).join('');
+        }
+      } catch (err) {
+        mostrarToast('Erro ao carregar influencers', 'error');
+      }
+    }
+
+    async function carregarUsuarios() {
+      try {
+        const response = await fetch(API_URL + '/api/admin/usuarios', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await response.json();
+        if (data.sucesso) {
+          const tbody = document.getElementById('usuariosList');
+          tbody.innerHTML = data.usuarios.map(u => {
+            return '<tr><td>' + u.id + '</td><td>' + u.nome + '</td><td>' + (u.email || '-') + '</td><td>' + (u.cpf || '-') + '</td><td>' + (u.total_lances || 0) + '</td><td>' + formatarMoeda(u.total_gasto || 0) + '</td></tr>';
+          }).join('');
+        }
+      } catch (err) {
+        mostrarToast('Erro ao carregar usuarios', 'error');
+      }
+    }
+
+    async function carregarConfiguracoes() {
+      try {
+        const response = await fetch(API_URL + '/api/admin/configuracoes', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await response.json();
+        if (data.sucesso) {
+          document.getElementById('configLanceInicial').value = data.configuracoes.lanceInicial || 0.01;
+          document.getElementById('configLanceMinimo').value = data.configuracoes.lanceMinimo || 0.01;
+          document.getElementById('configDuracao').value = data.configuracoes.duracaoPadrao || 24;
+          document.getElementById('configComissao').value = data.configuracoes.comissaoPadrao || 10;
+          document.getElementById('configSiteNome').value = data.configuracoes.siteNome || 'Leilao Facil';
+          document.getElementById('configSiteUrl').value = data.configuracoes.siteUrl || '';
+        }
+      } catch (err) {
+        mostrarToast('Erro ao carregar configuracoes', 'error');
+      }
+    }
+
+    async function criarCampanha() {
+      const nome = document.getElementById('campNome').value.trim();
+      if (!nome) {
+        mostrarToast('Nome da campanha e obrigatorio', 'error');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('nome', nome);
+      formData.append('descricao', document.getElementById('campDescricao').value);
+      formData.append('duracao_horas', document.getElementById('campDuracao').value);
+      formData.append('lance_inicial', document.getElementById('campLanceInicial').value);
+      formData.append('lance_minimo', document.getElementById('campLanceMinimo').value);
+      formData.append('meta_valor', document.getElementById('campMeta').value);
+      formData.append('premio_nome', document.getElementById('campPremioNome').value);
+      formData.append('premio_descricao', document.getElementById('campPremioDesc').value);
+      formData.append('premio_valor', document.getElementById('campPremioValor').value);
+
+      const imagem = document.getElementById('campImagem').files[0];
+      if (imagem) {
+        formData.append('premio_imagem', imagem);
+      }
+
+      try {
+        const response = await fetch(API_URL + '/api/admin/campanhas', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token },
+          body: formData
+        });
+        const data = await response.json();
+        if (data.sucesso) {
+          fecharModal('modalCampanha');
+          mostrarToast('Campanha criada com sucesso!', 'success');
+          carregarCampanhas();
+          limparFormCampanha();
+        } else {
+          mostrarToast(data.erro || 'Erro ao criar campanha', 'error');
+        }
+      } catch (err) {
+        mostrarToast('Erro de conexao', 'error');
+      }
+    }
+
+    async function criarInfluencer() {
+      const nome = document.getElementById('infNome').value.trim();
+      const email = document.getElementById('infEmail').value.trim();
+      const codigo_ref = document.getElementById('infCodigo').value.trim();
+
+      if (!nome || !email || !codigo_ref) {
+        mostrarToast('Preencha todos os campos obrigatorios', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch(API_URL + '/api/admin/influencers', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            nome,
+            email,
+            codigo_ref,
+            comissao_percentual: document.getElementById('infComissao').value,
+            pix_chave: document.getElementById('infPix').value
+          })
+        });
+        const data = await response.json();
+        if (data.sucesso) {
+          fecharModal('modalInfluencer');
+          mostrarToast('Influencer criado com sucesso!', 'success');
+          carregarInfluencers();
+          limparFormInfluencer();
+        } else {
+          mostrarToast(data.erro || 'Erro ao criar influencer', 'error');
+        }
+      } catch (err) {
+        mostrarToast('Erro de conexao', 'error');
+      }
+    }
+
+    async function ativarCampanha(id) {
+      try {
+        const response = await fetch(API_URL + '/api/admin/campanhas/' + id + '/ativar', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (response.ok) {
+          mostrarToast('Campanha ativada!', 'success');
+          carregarCampanhas();
+          carregarDashboard();
+        }
+      } catch (err) {
+        mostrarToast('Erro ao ativar campanha', 'error');
+      }
+    }
+
+    async function pausarCampanha(id) {
+      try {
+        const response = await fetch(API_URL + '/api/admin/campanhas/' + id + '/pausar', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (response.ok) {
+          mostrarToast('Campanha pausada', 'success');
+          carregarCampanhas();
+        }
+      } catch (err) {
+        mostrarToast('Erro ao pausar campanha', 'error');
+      }
+    }
+
+    async function finalizarCampanha(id) {
+      if (!confirm('Tem certeza que deseja finalizar esta campanha?')) return;
+      try {
+        const response = await fetch(API_URL + '/api/admin/campanhas/' + id + '/finalizar', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (response.ok) {
+          mostrarToast('Campanha finalizada!', 'success');
+          carregarCampanhas();
+          carregarDashboard();
+        }
+      } catch (err) {
+        mostrarToast('Erro ao finalizar campanha', 'error');
+      }
+    }
+
+    async function resetarCampanha(id) {
+      if (!confirm('Tem certeza? Isso resetara todos os lances e estatisticas.')) return;
+      try {
+        const response = await fetch(API_URL + '/api/admin/campanhas/' + id + '/resetar', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (response.ok) {
+          mostrarToast('Campanha resetada!', 'success');
+          carregarCampanhas();
+        }
+      } catch (err) {
+        mostrarToast('Erro ao resetar campanha', 'error');
+      }
+    }
+
+    function exportarCampanha(id) {
+      window.open(API_URL + '/api/admin/campanhas/' + id + '/exportar?token=' + encodeURIComponent(token), '_blank');
+    }
+
+    async function salvarConfiguracoes() {
+      try {
+        const response = await fetch(API_URL + '/api/admin/configuracoes', {
+          method: 'PUT',
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            lance_inicial_padrao: document.getElementById('configLanceInicial').value,
+            lance_minimo_padrao: document.getElementById('configLanceMinimo').value,
+            duracao_padrao_horas: document.getElementById('configDuracao').value,
+            comissao_padrao: document.getElementById('configComissao').value,
+            site_nome: document.getElementById('configSiteNome').value,
+            site_url: document.getElementById('configSiteUrl').value
+          })
+        });
+        if (response.ok) {
+          mostrarToast('Configuracoes salvas!', 'success');
+        }
+      } catch (err) {
+        mostrarToast('Erro ao salvar configuracoes', 'error');
+      }
+    }
+
+    function copiarLink(influencerId) {
+      const influencer = influencersData.find(i => i.id === influencerId);
+      if (!influencer) return;
+      const link = window.location.origin + '/?ref=' + influencer.codigo_ref;
+      navigator.clipboard.writeText(link).then(() => {
+        mostrarToast('Link copiado: ' + link, 'success');
+      });
+    }
+
+    function verCampanha(id) {
+      mostrarSecao('campanhas');
+    }
+
+    function abrirModalCampanha() {
+      abrirModal('modalCampanha');
+    }
+
+    function abrirModalInfluencer() {
+      abrirModal('modalInfluencer');
+    }
+
+    function abrirModal(id) {
+      document.getElementById(id).classList.add('active');
+    }
+
+    function fecharModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          overlay.classList.remove('active');
+        }
+      });
+    });
+
+    function limparFormCampanha() {
+      document.getElementById('campNome').value = '';
+      document.getElementById('campDescricao').value = '';
+      document.getElementById('campPremioNome').value = '';
+      document.getElementById('campPremioDesc').value = '';
+      document.getElementById('campPremioValor').value = '';
+      document.getElementById('campImagem').value = '';
+    }
+
+    function limparFormInfluencer() {
+      document.getElementById('infNome').value = '';
+      document.getElementById('infEmail').value = '';
+      document.getElementById('infCodigo').value = '';
+      document.getElementById('infPix').value = '';
+    }
+
+    function mostrarToast(mensagem, tipo) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'toast ' + tipo;
+      toast.textContent = mensagem;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => toast.remove(), 300);
+      }, 5000);
+    }
+
+    function formatarMoeda(valor) {
+      return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      }).format(valor);
+    }
+
+    document.getElementById('loginSenha').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') fazerLogin();
+    });
+  </script>
+</body>
+</html>
