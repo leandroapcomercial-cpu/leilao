@@ -6,16 +6,17 @@
     <title>Admin - Leilão Fácil</title>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
-        body {
-            font-family:-apple-system,'Segoe UI',Roboto,sans-serif;
-            background:#F8F9FA;
-            color:#1A2B4C;
+        body { 
+            font-family:-apple-system,'Segoe UI',Roboto,sans-serif; 
+            background:#F0F2F5; 
+            color:#1A2B4C; 
             -webkit-font-smoothing:antialiased;
             min-height:100vh;
         }
+        * { word-wrap: break-word; overflow-wrap: break-word; }
         .header {
             background:#FFFFFF;
-            padding:12px 20px;
+            padding:12px 24px;
             border-bottom:3px solid #0066FF;
             display:flex;
             justify-content:space-between;
@@ -29,50 +30,20 @@
         }
         .header h1 { font-size:20px; color:#0066FF; }
         .header h1 span { color:#1A2B4C; }
-        .header .btn-voltar {
-            padding:6px 16px;
-            border:1px solid #0066FF;
-            border-radius:8px;
-            background:transparent;
-            color:#0066FF;
-            cursor:pointer;
+        .header .btn-voltar { 
+            padding:6px 16px; 
+            border:1px solid #0066FF; 
+            border-radius:8px; 
+            background:transparent; 
+            color:#0066FF; 
+            cursor:pointer; 
             font-weight:600;
             transition:all 0.3s;
             text-decoration:none;
             font-size:13px;
         }
         .header .btn-voltar:hover { background:#0066FF; color:#fff; }
-        .header .user-info {
-            display:flex;
-            align-items:center;
-            gap:10px;
-        }
-        .header .user-info .admin-badge {
-            background:#0066FF;
-            color:#fff;
-            padding:4px 12px;
-            border-radius:12px;
-            font-size:12px;
-            font-weight:600;
-        }
-        .header .user-info .btn-sair {
-            padding:4px 12px;
-            border:1px solid #DC2626;
-            border-radius:6px;
-            background:transparent;
-            color:#DC2626;
-            cursor:pointer;
-            font-size:12px;
-            font-weight:600;
-            transition:all 0.3s;
-        }
-        .header .user-info .btn-sair:hover { background:#DC2626; color:#fff; }
-        .header #adminStatus {
-            font-size:12px;
-            padding:4px 12px;
-            border-radius:4px;
-        }
-        .container { max-width:1200px; margin:0 auto; padding:16px; }
+        .container { max-width:1400px; margin:0 auto; padding:16px; }
         .btn {
             padding:8px 20px;
             border:none;
@@ -95,134 +66,87 @@
         .btn-sm { padding:4px 12px; font-size:12px; }
         .btn-outline { background:transparent; border:1px solid #0066FF; color:#0066FF; }
         .btn-outline:hover { background:#0066FF; color:#fff; }
-        .tabs {
-            display:flex;
-            gap:8px;
-            flex-wrap:wrap;
-            margin-bottom:16px;
-            justify-content:center;
+
+        .dashboard {
+            display:grid;
+            grid-template-columns:1fr 1fr 1fr 1fr;
+            gap:16px;
+            margin-bottom:24px;
         }
-        .tabs button {
-            padding:10px 24px;
-            border:none;
-            border-radius:8px;
-            background:#F3F4F6;
-            color:#6B7280;
-            cursor:pointer;
+        .dashboard .card {
+            background:#FFFFFF;
+            border-radius:12px;
+            padding:16px 20px;
+            border:1px solid #E5E7EB;
+            text-align:center;
             transition:all 0.3s;
-            font-weight:600;
-            font-size:14px;
         }
-        .tabs button.active { background:#0066FF; color:#fff; }
-        .tabs button:hover:not(.active) { background:#E5E7EB; }
-        .table-container {
-            background:#FFFFFF;
-            border-radius:12px;
-            padding:16px;
-            box-shadow:0 2px 8px rgba(0,0,0,0.04);
-            overflow-x:auto;
-            border:1px solid #E5E7EB;
+        .dashboard .card:hover { border-color:#0066FF; box-shadow:0 4px 12px rgba(0,102,255,0.08); }
+        .dashboard .card .numero {
+            font-size:32px;
+            font-weight:700;
+            color:#0066FF;
         }
-        .admin-form {
-            background:#FFFFFF;
-            padding:24px;
-            border-radius:12px;
-            box-shadow:0 2px 8px rgba(0,0,0,0.04);
-            border:1px solid #E5E7EB;
-            display:none;
-            max-width:700px;
-            margin:0 auto;
-        }
-        .admin-form.active { display:block; }
-        .admin-form h3 { color:#0066FF; margin-bottom:16px; text-align:center; font-size:18px; }
-        .admin-form h4 {
-            color:#1A2B4C;
-            margin:16px 0 12px 0;
-            text-align:center;
-            font-size:15px;
-            padding-top:12px;
-            border-top:1px solid #E5E7EB;
-        }
-        .form-group { margin-bottom:14px; }
-        .form-group label {
-            display:block;
-            margin-bottom:4px;
-            color:#1A2B4C;
+        .dashboard .card .label {
             font-size:13px;
-            font-weight:500;
+            color:#6B7280;
+            margin-top:4px;
         }
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width:100%;
-            padding:10px 12px;
-            border-radius:8px;
-            border:2px solid #E5E7EB;
-            font-size:14px;
-            transition:border .3s;
-            background:#fff;
-            -webkit-appearance:none;
+
+        .farol {
+            display:inline-block;
+            width:16px;
+            height:16px;
+            border-radius:50%;
+            margin-right:6px;
+            vertical-align:middle;
         }
-        .form-group input:focus,
-        .form-group select:focus { outline:none; border-color:#0066FF; }
-        .form-group input[type="file"] { padding:8px; border:2px dashed #E5E7EB; cursor:pointer; }
-        .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-        .hidden { display:none !important; }
-        .msg {
-            padding:10px 14px;
-            border-radius:8px;
-            margin:8px auto;
-            max-width:600px;
-            text-align:center;
-            font-size:14px;
-        }
-        .msg.sucesso { background:#D1FAE5; color:#059669; border-left:4px solid #10B981; }
-        .msg.erro { background:#FEE2E2; color:#DC2626; border-left:4px solid #DC2626; }
-        .msg.info { background:#DBEAFE; color:#2563EB; border-left:4px solid #0066FF; }
-        .url-gerada {
-            background:#F0F4FF;
-            padding:12px;
-            border-radius:8px;
-            margin-top:12px;
-            word-break:break-all;
-            border:1px solid #0066FF;
-            text-align:center;
-        }
-        .url-gerada a { color:#0066FF; text-decoration:none; font-weight:600; }
-        .url-gerada a:hover { text-decoration:underline; }
-        .premio-preview {
+        .farol.verde { background:#10B981; }
+        .farol.amarelo { background:#FF8C00; }
+        .farol.vermelho { background:#DC2626; }
+
+        .seletor-campanha {
+            background:#FFFFFF;
+            border-radius:12px;
+            padding:16px 20px;
+            border:1px solid #E5E7EB;
+            margin-bottom:20px;
             display:flex;
+            justify-content:space-between;
             align-items:center;
-            gap:12px;
-            padding:10px;
-            background:#F8F9FA;
-            border-radius:8px;
-            margin-top:8px;
             flex-wrap:wrap;
+            gap:12px;
         }
-        .premio-preview img {
-            max-width:80px;
-            max-height:80px;
+        .seletor-campanha select {
+            padding:10px 16px;
             border-radius:8px;
             border:2px solid #E5E7EB;
-            object-fit:contain;
+            font-size:14px;
             background:#fff;
+            min-width:200px;
+            cursor:pointer;
         }
-        .premio-preview .emoji {
-            font-size:48px;
-            line-height:1;
-        }
+        .seletor-campanha select:focus { outline:none; border-color:#0066FF; }
+
         .campanha-card {
             background:#FFFFFF;
             border-radius:12px;
             border:1px solid #E5E7EB;
-            padding:16px;
+            padding:16px 20px;
             margin-bottom:12px;
             transition:all 0.3s;
+            position:relative;
         }
-        .campanha-card:hover {
-            border-color:#0066FF;
-            box-shadow:0 4px 12px rgba(0,102,255,0.08);
+        .campanha-card:hover { border-color:#0066FF; box-shadow:0 4px 12px rgba(0,102,255,0.08); }
+        .campanha-card.selecionada { border-color:#0066FF; background:#F0F7FF; }
+        .campanha-card .checkbox {
+            position:absolute;
+            top:16px;
+            right:16px;
+            width:20px;
+            height:20px;
+            cursor:pointer;
+            accent-color:#0066FF;
         }
         .campanha-card .topo {
             display:flex;
@@ -230,6 +154,7 @@
             align-items:flex-start;
             flex-wrap:wrap;
             gap:10px;
+            padding-right:30px;
         }
         .campanha-card .topo .titulo {
             font-size:18px;
@@ -250,75 +175,22 @@
         }
         .campanha-card .topo .status-badge.ativa { background:#D1FAE5; color:#059669; }
         .campanha-card .topo .status-badge.inativa { background:#FEE2E2; color:#DC2626; }
-        .campanha-card .premio-row {
-            display:flex;
-            align-items:center;
-            gap:12px;
-            margin:8px 0;
-            padding:8px 12px;
-            background:#F8F9FA;
-            border-radius:8px;
-        }
-        .campanha-card .premio-row img {
-            max-width:50px;
-            max-height:50px;
-            border-radius:6px;
-            object-fit:contain;
-            background:#fff;
-            border:1px solid #E5E7EB;
-        }
-        .campanha-card .premio-row .emoji {
-            font-size:32px;
-        }
-        .campanha-card .premio-row .label {
-            font-size:13px;
-            color:#6B7280;
-        }
-        .dashboard {
-            display:grid;
-            grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
-            gap:16px;
-            margin-bottom:24px;
-        }
-        .dashboard .card {
-            background:#FFFFFF;
-            border-radius:12px;
-            padding:16px 20px;
-            border:1px solid #E5E7EB;
-            text-align:center;
-            transition:all 0.3s;
-        }
-        .dashboard .card:hover {
-            border-color:#0066FF;
-            box-shadow:0 4px 12px rgba(0,102,255,0.08);
-        }
-        .dashboard .card .numero {
-            font-size:32px;
-            font-weight:700;
-            color:#0066FF;
-        }
-        .dashboard .card .numero.verde { color:#10B981; }
-        .dashboard .card .numero.vermelho { color:#DC2626; }
-        .dashboard .card .numero.laranja { color:#FF8C00; }
-        .dashboard .card .label {
-            font-size:13px;
-            color:#6B7280;
-            margin-top:4px;
-        }
-        .dashboard .card .sub {
-            font-size:12px;
-            color:#9CA3AF;
-            margin-top:2px;
+        .campanha-card .topo .farol {
+            width:20px;
+            height:20px;
+            margin-left:8px;
         }
         .campanha-card .detalhes {
             display:grid;
-            grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));
+            grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));
             gap:12px;
             margin-top:12px;
             padding-top:12px;
             border-top:1px solid #F3F4F6;
         }
-        .campanha-card .detalhes .item { text-align:center; }
+        .campanha-card .detalhes .item {
+            text-align:center;
+        }
         .campanha-card .detalhes .item .valor {
             font-size:20px;
             font-weight:700;
@@ -329,44 +201,30 @@
             color:#6B7280;
             margin-top:2px;
         }
-        .campanha-card .detalhes .item .meta-atingida { color:#10B981; font-size:14px; }
-        .campanha-card .detalhes .item .meta-nao-atingida { color:#DC2626; font-size:14px; }
-        .meta-grafico {
-            margin-top:12px;
-            padding:12px;
-            background:#F8F9FA;
-            border-radius:8px;
-            border:1px solid #E5E7EB;
-        }
-        .meta-grafico .barra-container {
+        .campanha-card .detalhes .item .barra-meta {
             width:100%;
-            height:20px;
+            height:6px;
             background:#E5E7EB;
-            border-radius:10px;
+            border-radius:3px;
+            margin-top:6px;
             overflow:hidden;
-            position:relative;
         }
-        .meta-grafico .barra-container .barra {
+        .campanha-card .detalhes .item .barra-meta .fill {
             height:100%;
-            border-radius:10px;
-            transition:width 1s ease;
-            background:linear-gradient(90deg, #0066FF, #10B981);
+            border-radius:3px;
+            transition:width 0.6s ease;
         }
-        .meta-grafico .barra-container .barra.atingida {
-            background:linear-gradient(90deg, #10B981, #059669);
-        }
-        .meta-grafico .info-meta {
-            display:flex;
-            justify-content:space-between;
-            font-size:13px;
+        .campanha-card .detalhes .item .barra-meta .fill.verde { background:#10B981; }
+        .campanha-card .detalhes .item .barra-meta .fill.amarelo { background:#FF8C00; }
+        .campanha-card .detalhes .item .barra-meta .fill.vermelho { background:#DC2626; }
+        .campanha-card .url {
+            font-size:12px;
             color:#6B7280;
-            margin-top:4px;
+            margin-top:8px;
+            word-break:break-all;
         }
-        .meta-grafico .info-meta .porcentagem {
-            font-weight:700;
-            color:#0066FF;
-        }
-        .meta-grafico .info-meta .porcentagem.atingida { color:#10B981; }
+        .campanha-card .url a { color:#0066FF; text-decoration:none; }
+        .campanha-card .url a:hover { text-decoration:underline; }
         .campanha-card .acoes {
             margin-top:12px;
             padding-top:12px;
@@ -375,14 +233,7 @@
             gap:8px;
             flex-wrap:wrap;
         }
-        .campanha-card .url {
-            font-size:12px;
-            color:#6B7280;
-            margin-top:8px;
-        }
-        .campanha-card .url a { color:#0066FF; text-decoration:none; }
-        .campanha-card .url a:hover { text-decoration:underline; }
-        .footer { text-align:center; padding:20px; color:#9CA3AF; font-size:12px; }
+
         .modal-overlay {
             display:none;
             position:fixed;
@@ -396,17 +247,16 @@
             align-items:center;
             padding:16px;
             backdrop-filter:blur(4px);
-            -webkit-backdrop-filter:blur(4px);
         }
         .modal-overlay.active { display:flex; }
         .modal {
             background:#FFFFFF;
             border-radius:16px;
-            max-width:600px;
+            max-width:560px;
             width:100%;
             max-height:90vh;
             overflow-y:auto;
-            padding:24px;
+            padding:28px;
             position:relative;
             animation:modalIn 0.3s ease;
         }
@@ -423,235 +273,259 @@
             color:#9CA3AF;
             background:none;
             border:none;
-            transition:color 0.3s;
         }
         .modal .close:hover { color:#0066FF; }
-        .modal h2 { font-size:20px; color:#1A2B4C; margin-bottom:16px; }
-        .modal .form-group { margin-bottom:12px; }
+        .modal h2 { font-size:20px; color:#1A2B4C; margin-bottom:20px; }
+        .modal .form-group { margin-bottom:14px; }
         .modal .form-group label { display:block; font-size:13px; font-weight:500; color:#1A2B4C; margin-bottom:4px; }
-        .modal .form-group input { width:100%; padding:10px 12px; border:2px solid #E5E7EB; border-radius:8px; font-size:14px; }
-        .modal .form-group input:focus { outline:none; border-color:#0066FF; }
-        .modal .form-group input[type="file"] { padding:8px; border:2px dashed #E5E7EB; cursor:pointer; }
-        .modal .form-group .tempo-info { font-size:12px; color:#6B7280; margin-top:4px; }
-        .modal .meta-row {
+        .modal .form-group input, 
+        .modal .form-group select, 
+        .modal .form-group textarea { 
+            width:100%; 
+            padding:10px 12px; 
+            border:2px solid #E5E7EB; 
+            border-radius:8px; 
+            font-size:14px; 
+            transition:border .3s; 
+        }
+        .modal .form-group input:focus, 
+        .modal .form-group select:focus, 
+        .modal .form-group textarea:focus { outline:none; border-color:#0066FF; }
+        .modal .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+        .modal .btn { width:100%; padding:12px; font-size:15px; }
+
+        .admin-form {
+            background:#FFFFFF;
+            padding:24px;
+            border-radius:12px;
+            box-shadow:0 2px 8px rgba(0,0,0,0.04);
+            border:1px solid #E5E7EB;
+            display:none;
+            max-width:600px;
+            margin:0 auto;
+        }
+        .admin-form.active { display:block; }
+        .admin-form h3 { color:#0066FF; margin-bottom:16px; text-align:center; font-size:18px; }
+        .admin-form h4 { 
+            color:#1A2B4C; 
+            margin:16px 0 12px 0; 
+            text-align:center; 
+            font-size:15px;
+            padding-top:12px;
+            border-top:1px solid #E5E7EB;
+        }
+        .admin-form .form-group { margin-bottom:14px; }
+        .admin-form .form-group label { 
+            display:block; 
+            margin-bottom:4px; 
+            color:#1A2B4C; 
+            font-size:13px; 
+            font-weight:500; 
+        }
+        .admin-form .form-group input, 
+        .admin-form .form-group select, 
+        .admin-form .form-group textarea { 
+            width:100%; 
+            padding:10px 12px; 
+            border-radius:8px; 
+            border:2px solid #E5E7EB; 
+            font-size:14px; 
+            transition:border .3s; 
+            background:#fff; 
+        }
+        .admin-form .form-group input:focus, 
+        .admin-form .form-group select:focus { outline:none; border-color:#0066FF; }
+        .admin-form .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+        .admin-form .btn { width:100%; padding:12px; font-size:15px; }
+
+        .url-gerada { 
+            background:#F0F4FF; 
+            padding:12px; 
+            border-radius:8px; 
+            margin-top:12px; 
+            word-break:break-all; 
+            border:1px solid #0066FF;
+            text-align:center;
+        }
+        .url-gerada a { color:#0066FF; text-decoration:none; font-weight:600; }
+
+        .tabs {
             display:flex;
             gap:8px;
-            margin-bottom:6px;
             flex-wrap:wrap;
-            align-items:center;
+            margin-bottom:16px;
+            justify-content:center;
         }
-        .modal .meta-row input {
-            flex:1;
-            min-width:80px;
-            padding:8px;
-            border:2px solid #E5E7EB;
-            border-radius:6px;
-            font-size:13px;
+        .tabs button {
+            padding:10px 24px;
+            border:none;
+            border-radius:8px;
+            background:#F3F4F6;
+            color:#6B7280;
+            cursor:pointer;
+            transition:all 0.3s;
+            font-weight:600;
+            font-size:14px;
         }
-        .modal .meta-row input.meta-premio {
-            flex:2;
-            min-width:120px;
+        .tabs button.active { background:#0066FF; color:#fff; }
+
+        .hidden { display:none !important; }
+        .msg { 
+            padding:10px 14px; 
+            border-radius:8px; 
+            margin:8px auto; 
+            max-width:600px; 
+            text-align:center; 
+            font-size:14px; 
         }
-        .login-container {
+        .msg.sucesso { background:#D1FAE5; color:#059669; border-left:4px solid #10B981; }
+        .msg.erro { background:#FEE2E2; color:#DC2626; border-left:4px solid #DC2626; }
+        .footer { text-align:center; padding:20px; color:#9CA3AF; font-size:12px; }
+
+        .login-box {
             max-width:400px;
             margin:60px auto;
             background:#FFFFFF;
-            padding:32px;
             border-radius:16px;
-            border:1px solid #E5E7EB;
+            padding:32px;
             box-shadow:0 4px 20px rgba(0,0,0,0.06);
-        }
-        .login-container h2 {
-            color:#0066FF;
             text-align:center;
-            margin-bottom:8px;
-            font-size:22px;
         }
-        .login-container p.sub {
-            color:#6B7280;
-            text-align:center;
-            margin-bottom:24px;
-            font-size:14px;
-        }
-        .login-container .form-group {
-            margin-bottom:16px;
-        }
-        .login-container .form-group label {
-            display:block;
-            font-size:13px;
-            font-weight:500;
+        .login-box h2 {
+            font-size:20px;
             color:#1A2B4C;
-            margin-bottom:4px;
+            margin-bottom:8px;
         }
-        .login-container .form-group input {
+        .login-box p {
+            color:#6B7280;
+            font-size:14px;
+            margin-bottom:20px;
+        }
+        .login-box input {
             width:100%;
-            padding:12px 14px;
+            padding:12px 16px;
             border:2px solid #E5E7EB;
             border-radius:8px;
-            font-size:15px;
-            transition:border 0.3s;
+            font-size:14px;
+            margin-bottom:12px;
+            text-align:center;
         }
-        .login-container .form-group input:focus {
-            outline:none;
+        .login-box input:focus {
             border-color:#0066FF;
+            outline:none;
         }
-        .login-container .btn {
+        .login-box .btn {
             width:100%;
             padding:12px;
-            font-size:16px;
+            font-size:15px;
         }
-        .login-container .erro {
+        .login-box .erro {
             color:#DC2626;
-            text-align:center;
-            margin-top:12px;
+            font-size:13px;
+            margin-top:8px;
             display:none;
-            font-size:14px;
         }
-        .loading-spinner {
-            display:inline-block;
-            width:16px;
-            height:16px;
-            border:2px solid #fff;
-            border-top:2px solid transparent;
-            border-radius:50%;
-            animation:spin 0.8s linear infinite;
-            vertical-align:middle;
-        }
-        @keyframes spin {
-            0% { transform:rotate(0deg); }
-            100% { transform:rotate(360deg); }
+
+        @media (max-width:768px) {
+            .dashboard { grid-template-columns:1fr 1fr; }
+            .seletor-campanha { flex-direction:column; align-items:stretch; }
+            .seletor-campanha select { width:100%; }
+            .modal .form-row { grid-template-columns:1fr; }
+            .admin-form .form-row { grid-template-columns:1fr; }
+            .campanha-card .detalhes { grid-template-columns:1fr 1fr; }
         }
         @media (max-width:480px) {
+            .dashboard { grid-template-columns:1fr; }
             .header h1 { font-size:17px; }
             .header { padding:10px 12px; }
             .btn { font-size:12px; padding:6px 14px; }
-            .table-container { padding:10px; }
-            table { font-size:12px; }
-            th, td { padding:6px; }
-            .form-row { grid-template-columns:1fr; }
-            .admin-form { padding:16px; }
-            .tabs button { padding:8px 16px; font-size:13px; }
-            .campanha-card .detalhes { grid-template-columns:1fr 1fr; }
-            .premio-preview img { max-width:60px; max-height:60px; }
-            .campanha-card .premio-row img { max-width:40px; max-height:40px; }
-            .login-container { margin:30px 16px; padding:24px; }
-            .meta-grafico .info-meta { font-size:11px; flex-direction:column; align-items:center; gap:2px; }
-            .modal { padding:16px; }
-            .dashboard { grid-template-columns:1fr 1fr; gap:10px; }
-            .dashboard .card .numero { font-size:24px; }
-            .modal .meta-row input { min-width:60px; font-size:12px; }
-            .modal .meta-row input.meta-premio { min-width:80px; }
-        }
-        @media (max-width:380px) {
-            .dashboard { grid-template-columns:1fr; }
+            .campanha-card .detalhes { grid-template-columns:1fr; }
         }
     </style>
 </head>
 <body>
     <header class="header">
         <h1>⚡ <span>Admin</span> Leilão</h1>
-        <div class="user-info">
-            <span class="admin-badge">🔐 Admin</span>
-            <span id="adminStatus" style="display:none;background:#D1FAE5;color:#059669;">✅ Sistema operando</span>
-            <button class="btn-sair" onclick="fazerLogout()">🚪 Sair</button>
-            <a href="/" class="btn-voltar">🏠 Ver Leilão</a>
+        <div>
+            <a href="/" class="btn-voltar">🏠 Voltar</a>
         </div>
     </header>
 
-    <div class="container">
-        <div id="loginAdmin" class="login-container">
-            <h2>🔐 Acesso Admin</h2>
-            <p class="sub">Digite a senha para acessar o painel</p>
-            <form onsubmit="fazerLogin(event)">
-                <div class="form-group">
-                    <label>Senha</label>
-                    <input type="password" id="senhaAdmin" placeholder="Digite a senha" required>
-                </div>
-                <button type="submit" class="btn btn-primary">🔓 Entrar</button>
-                <p class="erro" id="loginErro">Senha incorreta</p>
-            </form>
+    <div class="container" id="appContainer">
+        <!-- ===== LOGIN ===== -->
+        <div class="login-box" id="loginBox">
+            <h2>🔐 Acesso Restrito</h2>
+            <p>Digite a senha para acessar o painel administrativo</p>
+            <input type="password" id="senhaInput" placeholder="Digite a senha" autofocus>
+            <button class="btn btn-primary" id="btnLogin">Entrar</button>
+            <div class="erro" id="loginErro">Senha incorreta. Tente novamente.</div>
         </div>
 
-        <div id="painelAdmin" style="display:none;">
+        <!-- ===== ADMIN CONTENT ===== -->
+        <div id="adminContent" style="display:none;">
             <div id="msgArea"></div>
 
-            <div class="dashboard" id="dashboardContainer">
-                <div class="card">
-                    <div class="numero" id="dashTotalLeiloes">0</div>
-                    <div class="label">📢 Total de Leilões</div>
-                </div>
-                <div class="card">
-                    <div class="numero" id="dashLeiloesAtivos">0</div>
-                    <div class="label">🟢 Leilões Ativos</div>
-                </div>
-                <div class="card">
-                    <div class="numero" id="dashTotalLances">0</div>
-                    <div class="label">💎 Total de Lances</div>
-                </div>
-                <div class="card">
-                    <div class="numero" id="dashTotalUsuarios">0</div>
-                    <div class="label">👥 Participantes</div>
-                </div>
-                <div class="card">
-                    <div class="numero verde" id="dashMetaAtingida">0</div>
-                    <div class="label">🎯 Metas Atingidas</div>
-                </div>
-                <div class="card">
-                    <div class="numero laranja" id="dashMaiorLance">R$ 0</div>
-                    <div class="label">💰 Maior Lance</div>
-                </div>
-            </div>
-
             <div class="tabs">
-                <button class="active" onclick="trocarTab('campanhas')">📢 Leilões</button>
-                <button onclick="trocarTab('nova')">➕ Novo Leilão</button>
+                <button class="active" onclick="trocarTab('campanhas')">📢 Campanhas</button>
+                <button onclick="trocarTab('nova')">➕ Nova Campanha</button>
             </div>
 
-            <div id="tabCampanhas" class="table-container">
-                <h3 style="color:#0066FF;margin-bottom:16px;font-size:16px;text-align:center;">📢 Gerenciar Leilões</h3>
+            <div id="tabCampanhas">
+                <div class="dashboard" id="dashboard">
+                    <div class="card">
+                        <div class="numero" id="totalCampanhas">0</div>
+                        <div class="label">📢 Total de Campanhas</div>
+                    </div>
+                    <div class="card">
+                        <div class="numero" id="totalLances">0</div>
+                        <div class="label">📊 Total de Lances</div>
+                    </div>
+                    <div class="card">
+                        <div class="numero" id="metaAtingida">0</div>
+                        <div class="label">🎯 Metas Atingidas</div>
+                    </div>
+                    <div class="card">
+                        <div class="numero" id="totalUsuarios">0</div>
+                        <div class="label">👥 Participantes</div>
+                    </div>
+                </div>
+
+                <div class="seletor-campanha">
+                    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                        <label style="font-weight:600; font-size:14px;">📌 Campanha:</label>
+                        <select id="seletorCampanha" onchange="selecionarCampanha(this.value)">
+                            <option value="">Todas as campanhas</option>
+                        </select>
+                        <span id="campanhaSelecionadaInfo" style="font-size:13px; color:#6B7280;"></span>
+                    </div>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button class="btn btn-secondary btn-sm" onclick="selecionarTodas()">☑️ Selecionar Todas</button>
+                        <button class="btn btn-secondary btn-sm" onclick="desmarcarTodas()">☐ Desmarcar Todas</button>
+                        <button class="btn btn-danger btn-sm" onclick="excluirSelecionadas()">🗑️ Excluir Selecionadas</button>
+                    </div>
+                </div>
+
                 <div id="campanhasList">
-                    <div style="text-align:center;color:#6B7280;padding:30px;">Carregando leilões...</div>
+                    <div style="text-align:center;color:#6B7280;padding:40px;">Carregando campanhas...</div>
                 </div>
             </div>
 
             <div id="tabNova" class="admin-form">
-                <h3>➕ Criar Novo Leilão</h3>
-                <form id="formCriarCampanha" onsubmit="criarCampanha(event)" enctype="multipart/form-data" novalidate>
+                <h3>➕ Criar Nova Campanha</h3>
+                <form id="formCriarCampanha" onsubmit="criarCampanha(event)">
                     <div class="form-group">
-                        <label>Nome do Leilão *</label>
+                        <label>Nome da Campanha *</label>
                         <input type="text" id="campNome" placeholder="Ex: Dia dos Pais" required>
                     </div>
                     <div class="form-group">
-                        <label>Slug (URL amigável) *</label>
+                        <label>Slug (URL) *</label>
                         <input type="text" id="campSlug" placeholder="Ex: dia-dos-pais" required>
                         <small style="color:#6B7280;font-size:11px;">Será usado na URL: /seu-slug</small>
                     </div>
                     <div class="form-group">
                         <label>Descrição</label>
-                        <textarea id="campDesc" rows="2" placeholder="Descrição do leilão"></textarea>
+                        <textarea id="campDesc" rows="2" placeholder="Descrição da campanha"></textarea>
                     </div>
-
-                    <h4>🏆 Imagem da Premiação</h4>
-                    <div class="form-group">
-                        <label>Título da Premiação</label>
-                        <input type="text" id="campPremioTitulo" placeholder="Ex: Prêmio Especial" value="🏆 PRÊMIO DO LEILÃO">
-                    </div>
-                    <div class="form-group">
-                        <label>Upload de imagem</label>
-                        <input type="file" id="premioImagem" accept="image/*" name="premio_imagem">
-                        <small style="color:#6B7280;font-size:11px;">Formatos: JPG, PNG, GIF, WEBP (max 5MB)</small>
-                    </div>
-                    <div class="form-group">
-                        <label>OU URL da imagem</label>
-                        <input type="url" id="premioImagemUrl" placeholder="https://exemplo.com/premio.jpg">
-                        <small style="color:#6B7280;font-size:11px;">Deixe em branco para usar o emoji padrão 🏆</small>
-                    </div>
-                    <div id="premioPreview" class="premio-preview" style="display:none;">
-                        <span>Prévia:</span>
-                        <img id="premioPreviewImg" src="" alt="Prévia" style="display:none;">
-                        <span id="premioPreviewEmoji" class="emoji">🏆</span>
-                    </div>
-
                     <h4>📦 Item do Leilão</h4>
                     <div class="form-group">
                         <label>Nome do Item *</label>
@@ -660,6 +534,10 @@
                     <div class="form-group">
                         <label>Descrição do Item</label>
                         <textarea id="itemDesc" rows="2" placeholder="Descrição do item"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Imagem (emoji)</label>
+                        <input type="text" id="itemImagem" placeholder="🥩" value="📦">
                     </div>
                     <div class="form-group">
                         <label>Categoria</label>
@@ -672,878 +550,738 @@
                             <option value="Moda">Moda</option>
                         </select>
                     </div>
-
-                    <h4>👤 Controle do Influencer</h4>
-                    <div class="form-group">
-                        <label>Nome do Influencer</label>
-                        <input type="text" id="campInfluencer" placeholder="Ex: João Silva">
-                        <small style="color:#6B7280;font-size:11px;">Este campo é interno e não aparece no leilão</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Metas Internas (porcentagem e prêmio)</label>
-                        <div id="metasInternasContainer">
-                            <div class="meta-row">
-                                <input type="number" class="meta-porcentagem" placeholder="% Meta" min="0" max="100" value="25">
-                                <input type="text" class="meta-premio" placeholder="Prêmio (ex: R$ 100,00)" value="R$ 100,00">
-                                <button type="button" class="btn btn-danger btn-sm" onclick="removerMeta(this)" style="padding:4px 10px;">✕</button>
-                            </div>
-                            <div class="meta-row">
-                                <input type="number" class="meta-porcentagem" placeholder="% Meta" min="0" max="100" value="50">
-                                <input type="text" class="meta-premio" placeholder="Prêmio (ex: R$ 200,00)" value="R$ 200,00">
-                                <button type="button" class="btn btn-danger btn-sm" onclick="removerMeta(this)" style="padding:4px 10px;">✕</button>
-                            </div>
-                            <div class="meta-row">
-                                <input type="number" class="meta-porcentagem" placeholder="% Meta" min="0" max="100" value="75">
-                                <input type="text" class="meta-premio" placeholder="Prêmio (ex: R$ 300,00)" value="R$ 300,00">
-                                <button type="button" class="btn btn-danger btn-sm" onclick="removerMeta(this)" style="padding:4px 10px;">✕</button>
-                            </div>
-                            <div class="meta-row">
-                                <input type="number" class="meta-porcentagem" placeholder="% Meta" min="0" max="100" value="100">
-                                <input type="text" class="meta-premio" placeholder="Prêmio (ex: R$ 500,00)" value="R$ 500,00">
-                                <button type="button" class="btn btn-danger btn-sm" onclick="removerMeta(this)" style="padding:4px 10px;">✕</button>
-                            </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Meta (R$)</label>
+                            <input type="number" id="campMeta" step="0.01" min="0.01" value="3.00">
                         </div>
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="adicionarMeta()" style="margin-top:6px;">➕ Adicionar Meta</button>
-                        <small style="color:#6B7280;font-size:11px;">Defina metas em porcentagem e o prêmio correspondente</small>
-                    </div>
-
-                    <h4>⏱️ Controle do Leilão (30 DIAS = 43200 MINUTOS)</h4>
-                    <div class="form-group">
-                        <label>Meta (R$)</label>
-                        <input type="number" id="campMeta" step="0.01" min="0.01" value="3.00" placeholder="3.00">
-                        <small style="color:#6B7280;font-size:11px;">Valor necessário para atingir a premiação</small>
+                        <div class="form-group">
+                            <label>Data de Encerramento</label>
+                            <input type="datetime-local" id="itemDataFim">
+                            <small style="color:#6B7280;font-size:11px;">Deixe em branco para 24h</small>
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label>Duração do Leilão (minutos)</label>
-                        <input type="text" id="campDuracao" value="43200" inputmode="numeric" pattern="[0-9]*">
-                        <small style="color:#6B7280;font-size:11px;">Tempo total do leilão em minutos (1440 = 24h, máximo 43200 = 30 dias)</small>
+                        <label>Duração (minutos)</label>
+                        <input type="number" id="campDuracao" min="1" max="43200" value="1440">
+                        <small style="color:#6B7280;font-size:11px;">Máximo 43200 minutos (30 dias)</small>
                     </div>
-                    <button type="submit" class="btn btn-success" style="width:100%;">✅ Criar Leilão</button>
+                    <button type="submit" class="btn btn-success">✅ Criar Campanha</button>
                 </form>
                 <div id="urlGeradaContainer" class="url-gerada" style="display:none;"></div>
             </div>
 
-            <div class="footer">Admin Leilão Fácil • Gerenciamento de Leilões</div>
+            <div class="footer">Admin Leilão Fácil • Gerenciamento de Campanhas</div>
         </div>
     </div>
 
     <div class="modal-overlay" id="modalEditar">
         <div class="modal">
             <button class="close" onclick="fecharModalEditar()">✕</button>
-            <h2>✏️ Editar Leilão</h2>
-            <form onsubmit="salvarEdicao(event)" enctype="multipart/form-data" novalidate>
+            <h2>✏️ Editar Campanha</h2>
+            <form onsubmit="salvarEdicao(event)">
                 <input type="hidden" id="editCampanhaId">
-
                 <div class="form-group">
-                    <label>Nome do Leilão *</label>
+                    <label>Nome da Campanha</label>
                     <input type="text" id="editNome" required>
-                </div>
-                <div class="form-group">
-                    <label>Slug (URL) *</label>
-                    <input type="text" id="editSlug" required>
-                    <small style="color:#6B7280;font-size:11px;">⚠️ Alterar o slug quebra a URL atual!</small>
                 </div>
                 <div class="form-group">
                     <label>Descrição</label>
                     <textarea id="editDesc" rows="2"></textarea>
                 </div>
-
-                <h4>🏆 Imagem da Premiação</h4>
-                <div class="form-group">
-                    <label>Título da Premiação</label>
-                    <input type="text" id="editPremioTitulo" placeholder="Ex: Prêmio Especial">
-                </div>
-                <div class="form-group">
-                    <label>Upload de imagem</label>
-                    <input type="file" id="editPremioImagem" accept="image/*" name="premio_imagem">
-                    <small style="color:#6B7280;font-size:11px;">Formatos: JPG, PNG, GIF, WEBP (max 5MB)</small>
-                </div>
-                <div class="form-group">
-                    <label>OU URL da imagem</label>
-                    <input type="url" id="editPremioImagemUrl" placeholder="https://exemplo.com/premio.jpg">
-                    <small style="color:#6B7280;font-size:11px;">Deixe em branco para usar o emoji padrão 🏆</small>
-                </div>
-                <div id="editPremioPreview" class="premio-preview" style="display:none;">
-                    <span>Prévia:</span>
-                    <img id="editPremioPreviewImg" src="" alt="Prévia" style="display:none;">
-                    <span id="editPremioPreviewEmoji" class="emoji">🏆</span>
-                </div>
-
-                <h4>📦 Item do Leilão</h4>
-                <div class="form-group">
-                    <label>Nome do Item *</label>
-                    <input type="text" id="editItemNome" required>
-                </div>
-                <div class="form-group">
-                    <label>Descrição do Item</label>
-                    <textarea id="editItemDesc" rows="2"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Categoria</label>
-                    <select id="editItemCategoria">
-                        <option value="Geral">Geral</option>
-                        <option value="Eletrônicos">Eletrônicos</option>
-                        <option value="Veículos">Veículos</option>
-                        <option value="Imóveis">Imóveis</option>
-                        <option value="Cozinha">Cozinha</option>
-                        <option value="Moda">Moda</option>
-                    </select>
-                </div>
-
-                <h4>👤 Controle do Influencer</h4>
-                <div class="form-group">
-                    <label>Nome do Influencer</label>
-                    <input type="text" id="editInfluencer" placeholder="Ex: João Silva">
-                    <small style="color:#6B7280;font-size:11px;">Este campo é interno e não aparece no leilão</small>
-                </div>
-
-                <div class="form-group">
-                    <label>Metas Internas (porcentagem e prêmio)</label>
-                    <div id="editMetasInternasContainer">
-                    </div>
-                    <button type="button" class="btn btn-secondary btn-sm" onclick="adicionarMetaEdicao()" style="margin-top:6px;">➕ Adicionar Meta</button>
-                    <small style="color:#6B7280;font-size:11px;">Defina metas em porcentagem e o prêmio correspondente</small>
-                </div>
-
-                <h4>⏱️ Controle do Leilão (30 DIAS = 43200 MINUTOS)</h4>
                 <div class="form-group">
                     <label>Meta (R$)</label>
                     <input type="number" id="editMeta" step="0.01" min="0.01" required>
-                    <small style="color:#6B7280;font-size:11px;">Valor necessário para atingir a premiação</small>
                 </div>
-
                 <div class="form-group">
-                    <label>Duração Total (minutos)</label>
-                    <input type="text" id="editDuracao" inputmode="numeric" pattern="[0-9]*" required
-                           oninput="this.value = this.value.replace(/[^0-9]/g, ''); if(this.value && parseInt(this.value) > 43200) this.value = '43200'; if(this.value && parseInt(this.value) < 1) this.value = '1'; document.getElementById('editTempoInfo').textContent = '⏱️ Duração: ' + formatarDuracao(parseInt(this.value) || 0);"
-                           onblur="if(!this.value) this.value = '1440'; document.getElementById('editTempoInfo').textContent = '⏱️ Duração: ' + formatarDuracao(parseInt(this.value) || 0);">
-                    <small style="color:#6B7280;font-size:11px;">Tempo total do leilão em minutos (1440 = 24h, máximo 43200 = 30 dias)</small>
-                    <div class="tempo-info" id="editTempoInfo">⏱️ Duração: 24h</div>
+                    <label>Duração (minutos)</label>
+                    <input type="number" id="editDuracao" min="1" max="43200" value="1440">
                 </div>
-
-                <div class="form-group">
-                    <label>Status do Leilão</label>
-                    <select id="editStatus">
-                        <option value="ativa">🟢 Ativo</option>
-                        <option value="inativa">🔴 Inativo</option>
-                    </select>
-                </div>
-
-                <button type="submit" class="btn btn-primary" style="width:100%;">💾 Salvar Alterações</button>
+                <button type="submit" class="btn btn-primary">💾 Salvar</button>
             </form>
         </div>
     </div>
 
+    <div class="modal-overlay" id="modalVisualizar">
+        <div class="modal" style="max-width:600px;">
+            <button class="close" onclick="fecharModalVisualizar()">✕</button>
+            <h2 id="visualizarTitulo">📊 Detalhes da Campanha</h2>
+            <div id="visualizarConteudo"></div>
+        </div>
+    </div>
+
     <script>
-    const MAX_DURACAO = 43200;
-    let campanhasCache = [];
-    let token = null; // NÃO salva no localStorage!
-    let isLoggedIn = false;
+        // ============================================================
+        // CONFIGURAÇÕES
+        // ============================================================
+        const API_URL = window.location.origin;
+        const ADMIN_SENHA = 'admin123';
+        let campanhasCache = [];
+        let campanhasSelecionadas = new Set();
+        let autenticado = false;
+        let atualizacaoInterval = null;
 
-    // ========== VERIFICADOR DE SESSÃO ==========
-    function verificarSessao() {
-        if (!isLoggedIn || !token) {
-            document.getElementById('loginAdmin').style.display = 'block';
-            document.getElementById('painelAdmin').style.display = 'none';
-            document.getElementById('adminStatus').style.display = 'none';
-            mostrarMsg('🔐 Faça login para acessar o painel', 'info');
-            return false;
+        // ============================================================
+        // FUNÇÃO PARA OBTER URL BASE (CORRIGIDA)
+        // ============================================================
+        function getBaseUrl() {
+            // Tenta window.location.origin primeiro
+            let base = window.location.origin;
+            // Se estiver vazio ou undefined, usa fallback
+            if (!base || base === 'undefined' || base === '') {
+                base = window.location.protocol + '//' + window.location.host;
+            }
+            // Remove barra final se existir
+            if (base.endsWith('/')) {
+                base = base.slice(0, -1);
+            }
+            return base;
         }
-        return true;
-    }
 
-    function formatarDuracao(minutos) {
-        if (minutos <= 0) return '0 minutos';
-        if (minutos < 60) return `${minutos} minutos`;
-        const h = Math.floor(minutos / 60);
-        const m = minutos % 60;
-        if (h < 24) return `${h}h ${m > 0 ? m + 'm' : ''}`;
-        const d = Math.floor(h / 24);
-        const rh = h % 24;
-        return `${d}d ${rh}h${m > 0 ? ' ' + m + 'm' : ''}`;
-    }
+        // ============================================================
+        // FUNÇÃO PARA COPIAR URL (CORRIGIDA)
+        // ============================================================
+        function copiarUrl(url) {
+            const base = getBaseUrl();
+            // Garante que a URL comece com /
+            if (!url.startsWith('/')) {
+                url = '/' + url;
+            }
+            const fullUrl = base + url;
+            
+            // Fallback se a URL ainda estiver undefined
+            if (fullUrl.includes('undefined')) {
+                const fallbackUrl = 'https://leilao-facil.onrender.com' + url;
+                navigator.clipboard.writeText(fallbackUrl).then(() => {
+                    mostrarMsg('✅ URL copiada! (fallback)', 'sucesso');
+                }).catch(() => {
+                    alert('Copie manualmente: ' + fallbackUrl);
+                });
+                return;
+            }
 
-    document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('input').forEach(function(input) {
-            input.removeAttribute('max');
-            input.removeAttribute('min');
-            input.setAttribute('novalidate', 'novalidate');
-            input.addEventListener('invalid', function(e) {
-                e.preventDefault();
-                this.setCustomValidity('');
+            navigator.clipboard.writeText(fullUrl).then(() => {
+                mostrarMsg('✅ URL copiada!', 'sucesso');
+            }).catch(() => {
+                // Fallback para copiar manualmente
+                const input = document.createElement('input');
+                input.value = fullUrl;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                mostrarMsg('✅ URL copiada!', 'sucesso');
             });
-        });
+        }
 
-        // NUNCA restaura token do localStorage - sempre pede login
-        document.getElementById('loginAdmin').style.display = 'block';
-        document.getElementById('painelAdmin').style.display = 'none';
-    });
+        // ============================================================
+        // FUNÇÃO PARA ABRIR LEILÃO (CORRIGIDA)
+        // ============================================================
+        function abrirLeilao(slug) {
+            if (!slug || slug === 'undefined' || slug === '') {
+                mostrarMsg('❌ Slug inválido!', 'erro');
+                return;
+            }
+            const base = getBaseUrl();
+            const url = base + '/' + slug;
+            window.open(url, '_blank');
+        }
 
-    async function fazerLogin(e) {
-        e.preventDefault();
-        const senha = document.getElementById('senhaAdmin').value;
-        const erroEl = document.getElementById('loginErro');
-        erroEl.style.display = 'none';
-        try {
-            const res = await fetch('/api/admin/verificar', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ senha })
-            });
-            const data = await res.json();
-            if (data.sucesso) {
-                token = senha;
-                isLoggedIn = true;
-                // NÃO salva no localStorage!
-                document.getElementById('loginAdmin').style.display = 'none';
-                document.getElementById('painelAdmin').style.display = 'block';
-                document.getElementById('adminStatus').style.display = 'inline-block';
-                carregarCampanhas();
-                configurarSlugAutomatico();
-                configurarPreviewImagem();
-            } else {
+        // ============================================================
+        // LOGIN
+        // ============================================================
+        document.getElementById('btnLogin').addEventListener('click', async function() {
+            const senha = document.getElementById('senhaInput').value;
+            const erroEl = document.getElementById('loginErro');
+            
+            if (!senha) {
+                erroEl.textContent = '⚠️ Digite a senha';
                 erroEl.style.display = 'block';
+                return;
             }
-        } catch(e) {
-            erroEl.style.display = 'block';
-        }
-    }
 
-    function fazerLogout() {
-        if (confirm('Deseja realmente sair?')) {
-            token = null;
-            isLoggedIn = false;
-            document.getElementById('loginAdmin').style.display = 'block';
-            document.getElementById('painelAdmin').style.display = 'none';
-            document.getElementById('adminStatus').style.display = 'none';
-            document.getElementById('senhaAdmin').value = '';
-            mostrarMsg('✅ Você saiu do painel admin', 'sucesso');
-        }
-    }
+            this.disabled = true;
+            this.textContent = '⏳ Verificando...';
+            erroEl.style.display = 'none';
 
-    function mostrarMsg(texto, tipo) {
-        const area = document.getElementById('msgArea');
-        area.innerHTML = `<div class="msg ${tipo}">${texto}</div>`;
-        setTimeout(() => area.innerHTML = '', 5000);
-    }
+            try {
+                const res = await fetch('/api/admin/verificar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ senha })
+                });
 
-    function trocarTab(tab) {
-        if (!verificarSessao()) return;
-        document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
-        const idx = ['campanhas', 'nova'].indexOf(tab);
-        const btns = document.querySelectorAll('.tabs button');
-        if (btns[idx]) btns[idx].classList.add('active');
-        document.getElementById('tabCampanhas').classList.toggle('hidden', tab !== 'campanhas');
-        document.getElementById('tabNova').classList.toggle('active', tab === 'nova');
-        if (tab === 'campanhas') carregarCampanhas();
-    }
+                const data = await res.json();
 
-    function configurarSlugAutomatico() {
-        document.getElementById('campNome').addEventListener('input', function() {
-            const slugInput = document.getElementById('campSlug');
-            if (!slugInput.value || slugInput.dataset.auto === 'true') {
-                slugInput.value = this.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-                slugInput.dataset.auto = 'true';
-            }
-        });
-        document.getElementById('campSlug').addEventListener('input', function() {
-            this.dataset.auto = 'false';
-        });
-    }
-
-    function configurarPreviewImagem() {
-        document.getElementById('premioImagem').addEventListener('change', function(e) {
-            const preview = document.getElementById('premioPreview');
-            const emoji = document.getElementById('premioPreviewEmoji');
-            const img = document.getElementById('premioPreviewImg');
-            if (this.files && this.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(ev) {
-                    img.src = ev.target.result;
-                    img.style.display = 'block';
-                    emoji.style.display = 'none';
-                    preview.style.display = 'flex';
-                };
-                reader.readAsDataURL(this.files[0]);
-            } else {
-                preview.style.display = 'none';
-            }
-        });
-        document.getElementById('premioImagemUrl').addEventListener('input', function() {
-            const preview = document.getElementById('premioPreview');
-            const emoji = document.getElementById('premioPreviewEmoji');
-            const img = document.getElementById('premioPreviewImg');
-            if (this.value && this.value.trim() !== '') {
-                img.src = this.value.trim();
-                img.style.display = 'block';
-                emoji.style.display = 'none';
-                preview.style.display = 'flex';
-            } else {
-                preview.style.display = 'none';
-            }
-        });
-        document.getElementById('editPremioImagem').addEventListener('change', function(e) {
-            const preview = document.getElementById('editPremioPreview');
-            const emoji = document.getElementById('editPremioPreviewEmoji');
-            const img = document.getElementById('editPremioPreviewImg');
-            if (this.files && this.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(ev) {
-                    img.src = ev.target.result;
-                    img.style.display = 'block';
-                    emoji.style.display = 'none';
-                    preview.style.display = 'flex';
-                };
-                reader.readAsDataURL(this.files[0]);
-            }
-        });
-        document.getElementById('editPremioImagemUrl').addEventListener('input', function() {
-            const preview = document.getElementById('editPremioPreview');
-            const emoji = document.getElementById('editPremioPreviewEmoji');
-            const img = document.getElementById('editPremioPreviewImg');
-            if (this.value && this.value.trim() !== '') {
-                img.src = this.value.trim();
-                img.style.display = 'block';
-                emoji.style.display = 'none';
-                preview.style.display = 'flex';
-            } else {
-                preview.style.display = 'none';
-            }
-        });
-    }
-
-    function formatarTempo(segundos) {
-        if (segundos <= 0) return 'Encerrado';
-        const d = Math.floor(segundos / 86400);
-        const h = Math.floor((segundos % 86400) / 3600);
-        const m = Math.floor((segundos % 3600) / 60);
-        if (d > 0) return `${d}d ${h}h`;
-        if (h > 0) return `${h}h ${m}m`;
-        return `${m}m`;
-    }
-
-    function adicionarMeta(containerId, porcentagem, premio) {
-        const container = document.getElementById(containerId);
-        const row = document.createElement('div');
-        row.className = 'meta-row';
-        row.innerHTML = `
-            <input type="number" class="meta-porcentagem" placeholder="% Meta" min="0" max="100" value="${porcentagem || ''}" style="flex:1;min-width:80px;padding:8px;border:2px solid #E5E7EB;border-radius:6px;font-size:13px;">
-            <input type="text" class="meta-premio" placeholder="Prêmio (ex: R$ 100,00)" value="${premio || ''}" style="flex:2;min-width:120px;padding:8px;border:2px solid #E5E7EB;border-radius:6px;font-size:13px;">
-            <button type="button" class="btn btn-danger btn-sm" onclick="removerMeta(this)" style="padding:4px 10px;">✕</button>
-        `;
-        container.appendChild(row);
-    }
-
-    function adicionarMetaEdicao() {
-        adicionarMeta('editMetasInternasContainer');
-    }
-
-    function removerMeta(btn) {
-        const row = btn.closest('.meta-row');
-        const container = row.parentElement;
-        if (container.querySelectorAll('.meta-row').length > 1) {
-            row.remove();
-        } else {
-            mostrarMsg('⚠️ É necessário ter pelo menos uma meta', 'erro');
-        }
-    }
-
-    function getMetasInternas(containerId) {
-        const container = document.getElementById(containerId);
-        const rows = container.querySelectorAll('.meta-row');
-        const metas = [];
-        rows.forEach(row => {
-            const porcentagem = parseFloat(row.querySelector('.meta-porcentagem').value);
-            const premio = row.querySelector('.meta-premio').value.trim();
-            if (!isNaN(porcentagem) && premio) {
-                metas.push({ meta: porcentagem, premio: premio });
-            }
-        });
-        return metas;
-    }
-
-    function atualizarDashboard(campanhas) {
-        const total = campanhas.length;
-        const ativos = campanhas.filter(c => c.status === 'ativa').length;
-        let totalLances = 0;
-        let totalUsuarios = new Set();
-        let metasAtingidas = 0;
-        let maiorLance = 0;
-        campanhas.forEach(c => {
-            totalLances += c.total_lances || 0;
-            if (c.vencedor_atual) totalUsuarios.add(c.vencedor_atual.nome);
-            if (c.atingiu_meta) metasAtingidas++;
-            if ((c.lance_atual || 0) > maiorLance) maiorLance = c.lance_atual || 0;
-        });
-        document.getElementById('dashTotalLeiloes').textContent = total;
-        document.getElementById('dashLeiloesAtivos').textContent = ativos;
-        document.getElementById('dashTotalLances').textContent = totalLances;
-        document.getElementById('dashTotalUsuarios').textContent = totalUsuarios.size || 0;
-        document.getElementById('dashMetaAtingida').textContent = metasAtingidas;
-        document.getElementById('dashMaiorLance').textContent = `R$ ${maiorLance.toFixed(2)}`;
-    }
-
-    function renderizarCampanhas(campanhas) {
-        const container = document.getElementById('campanhasList');
-        if (!campanhas || campanhas.length === 0) {
-            container.innerHTML = `
-                <div style="text-align:center;color:#6B7280;padding:30px;">
-                    📭 Nenhum leilão criado ainda.<br>
-                    <button class="btn btn-primary" style="margin-top:12px;" onclick="trocarTab('nova')">➕ Criar primeiro leilão</button>
-                </div>
-            `;
-            return;
-        }
-        container.innerHTML = campanhas.map(c => {
-            let premioHtml = '';
-            if (c.premio_imagem_url && c.premio_imagem_url.trim() !== '') {
-                premioHtml = `<img src="${c.premio_imagem_url}" alt="Prêmio">`;
-            } else if (c.premio_imagem && c.premio_imagem.startsWith('/uploads/')) {
-                premioHtml = `<img src="${c.premio_imagem}" alt="Prêmio">`;
-            } else {
-                premioHtml = `<span class="emoji">${c.premio_imagem || '🏆'}</span>`;
-            }
-            const percentual = c.percentual_meta || 0;
-            const atingiuMeta = c.atingiu_meta || false;
-            const barraClass = atingiuMeta ? 'barra atingida' : 'barra';
-            const percentualClass = atingiuMeta ? 'porcentagem atingida' : 'porcentagem';
-            let metasHtml = '';
-            if (c.metas_atingidas && c.metas_atingidas.length > 0) {
-                metasHtml = `
-                    <div style="margin-top:8px;padding:8px;background:#D1FAE5;border-radius:6px;font-size:12px;color:#059669;">
-                        🎯 Metas Internas Atingidas: ${c.metas_atingidas.map(m => `${m.meta}% (${m.premio})`).join(', ')}
-                    </div>
-                `;
-            }
-            return `
-            <div class="campanha-card">
-                <div class="topo">
-                    <div>
-                        <span class="titulo">${c.nome}</span>
-                        <small>#${c.id} • /${c.slug}</small>
-                        ${c.influencer && c.influencer !== 'Não informado' ? `<br><small style="color:#6B7280;">👤 Influencer: ${c.influencer}</small>` : ''}
-                    </div>
-                    <div>
-                        <span class="status-badge ${c.status === 'ativa' ? 'ativa' : 'inativa'}">
-                            ${c.status === 'ativa' ? '🟢 Ativo' : '🔴 Inativo'}
-                        </span>
-                    </div>
-                </div>
-                <div class="premio-row">
-                    ${premioHtml}
-                    <span class="label">🏆 Prêmio: ${c.meta_valor ? `R$ ${c.meta_valor.toFixed(2)}` : 'N/A'}</span>
-                </div>
-                <div class="meta-grafico">
-                    <div class="barra-container">
-                        <div class="${barraClass}" style="width:${Math.min(percentual, 100)}%;"></div>
-                    </div>
-                    <div class="info-meta">
-                        <span>🎯 Meta: R$ ${(c.meta_valor || 3.00).toFixed(2)}</span>
-                        <span class="${percentualClass}">${percentual.toFixed(1)}% ${atingiuMeta ? '✅ Atingida!' : ''}</span>
-                        <span>💰 Atual: R$ ${(c.lance_atual || 0).toFixed(2)}</span>
-                    </div>
-                </div>
-                ${metasHtml}
-                <div class="detalhes">
-                    <div class="item"><div class="valor">${c.total_lances || 0}</div><div class="label">📊 Lances</div></div>
-                    <div class="item"><div class="valor">R$ ${(c.lance_atual || 0).toFixed(2)}</div><div class="label">💰 Lance Atual</div></div>
-                    <div class="item"><div class="valor">${c.vencedor_atual ? c.vencedor_atual.nome : '—'}</div><div class="label">🏆 Vencedor</div></div>
-                    <div class="item"><div class="valor">${formatarTempo(c.tempo_restante || 0)}</div><div class="label">⏱️ Restante</div></div>
-                </div>
-                <div class="url">
-                    🔗 URL: <a href="${c.url}" target="_blank">${c.url}</a>
-                    <button class="btn btn-secondary btn-sm" onclick="copiarUrl('${c.url}')" style="margin-left:8px;padding:2px 10px;font-size:11px;">📋 Copiar</button>
-                </div>
-                <div class="acoes">
-                    <button class="btn btn-secondary btn-sm" onclick="editarCampanha(${c.id})">✏️ Editar</button>
-                    <button class="btn btn-warning btn-sm" onclick="resetarLeilao(${c.id})">🔄 Resetar</button>
-                    <button class="btn ${c.status === 'ativa' ? 'btn-danger' : 'btn-success'} btn-sm" onclick="toggleStatus(${c.id}, '${c.status === 'ativa' ? 'inativa' : 'ativa'}')">
-                        ${c.status === 'ativa' ? '⏸️ Desativar' : '▶️ Ativar'}
-                    </button>
-                    <button class="btn btn-primary btn-sm" onclick="window.open('${c.url}', '_blank')">🔗 Abrir</button>
-                </div>
-            </div>`;
-        }).join('');
-    }
-
-    function carregarCampanhas() {
-        if (!verificarSessao()) return;
-        try {
-            fetch('/api/admin/campanhas-completas', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            })
-            .then(res => {
-                if (res.status === 401) {
-                    isLoggedIn = false;
-                    token = null;
-                    document.getElementById('loginAdmin').style.display = 'block';
-                    document.getElementById('painelAdmin').style.display = 'none';
-                    document.getElementById('adminStatus').style.display = 'none';
-                    mostrarMsg('Sessão expirada. Faça login novamente.', 'erro');
-                    throw new Error('Unauthorized');
+                if (data.sucesso) {
+                    autenticado = true;
+                    document.getElementById('loginBox').style.display = 'none';
+                    document.getElementById('adminContent').style.display = 'block';
+                    document.getElementById('senhaInput').value = '';
+                    iniciarAdmin();
+                } else {
+                    erroEl.textContent = '❌ Senha incorreta. Tente novamente.';
+                    erroEl.style.display = 'block';
+                    document.getElementById('senhaInput').value = '';
+                    document.getElementById('senhaInput').focus();
                 }
-                return res.json();
-            })
-            .then(campanhas => {
+            } catch (e) {
+                erroEl.textContent = '❌ Erro ao conectar com o servidor.';
+                erroEl.style.display = 'block';
+                console.error('Erro no login:', e);
+            }
+
+            this.disabled = false;
+            this.textContent = 'Entrar';
+        });
+
+        document.getElementById('senhaInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('btnLogin').click();
+            }
+        });
+
+        // ============================================================
+        // INICIAR ADMIN
+        // ============================================================
+        function iniciarAdmin() {
+            carregarCampanhas();
+            configurarSlugAutomatico();
+            iniciarAtualizacaoAutomatica();
+        }
+
+        function iniciarAtualizacaoAutomatica() {
+            if (atualizacaoInterval) clearInterval(atualizacaoInterval);
+            atualizacaoInterval = setInterval(() => {
+                if (autenticado) {
+                    carregarCampanhas(true);
+                }
+            }, 5000);
+        }
+
+        // ============================================================
+        // MENSAGENS
+        // ============================================================
+        function mostrarMsg(texto, tipo) {
+            const area = document.getElementById('msgArea');
+            area.innerHTML = `<div class="msg ${tipo}">${texto}</div>`;
+            setTimeout(() => { area.innerHTML = ''; }, 5000);
+        }
+
+        // ============================================================
+        // TABS
+        // ============================================================
+        function trocarTab(tab) {
+            document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+            const idx = ['campanhas', 'nova'].indexOf(tab);
+            const btns = document.querySelectorAll('.tabs button');
+            if (btns[idx]) btns[idx].classList.add('active');
+            
+            document.getElementById('tabCampanhas').classList.toggle('hidden', tab !== 'campanhas');
+            document.getElementById('tabNova').classList.toggle('active', tab === 'nova');
+            
+            if (tab === 'campanhas') carregarCampanhas();
+        }
+
+        // ============================================================
+        // SLUG AUTOMÁTICO
+        // ============================================================
+        function configurarSlugAutomatico() {
+            document.getElementById('campNome').addEventListener('input', function() {
+                const slugInput = document.getElementById('campSlug');
+                if (!slugInput.value || slugInput.dataset.auto === 'true') {
+                    slugInput.value = this.value.toLowerCase()
+                        .replace(/\s+/g, '-')
+                        .replace(/[^a-z0-9-]/g, '');
+                    slugInput.dataset.auto = 'true';
+                }
+            });
+            document.getElementById('campSlug').addEventListener('input', function() {
+                this.dataset.auto = 'false';
+            });
+        }
+
+        // ============================================================
+        // FORMATAR TEMPO
+        // ============================================================
+        function formatarTempo(segundos) {
+            if (segundos <= 0) return 'Encerrado';
+            const d = Math.floor(segundos / 86400);
+            const h = Math.floor((segundos % 86400) / 3600);
+            const m = Math.floor((segundos % 3600) / 60);
+            if (d > 0) return `${d}d ${h}h`;
+            if (h > 0) return `${h}h ${m}m`;
+            return `${m}m`;
+        }
+
+        // ============================================================
+        // SELETOR
+        // ============================================================
+        function selecionarCampanha(id) {
+            const select = document.getElementById('seletorCampanha');
+            const info = document.getElementById('campanhaSelecionadaInfo');
+            
+            if (!id) {
+                info.textContent = 'Mostrando todas as campanhas';
+                renderizarCampanhas(campanhasCache);
+                return;
+            }
+            
+            const campanha = campanhasCache.find(c => c.id === parseInt(id));
+            if (campanha) {
+                const lanceAtual = campanha.lance_atual || 0;
+                info.textContent = `📌 ${campanha.nome} • ${campanha.total_lances || 0} lances • R$ ${lanceAtual.toFixed(2)}`;
+                renderizarCampanhas([campanha]);
+            }
+        }
+
+        function selecionarTodas() {
+            campanhasSelecionadas = new Set(campanhasCache.map(c => c.id));
+            renderizarCampanhas(campanhasCache);
+        }
+
+        function desmarcarTodas() {
+            campanhasSelecionadas = new Set();
+            renderizarCampanhas(campanhasCache);
+        }
+
+        function toggleSelecionar(id) {
+            if (campanhasSelecionadas.has(id)) {
+                campanhasSelecionadas.delete(id);
+            } else {
+                campanhasSelecionadas.add(id);
+            }
+            renderizarCampanhas(campanhasCache);
+        }
+
+        // ============================================================
+        // CARREGAR CAMPANHAS
+        // ============================================================
+        async function carregarCampanhas(silencioso = false) {
+            try {
+                const res = await fetch('/api/admin/campanhas-completas', {
+                    headers: { 'Authorization': 'Bearer admin123' }
+                });
+                const campanhas = await res.json();
                 campanhasCache = campanhas;
                 atualizarDashboard(campanhas);
+                atualizarSeletor(campanhas);
                 renderizarCampanhas(campanhas);
-                document.getElementById('adminStatus').style.display = 'inline-block';
-                document.getElementById('adminStatus').style.background = '#D1FAE5';
-                document.getElementById('adminStatus').style.color = '#059669';
-                document.getElementById('adminStatus').textContent = '✅ Sistema operando';
-            })
-            .catch(err => {
-                if (err.message !== 'Unauthorized') {
-                    console.error('Erro ao carregar leilões:', err);
-                    document.getElementById('adminStatus').style.display = 'inline-block';
-                    document.getElementById('adminStatus').style.background = '#FEE2E2';
-                    document.getElementById('adminStatus').style.color = '#DC2626';
-                    document.getElementById('adminStatus').textContent = '⚠️ Erro ao carregar';
-                    document.getElementById('campanhasList').innerHTML =
-                        '<div style="text-align:center;color:#DC2626;padding:30px;">❌ Erro ao carregar leilões. Tentando novamente...</div>';
-                    setTimeout(carregarCampanhas, 10000);
+            } catch (e) { 
+                if (!silencioso) {
+                    console.error('Erro ao carregar campanhas:', e);
+                    document.getElementById('campanhasList').innerHTML = 
+                        '<div style="text-align:center;color:#DC2626;padding:30px;">❌ Erro ao carregar campanhas</div>';
+                }
+            }
+        }
+
+        // ============================================================
+        // DASHBOARD
+        // ============================================================
+        function atualizarDashboard(campanhas) {
+            const total = campanhas.length;
+            const totalLances = campanhas.reduce((s, c) => s + (c.total_lances || 0), 0);
+            const metasAtingidas = campanhas.filter(c => c.atingiu_meta).length;
+            const usuarios = new Set();
+            campanhas.forEach(c => {
+                if (c.vencedor_atual) usuarios.add(c.vencedor_atual.id);
+            });
+
+            document.getElementById('totalCampanhas').textContent = total;
+            document.getElementById('totalLances').textContent = totalLances;
+            document.getElementById('metaAtingida').textContent = metasAtingidas;
+            document.getElementById('totalUsuarios').textContent = usuarios.size || 0;
+        }
+
+        // ============================================================
+        // SELETOR
+        // ============================================================
+        function atualizarSeletor(campanhas) {
+            const select = document.getElementById('seletorCampanha');
+            const current = select.value;
+            select.innerHTML = `<option value="">Todas as campanhas</option>`;
+            campanhas.forEach(c => {
+                select.innerHTML += `<option value="${c.id}">${c.nome} #${c.id}</option>`;
+            });
+            if (current) select.value = current;
+        }
+
+        // ============================================================
+        // RENDERIZAR CAMPANHAS (CORRIGIDO)
+        // ============================================================
+        function renderizarCampanhas(campanhas) {
+            const container = document.getElementById('campanhasList');
+            
+            if (!campanhas || campanhas.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align:center;color:#6B7280;padding:40px;">
+                        📭 Nenhuma campanha encontrada.<br>
+                        <button class="btn btn-primary" style="margin-top:12px;" onclick="trocarTab('nova')">
+                            ➕ Criar primeira campanha
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = campanhas.map(c => {
+                const selecionada = campanhasSelecionadas.has(c.id);
+                const metaValor = c.meta_valor || 3.00;
+                const lanceAtual = c.lance_atual || 0;
+                const percentualMeta = metaValor > 0 ? Math.min(100, (lanceAtual / metaValor) * 100) : 0;
+                const corMeta = percentualMeta >= 100 ? 'verde' : percentualMeta >= 50 ? 'amarelo' : 'vermelho';
+                const statusClass = c.status === 'ativa' ? 'ativa' : 'inativa';
+                const statusLabel = c.status === 'ativa' ? '🟢 Ativa' : '🔴 Inativa';
+                const tempoRestante = c.tempo_restante || 0;
+                
+                // GARANTE QUE O SLUG NÃO SEJA UNDEFINED
+                const slug = c.slug || 'slug-indisponivel';
+                const urlPath = '/' + slug;
+                const urlCompleta = getBaseUrl() + urlPath;
+
+                return `
+                    <div class="campanha-card ${selecionada ? 'selecionada' : ''}" data-id="${c.id}">
+                        <input type="checkbox" class="checkbox" 
+                               ${selecionada ? 'checked' : ''} 
+                               onchange="toggleSelecionar(${c.id})">
+                        
+                        <div class="topo">
+                            <div>
+                                <span class="titulo">${c.nome}</span>
+                                <small>#${c.id} • ${urlPath}</small>
+                                <span class="farol ${corMeta}" title="Meta: ${percentualMeta.toFixed(0)}%"></span>
+                            </div>
+                            <div>
+                                <span class="status-badge ${statusClass}">${statusLabel}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="detalhes">
+                            <div class="item">
+                                <div class="valor">${c.total_lances || 0}</div>
+                                <div class="label">📊 Lances</div>
+                            </div>
+                            <div class="item">
+                                <div class="valor">R$ ${(lanceAtual).toFixed(2)}</div>
+                                <div class="label">💰 Lance Atual</div>
+                            </div>
+                            <div class="item">
+                                <div class="valor">${c.vencedor_atual ? c.vencedor_atual.nome : '—'}</div>
+                                <div class="label">🏆 Vencedor</div>
+                            </div>
+                            <div class="item">
+                                <div class="valor" style="font-size:16px; color:${percentualMeta >= 100 ? '#10B981' : percentualMeta >= 50 ? '#FF8C00' : '#DC2626'}">
+                                    ${percentualMeta.toFixed(0)}% de R$ ${metaValor.toFixed(2)}
+                                </div>
+                                <div class="label">🎯 Meta</div>
+                                <div class="barra-meta">
+                                    <div class="fill ${corMeta}" style="width:${percentualMeta}%;"></div>
+                                </div>
+                            </div>
+                            <div class="item">
+                                <div class="valor">${formatarTempo(tempoRestante)}</div>
+                                <div class="label">⏱️ Tempo Restante</div>
+                            </div>
+                        </div>
+
+                        <div class="url">
+                            🔗 URL: <a href="${urlPath}" target="_blank">${urlPath}</a>
+                            <button class="btn btn-secondary btn-sm" style="padding:2px 8px;font-size:11px;margin-left:4px;" onclick="copiarUrl('${slug}')">
+                                📋 Copiar
+                            </button>
+                            <span style="font-size:10px;color:#9CA3AF;margin-left:4px;">(${urlCompleta})</span>
+                        </div>
+
+                        <div class="acoes">
+                            <button class="btn btn-secondary btn-sm" onclick="visualizarCampanha(${c.id})">
+                                👁️ Visualizar
+                            </button>
+                            <button class="btn btn-secondary btn-sm" onclick="editarCampanha(${c.id})">
+                                ✏️ Editar
+                            </button>
+                            <button class="btn btn-warning btn-sm" onclick="resetarLeilao(${c.id})">
+                                🔄 Resetar
+                            </button>
+                            <button class="btn ${c.status === 'ativa' ? 'btn-danger' : 'btn-success'} btn-sm" onclick="toggleStatus(${c.id}, '${c.status === 'ativa' ? 'inativa' : 'ativa'}')">
+                                ${c.status === 'ativa' ? '⏸️ Desativar' : '▶️ Ativar'}
+                            </button>
+                            <button class="btn btn-primary btn-sm" onclick="abrirLeilao('${slug}')">
+                                🔗 Abrir
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ============================================================
+        // EXCLUIR SELECIONADAS
+        // ============================================================
+        async function excluirSelecionadas() {
+            if (campanhasSelecionadas.size === 0) {
+                mostrarMsg('⚠️ Selecione pelo menos uma campanha', 'erro');
+                return;
+            }
+            if (!confirm(`Deseja excluir ${campanhasSelecionadas.size} campanha(s)? Esta ação não pode ser desfeita!`)) return;
+
+            try {
+                const ids = Array.from(campanhasSelecionadas);
+                const res = await fetch('/api/admin/campanhas', {
+                    method: 'DELETE',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer admin123'
+                    },
+                    body: JSON.stringify({ ids })
+                });
+                const data = await res.json();
+                if (data.sucesso) {
+                    mostrarMsg(`✅ ${campanhasSelecionadas.size} campanha(s) excluída(s)!`, 'sucesso');
+                    campanhasSelecionadas = new Set();
+                    carregarCampanhas();
+                } else {
+                    mostrarMsg('❌ ' + (data.erro || 'Erro ao excluir'), 'erro');
+                }
+            } catch (e) {
+                mostrarMsg('❌ Erro ao excluir campanhas', 'erro');
+                console.error(e);
+            }
+        }
+
+        // ============================================================
+        // CRIAR CAMPANHA
+        // ============================================================
+        async function criarCampanha(e) {
+            e.preventDefault();
+            
+            const nome = document.getElementById('campNome').value.trim();
+            const slug = document.getElementById('campSlug').value.trim();
+            const descricao = document.getElementById('campDesc').value.trim();
+            const itemNome = document.getElementById('itemNome').value.trim();
+            const itemDesc = document.getElementById('itemDesc').value.trim();
+            const itemImagem = document.getElementById('itemImagem').value.trim();
+            const itemCategoria = document.getElementById('itemCategoria').value;
+            const metaValor = parseFloat(document.getElementById('campMeta').value) || 3.00;
+            const dataFim = document.getElementById('itemDataFim').value;
+            const duracao = parseInt(document.getElementById('campDuracao').value) || 1440;
+
+            if (!nome || !slug || !itemNome) {
+                mostrarMsg('⚠️ Preencha nome, slug e nome do item', 'erro');
+                return;
+            }
+
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.textContent = '⏳ Criando...';
+
+            try {
+                const res = await fetch('/api/admin/criar-campanha', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer admin123'
+                    },
+                    body: JSON.stringify({
+                        nome, slug, descricao,
+                        item_nome: itemNome,
+                        item_descricao: itemDesc,
+                        item_imagem: itemImagem,
+                        item_categoria: itemCategoria,
+                        meta_valor: metaValor,
+                        data_fim: dataFim,
+                        duracao: duracao
+                    })
+                });
+
+                const data = await res.json();
+
+                if (data.sucesso) {
+                    const urlCompleta = getBaseUrl() + '/' + slug;
+                    mostrarMsg(`✅ Campanha "${nome}" criada com sucesso!`, 'sucesso');
+                    document.getElementById('urlGeradaContainer').innerHTML = `
+                        🔗 URL: <a href="/${slug}" target="_blank">/${slug}</a>
+                        <button class="btn btn-secondary btn-sm" onclick="copiarUrl('${slug}')">📋 Copiar</button>
+                        <br><small style="color:#6B7280;">${urlCompleta}</small>
+                    `;
+                    document.getElementById('urlGeradaContainer').style.display = 'block';
+                    
+                    document.getElementById('campNome').value = '';
+                    document.getElementById('campSlug').value = '';
+                    document.getElementById('campDesc').value = '';
+                    document.getElementById('itemNome').value = '';
+                    document.getElementById('itemDesc').value = '';
+                    document.getElementById('campMeta').value = '3.00';
+                    document.getElementById('itemDataFim').value = '';
+                    document.getElementById('campDuracao').value = '1440';
+                    
+                    carregarCampanhas();
+                } else {
+                    mostrarMsg('❌ ' + (data.erro || 'Erro ao criar campanha'), 'erro');
+                }
+            } catch (e) {
+                mostrarMsg('❌ Erro ao criar campanha: ' + e.message, 'erro');
+                console.error(e);
+            }
+
+            btn.disabled = false;
+            btn.textContent = '✅ Criar Campanha';
+        }
+
+        // ============================================================
+        // EDITAR CAMPANHA
+        // ============================================================
+        function editarCampanha(id) {
+            const campanha = campanhasCache.find(c => c.id === id);
+            if (!campanha) return;
+
+            document.getElementById('editCampanhaId').value = id;
+            document.getElementById('editNome').value = campanha.nome || '';
+            document.getElementById('editDesc').value = campanha.descricao || '';
+            document.getElementById('editMeta').value = campanha.meta_valor || 3.00;
+            document.getElementById('editDuracao').value = campanha.duracao || 1440;
+            document.getElementById('modalEditar').classList.add('active');
+        }
+
+        function fecharModalEditar() {
+            document.getElementById('modalEditar').classList.remove('active');
+        }
+
+        async function salvarEdicao(e) {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('editCampanhaId').value);
+            const nome = document.getElementById('editNome').value.trim();
+            const descricao = document.getElementById('editDesc').value.trim();
+            const metaValor = parseFloat(document.getElementById('editMeta').value) || 3.00;
+            const duracao = parseInt(document.getElementById('editDuracao').value) || 1440;
+
+            if (!nome) {
+                mostrarMsg('⚠️ Nome é obrigatório', 'erro');
+                return;
+            }
+
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.textContent = '⏳ Salvando...';
+
+            try {
+                const res = await fetch(`/api/admin/campanhas/${id}`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer admin123'
+                    },
+                    body: JSON.stringify({ nome, descricao, meta_valor: metaValor, duracao })
+                });
+                const data = await res.json();
+                if (data.sucesso) {
+                    mostrarMsg('✅ Campanha atualizada!', 'sucesso');
+                    fecharModalEditar();
+                    carregarCampanhas();
+                } else {
+                    mostrarMsg('❌ ' + (data.erro || 'Erro ao atualizar'), 'erro');
+                }
+            } catch (e) {
+                mostrarMsg('❌ Erro ao atualizar campanha', 'erro');
+                console.error(e);
+            }
+
+            btn.disabled = false;
+            btn.textContent = '💾 Salvar';
+        }
+
+        // ============================================================
+        // VISUALIZAR CAMPANHA
+        // ============================================================
+        function visualizarCampanha(id) {
+            const campanha = campanhasCache.find(c => c.id === id);
+            if (!campanha) return;
+
+            document.getElementById('visualizarTitulo').textContent = `📊 ${campanha.nome}`;
+            document.getElementById('visualizarConteudo').innerHTML = `
+                <p><strong>Slug:</strong> ${campanha.slug || 'N/A'}</p>
+                <p><strong>Status:</strong> ${campanha.status === 'ativa' ? '🟢 Ativa' : '🔴 Inativa'}</p>
+                <p><strong>Meta:</strong> R$ ${(campanha.meta_valor || 3.00).toFixed(2)}</p>
+                <p><strong>Lance Atual:</strong> R$ ${(campanha.lance_atual || 0).toFixed(2)}</p>
+                <p><strong>Total de Lances:</strong> ${campanha.total_lances || 0}</p>
+                <p><strong>Vencedor Atual:</strong> ${campanha.vencedor_atual ? campanha.vencedor_atual.nome : '—'}</p>
+                <p><strong>Meta Atingida:</strong> ${campanha.atingiu_meta ? '✅ Sim' : '❌ Não'}</p>
+                <p><strong>Tempo Restante:</strong> ${formatarTempo(campanha.tempo_restante || 0)}</p>
+                <hr>
+                <p><strong>Item:</strong> ${campanha.item_nome || 'N/A'}</p>
+                <p><strong>Descrição do Item:</strong> ${campanha.item_descricao || '—'}</p>
+                <p><strong>URL:</strong> <a href="/${campanha.slug}" target="_blank">/${campanha.slug}</a></p>
+            `;
+            document.getElementById('modalVisualizar').classList.add('active');
+        }
+
+        function fecharModalVisualizar() {
+            document.getElementById('modalVisualizar').classList.remove('active');
+        }
+
+        // ============================================================
+        // TOGGLE STATUS
+        // ============================================================
+        async function toggleStatus(id, novoStatus) {
+            try {
+                const res = await fetch(`/api/admin/campanhas/${id}/status`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer admin123'
+                    },
+                    body: JSON.stringify({ status: novoStatus })
+                });
+                const data = await res.json();
+                if (data.sucesso) {
+                    mostrarMsg(`✅ Campanha ${novoStatus === 'ativa' ? 'ativada' : 'desativada'}!`, 'sucesso');
+                    carregarCampanhas();
+                } else {
+                    mostrarMsg('❌ ' + (data.erro || 'Erro ao alterar status'), 'erro');
+                }
+            } catch (e) {
+                mostrarMsg('❌ Erro ao alterar status', 'erro');
+                console.error(e);
+            }
+        }
+
+        // ============================================================
+        // RESETAR LEILÃO
+        // ============================================================
+        async function resetarLeilao(id) {
+            if (!confirm('Tem certeza que deseja resetar este leilão? Todos os lances serão removidos!')) return;
+
+            try {
+                const res = await fetch(`/api/admin/resetar-leilao/${id}`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer admin123'
+                    }
+                });
+                const data = await res.json();
+                if (data.sucesso) {
+                    mostrarMsg('✅ Leilão resetado com sucesso!', 'sucesso');
+                    carregarCampanhas();
+                } else {
+                    mostrarMsg('❌ ' + (data.erro || 'Erro ao resetar'), 'erro');
+                }
+            } catch (e) {
+                mostrarMsg('❌ Erro ao resetar leilão', 'erro');
+                console.error(e);
+            }
+        }
+
+        // ============================================================
+        // FECHAR MODAIS CLICANDO FORA
+        // ============================================================
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('active');
                 }
             });
-        } catch (e) {
-            console.error('Erro ao carregar leilões:', e);
-        }
-    }
-
-    function copiarUrl(url) {
-        navigator.clipboard.writeText(url).then(() => {
-            mostrarMsg('✅ URL copiada!', 'sucesso');
-        }).catch(() => {
-            const input = document.createElement('input');
-            input.value = url;
-            document.body.appendChild(input);
-            input.select();
-            document.execCommand('copy');
-            document.body.removeChild(input);
-            mostrarMsg('✅ URL copiada!', 'sucesso');
         });
-    }
-
-    function validarCampanha(dados) {
-        const erros = [];
-        if (!dados.nome || dados.nome.trim().length < 3) erros.push('Nome deve ter pelo menos 3 caracteres');
-        if (!dados.slug || !/^[a-z0-9-]+$/.test(dados.slug)) erros.push('Slug deve conter apenas letras minúsculas, números e hífens');
-        if (isNaN(dados.meta_valor) || dados.meta_valor <= 0) erros.push('Meta deve ser um valor maior que 0');
-        return erros;
-    }
-
-    async function criarCampanha(e) {
-        e.preventDefault();
-        if (!verificarSessao()) return;
-
-        const btn = document.querySelector('#tabNova .btn-success');
-        const originalText = btn.textContent;
-        btn.disabled = true;
-        btn.innerHTML = '<span class="loading-spinner"></span> Criando...';
-
-        try {
-            const nome = document.getElementById('campNome').value.trim();
-            const slug = document.getElementById('campSlug').value.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-            const descricao = document.getElementById('campDesc').value.trim();
-            const item_nome = document.getElementById('itemNome').value.trim();
-            const item_descricao = document.getElementById('itemDesc').value.trim();
-            const item_categoria = document.getElementById('itemCategoria').value;
-            const premio_titulo = document.getElementById('campPremioTitulo').value.trim() || '🏆 PRÊMIO DO LEILÃO';
-            const premio_imagem_url = document.getElementById('premioImagemUrl').value.trim();
-            const meta_valor = parseFloat(document.getElementById('campMeta').value) || 3.00;
-            let duracao = parseInt(document.getElementById('campDuracao').value) || 43200;
-            const influencer = document.getElementById('campInfluencer').value.trim() || 'Não informado';
-
-            if (!nome) { mostrarMsg('⚠️ Nome do leilão é obrigatório', 'erro'); btn.disabled = false; btn.innerHTML = originalText; return; }
-            if (!slug) { mostrarMsg('⚠️ Slug é obrigatório', 'erro'); btn.disabled = false; btn.innerHTML = originalText; return; }
-            if (!item_nome) { mostrarMsg('⚠️ Nome do item é obrigatório', 'erro'); btn.disabled = false; btn.innerHTML = originalText; return; }
-            if (duracao > 43200) duracao = 43200;
-            if (duracao < 1) duracao = 1;
-
-            const metasInternas = getMetasInternas('metasInternasContainer');
-
-            const formData = new FormData();
-            formData.append('nome', nome);
-            formData.append('slug', slug);
-            formData.append('descricao', descricao);
-            formData.append('item_nome', item_nome);
-            formData.append('item_descricao', item_descricao);
-            formData.append('item_categoria', item_categoria);
-            formData.append('premio_titulo', premio_titulo);
-            formData.append('premio_imagem_url', premio_imagem_url);
-            formData.append('meta_valor', meta_valor);
-            formData.append('duracao', duracao);
-            formData.append('influencer', influencer);
-            formData.append('metas_internas', JSON.stringify(metasInternas));
-
-            const fileInput = document.getElementById('premioImagem');
-            if (fileInput.files && fileInput.files.length > 0) {
-                formData.append('premio_imagem', fileInput.files[0]);
-            }
-
-            console.log('📤 Enviando dados com FormData');
-
-            const res = await fetch('/api/admin/criar-campanha', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                },
-                body: formData
-            });
-
-            const result = await res.json();
-            console.log('📥 Resposta:', result);
-
-            if (result.sucesso) {
-                mostrarMsg('✅ Leilão criado com sucesso!', 'sucesso');
-                
-                const urlContainer = document.getElementById('urlGeradaContainer');
-                urlContainer.style.display = 'block';
-                urlContainer.innerHTML = `
-                    <strong>🔗 URL do Leilão:</strong><br>
-                    <a href="${result.url}" target="_blank">${result.url}</a>
-                    <br><small style="color:#6B7280;">Compartilhe este link para os participantes</small>
-                    <br><button class="btn btn-secondary btn-sm" onclick="copiarUrl('${result.url}')" style="margin-top:8px;">📋 Copiar URL</button>
-                `;
-
-                document.getElementById('formCriarCampanha').reset();
-                document.getElementById('premioPreview').style.display = 'none';
-                document.getElementById('premioPreviewEmoji').textContent = '🏆';
-                document.getElementById('premioPreviewImg').style.display = 'none';
-                document.getElementById('campDuracao').value = '43200';
-                document.getElementById('campPremioTitulo').value = '🏆 PRÊMIO DO LEILÃO';
-                document.getElementById('campMeta').value = '3.00';
-                document.getElementById('campInfluencer').value = '';
-                
-                const metasContainer = document.getElementById('metasInternasContainer');
-                metasContainer.innerHTML = '';
-                adicionarMeta('metasInternasContainer', 25, 'R$ 100,00');
-                adicionarMeta('metasInternasContainer', 50, 'R$ 200,00');
-                adicionarMeta('metasInternasContainer', 75, 'R$ 300,00');
-                adicionarMeta('metasInternasContainer', 100, 'R$ 500,00');
-
-                carregarCampanhas();
-                setTimeout(() => trocarTab('campanhas'), 2000);
-            } else {
-                mostrarMsg('❌ ' + (result.erro || 'Erro ao criar leilão'), 'erro');
-            }
-        } catch (err) {
-            console.error('❌ Erro:', err);
-            mostrarMsg('❌ Erro ao criar leilão: ' + err.message, 'erro');
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-        }
-    }
-
-    function editarCampanha(id) {
-        if (!verificarSessao()) return;
-        const campanha = campanhasCache.find(c => c.id === id);
-        if (!campanha) {
-            mostrarMsg('❌ Leilão não encontrado', 'erro');
-            return;
-        }
-        document.getElementById('editCampanhaId').value = id;
-        document.getElementById('editNome').value = campanha.nome;
-        document.getElementById('editSlug').value = campanha.slug;
-        document.getElementById('editDesc').value = campanha.descricao || '';
-        document.getElementById('editMeta').value = campanha.meta_valor || 3.00;
-        document.getElementById('editItemNome').value = campanha.item_nome || '';
-        document.getElementById('editItemDesc').value = campanha.item_descricao || '';
-        document.getElementById('editItemCategoria').value = campanha.item_categoria || 'Geral';
-        document.getElementById('editStatus').value = campanha.status || 'ativa';
-        document.getElementById('editPremioTitulo').value = campanha.premio_titulo || '🏆 PRÊMIO DO LEILÃO';
-        document.getElementById('editInfluencer').value = campanha.influencer || '';
-        const metasContainer = document.getElementById('editMetasInternasContainer');
-        metasContainer.innerHTML = '';
-        if (campanha.metas_internas && campanha.metas_internas.length > 0) {
-            campanha.metas_internas.forEach(meta => {
-                adicionarMeta('editMetasInternasContainer', meta.meta, meta.premio);
-            });
-        } else {
-            adicionarMeta('editMetasInternasContainer', 25, 'R$ 100,00');
-            adicionarMeta('editMetasInternasContainer', 50, 'R$ 200,00');
-            adicionarMeta('editMetasInternasContainer', 75, 'R$ 300,00');
-            adicionarMeta('editMetasInternasContainer', 100, 'R$ 500,00');
-        }
-        let duracaoAtual = 1440;
-        if (campanha.data_fim && campanha.started_at) {
-            const inicio = new Date(campanha.started_at);
-            const fim = new Date(campanha.data_fim);
-            const diffMinutos = Math.round((fim - inicio) / (1000 * 60));
-            if (diffMinutos > 0) duracaoAtual = Math.min(diffMinutos, MAX_DURACAO);
-        } else if (campanha.data_fim) {
-            const agora = new Date();
-            const fim = new Date(campanha.data_fim);
-            const diffMinutos = Math.round((fim - agora) / (1000 * 60));
-            if (diffMinutos > 0) duracaoAtual = Math.min(diffMinutos, MAX_DURACAO);
-        }
-        document.getElementById('editDuracao').value = duracaoAtual;
-        document.getElementById('editTempoInfo').textContent = `⏱️ Duração: ${formatarDuracao(duracaoAtual)}`;
-        document.getElementById('editPremioImagemUrl').value = campanha.premio_imagem_url || '';
-        const preview = document.getElementById('editPremioPreview');
-        const emoji = document.getElementById('editPremioPreviewEmoji');
-        const img = document.getElementById('editPremioPreviewImg');
-        if (campanha.premio_imagem_url && campanha.premio_imagem_url.trim() !== '') {
-            img.src = campanha.premio_imagem_url;
-            img.style.display = 'block';
-            emoji.style.display = 'none';
-            preview.style.display = 'flex';
-        } else if (campanha.premio_imagem && campanha.premio_imagem.startsWith('/uploads/')) {
-            img.src = campanha.premio_imagem;
-            img.style.display = 'block';
-            emoji.style.display = 'none';
-            preview.style.display = 'flex';
-        } else {
-            emoji.textContent = campanha.premio_imagem || '🏆';
-            emoji.style.display = 'block';
-            img.style.display = 'none';
-            preview.style.display = 'flex';
-        }
-        document.getElementById('modalEditar').classList.add('active');
-    }
-
-    function fecharModalEditar() {
-        document.getElementById('modalEditar').classList.remove('active');
-    }
-
-    async function salvarEdicao(e) {
-        e.preventDefault();
-        if (!verificarSessao()) return;
-        const id = parseInt(document.getElementById('editCampanhaId').value);
-        const formData = new FormData(e.target);
-        const nome = document.getElementById('editNome').value.trim();
-        const slug = document.getElementById('editSlug').value.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-        const descricao = document.getElementById('editDesc').value.trim();
-        const meta_valor = parseFloat(document.getElementById('editMeta').value) || 3.00;
-        const premio_imagem_url = document.getElementById('editPremioImagemUrl').value.trim();
-        const premio_titulo = document.getElementById('editPremioTitulo').value.trim() || '🏆 PRÊMIO DO LEILÃO';
-        const item_nome = document.getElementById('editItemNome').value.trim();
-        const item_descricao = document.getElementById('editItemDesc').value.trim();
-        const item_categoria = document.getElementById('editItemCategoria').value;
-        let duracao = parseInt(document.getElementById('editDuracao').value) || 1440;
-        if (duracao > MAX_DURACAO) { duracao = MAX_DURACAO; document.getElementById('editDuracao').value = MAX_DURACAO; }
-        if (duracao < 1) { duracao = 1; document.getElementById('editDuracao').value = 1; }
-        const status = document.getElementById('editStatus').value;
-        const influencer = document.getElementById('editInfluencer').value.trim() || 'Não informado';
-        const metasInternas = getMetasInternas('editMetasInternasContainer');
-        const erros = validarCampanha({ nome, slug, meta_valor });
-        if (erros.length > 0) {
-            mostrarMsg('⚠️ ' + erros.join('; '), 'erro');
-            return;
-        }
-        const slugExists = campanhasCache.some(c => c.slug === slug && c.id !== id);
-        if (slugExists) {
-            mostrarMsg('⚠️ Este slug já está em uso. Escolha outro.', 'erro');
-            return;
-        }
-        formData.append('nome', nome);
-        formData.append('slug', slug);
-        formData.append('descricao', descricao);
-        formData.append('meta_valor', meta_valor);
-        formData.append('premio_imagem_url', premio_imagem_url);
-        formData.append('premio_titulo', premio_titulo);
-        formData.append('item_nome', item_nome);
-        formData.append('item_descricao', item_descricao);
-        formData.append('item_categoria', item_categoria);
-        formData.append('duracao', duracao);
-        formData.append('status', status);
-        formData.append('influencer', influencer);
-        formData.append('metas_internas', JSON.stringify(metasInternas));
-        const btn = e.target.querySelector('button[type="submit"]');
-        const originalText = btn.textContent;
-        btn.disabled = true;
-        btn.innerHTML = '<span class="loading-spinner"></span> Salvando...';
-        try {
-            const res = await fetch(`/api/admin/campanhas/${id}`, {
-                method: 'PUT',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: formData
-            });
-            const data = await res.json();
-            if (data.sucesso) {
-                mostrarMsg('✅ Leilão atualizado com sucesso!', 'sucesso');
-                fecharModalEditar();
-                carregarCampanhas();
-                btn.innerHTML = '✅ Salvo!';
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                    btn.disabled = false;
-                }, 2000);
-            } else {
-                mostrarMsg('❌ ' + (data.erro || 'Erro ao editar'), 'erro');
-                btn.textContent = originalText;
-                btn.disabled = false;
-            }
-        } catch (e) {
-            mostrarMsg('❌ Erro ao editar leilão', 'erro');
-            console.error(e);
-            btn.textContent = originalText;
-            btn.disabled = false;
-        }
-    }
-
-    async function resetarLeilao(campanha_id) {
-        if (!verificarSessao()) return;
-        if (!confirm('⚠️ Resetar o leilão? Todos os lances serão perdidos!')) return;
-        if (!confirm('🔄 Última chance! Resetar para R$ 0,00?')) return;
-        try {
-            const res = await fetch(`/api/admin/resetar-leilao/${campanha_id}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
-            });
-            const data = await res.json();
-            if (data.sucesso) {
-                mostrarMsg('✅ Leilão resetado para R$ 0,00!', 'sucesso');
-                carregarCampanhas();
-            } else {
-                mostrarMsg('❌ ' + (data.erro || 'Erro ao resetar'), 'erro');
-            }
-        } catch (e) {
-            mostrarMsg('❌ Erro ao resetar leilão', 'erro');
-            console.error(e);
-        }
-    }
-
-    async function toggleStatus(campanha_id, novoStatus) {
-        if (!verificarSessao()) return;
-        if (!confirm(`Alterar leilão #${campanha_id} para "${novoStatus}"?`)) return;
-        try {
-            const res = await fetch(`/api/admin/campanhas/${campanha_id}/status`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ status: novoStatus })
-            });
-            const data = await res.json();
-            if (data.sucesso) {
-                mostrarMsg(`✅ Leilão ${novoStatus === 'ativa' ? 'ativado' : 'desativado'}!`, 'sucesso');
-                carregarCampanhas();
-            } else {
-                mostrarMsg('❌ ' + (data.erro || 'Erro ao alterar status'), 'erro');
-            }
-        } catch (e) {
-            mostrarMsg('❌ Erro ao alterar status', 'erro');
-            console.error(e);
-        }
-    }
-
-    // Bloqueia acesso sem login
-    setInterval(() => {
-        const tab = document.getElementById('tabCampanhas');
-        if (!tab.classList.contains('hidden')) {
-            if (!verificarSessao()) {
-                document.getElementById('tabCampanhas').classList.add('hidden');
-                document.getElementById('tabNova').classList.remove('active');
-            }
-        }
-    }, 5000);
-
-    document.querySelectorAll('.modal-overlay').forEach(el => {
-        el.addEventListener('click', (e) => {
-            if (e.target === el) el.classList.remove('active');
-        });
-    });
     </script>
 </body>
 </html>
