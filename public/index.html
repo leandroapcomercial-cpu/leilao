@@ -785,7 +785,7 @@ nomeInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') btnS
 emailInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') btnSalvarNome.click(); });
 whatsappInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') btnSalvarNome.click(); });
 
-// ========== FUNÇÃO CORRIGIDA: PEGAR SLUG DA URL ==========
+// ========== FUNÇÃO PEGAR SLUG DA URL (CORRIGIDA) ==========
 function getSlugFromURL() {
     var path = window.location.pathname;
     
@@ -802,7 +802,7 @@ function getSlugFromURL() {
 
 var slugAtual = getSlugFromURL();
 
-// ========== FUNÇÃO CORRIGIDA: CARREGAR CAMPANHA ==========
+// ========== FUNÇÃO CARREGAR CAMPANHA (CORRIGIDA) ==========
 async function carregarCampanha() {
     var slug = slugAtual;
 
@@ -837,7 +837,6 @@ async function carregarCampanha() {
         if (!res.ok) {
             if (res.status === 404) {
                 console.log('❌ Campanha não encontrada. Tentando buscar campanha ativa...');
-                // Tenta redirecionar para campanha ativa
                 var redirectRes = await fetch('/api/campanha-ativa');
                 var redirectData = await redirectRes.json();
                 if (redirectData && redirectData.slug) {
