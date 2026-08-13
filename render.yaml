@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: leilao-facil
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DB_PATH
+        value: /var/lib/data/database.sqlite
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CHAVE_PIX
+        sync: false
+      - key: MERCADO_PAGO_ACCESS_TOKEN
+        sync: false
+      - key: CORS_ORIGINS
+        value: https://leilao-facil.onrender.com
+    disk:
+      name: sqlite-data
+      mountPath: /var/lib/data
+      sizeGB: 1

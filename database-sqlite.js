@@ -1,4 +1,7 @@
-﻿const path = require('path');
+/**
+ * LEILÃO FÁCIL v2.0 - Selector de Banco de Dados
+ * Usa PostgreSQL (Supabase) em produção, SQLite local em desenvolvimento
+ */
 
 if (process.env.DATABASE_URL) {
   console.log('💾 Usando PostgreSQL (Supabase) em produção');
@@ -6,7 +9,7 @@ if (process.env.DATABASE_URL) {
 } else {
   console.log('💾 Usando SQLite (local) em desenvolvimento');
   const sqliteDb = require('./database-sqlite');
-  
+
   // Wrap SQLite sync functions in async promises for uniform API
   const wrapped = { db: sqliteDb.db };
   for (const key of Object.keys(sqliteDb)) {
