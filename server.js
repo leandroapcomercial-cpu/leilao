@@ -207,12 +207,12 @@ function formatarMoeda(valor) {
 // ==========================================
 const timersAtivos = new Map();
 
-function iniciarTimerCampanha(campanhaId) {
+async function iniciarTimerCampanha(campanhaId) {
   if (timersAtivos.has(campanhaId)) {
     clearTimeout(timersAtivos.get(campanhaId));
   }
 
-  const campanha = db.buscarCampanhaPorId(campanhaId);
+  const campanha = await db.buscarCampanhaPorId(campanhaId);
   if (!campanha || campanha.status !== 'ativo') return;
 
   const dataFim = new Date(campanha.data_fim);
@@ -244,23 +244,23 @@ function cancelarTimerCampanha(campanhaId) {
 async function finalizarCampanha(campanhaId) {
   console.log(`🏁 Finalizando campanha ${campanhaId}...`);
 
-  const campanha = db.buscarCampanhaPorId(campanhaId);
+  const campanha = await db.buscarCampanhaPorId(campanhaId);
   if (!campanha) return;
 
   db.encerrarCampanha(campanhaId);
   cancelarTimerCampanha(campanhaId);
 
-  const itens = db.listarItensPorCampanha(campanhaId);
+  const itens = await db.listarItensPorCampanha(campanhaId);
   const resultados = [];
 
   for (const item of itens) {
     if (item.status === 'encerrado') continue;
 
-    const maiorLance = db.buscarMaiorLance(item.id);
+    const maiorLance = await db.buscarMaiorLance(item.id);
 
     if (maiorLance) {
-      db.encerrarItem(item.id, maiorLance.usuario_id);
-      db.atualizarLanceAtual(item.id, maiorLance.valor, maiorLance.usuario_id);
+      await db.encerrarItem(item.id, maiorLance.usuario_id);
+      await db.atualizarLanceAtual(item.id, maiorLance.valor, maiorLance.usuario_id);
 
       resultados.push({
         itemId: item.id,
@@ -271,10 +271,10 @@ async function finalizarCampanha(campanhaId) {
       });
 
       if (campanha.influencer_id && campanha.comissao_ativa) {
-        const influencer = db.buscarInfluencerPorId(campanha.influencer_id);
+        const influencer = await db.buscarInfluencerPorId(campanha.influencer_id);
         if (influencer) {
           const comissao = (maiorLance.valor * influencer.comissao_percentual) / 100;
-          db.registrarEventoInfluencer({
+          await db.registrarEventoInfluencer({
             influencer_id: influencer.id,
             campanha_id: campanhaId,
             usuario_id: maiorLance.usuario_id,
@@ -282,15 +282,15 @@ async function finalizarCampanha(campanhaId) {
             valor_evento: maiorLance.valor,
             comissao_gerada: comissao
           });
-          db.atualizarEstatisticasInfluencer(influencer.id);
+          await await db.atualizarEstatisticasInfluencer(influencer.id);
         }
       }
     } else {
-      db.atualizarCampanha(item.id, { status: 'cancelado' });
+      await await db.atualizarCampanha(item.id, { status: 'cancelado' });
     }
   }
 
-  db.atualizarTotaisCampanha(campanhaId);
+  await await db.atualizarTotaisCampanha(campanhaId);
 
   io.emit('campanha_finalizada', {
     campanhaId,
@@ -302,9 +302,9 @@ async function finalizarCampanha(campanhaId) {
   console.log(`✅ Campanha ${campanhaId} finalizada. ${resultados.length} itens arrematados.`);
 }
 
-function verificarCampanhasAtivas() {
+async function verificarCampanhasAtivas() {
   console.log('🔍 Verificando campanhas ativas...');
-  const ativas = db.listarCampanhasAtivas();
+  const ativas = await db.listarCampanhasAtivas();
 
   for (const campanha of ativas) {
     const dataFim = new Date(campanha.data_fim);
@@ -317,8 +317,8 @@ function verificarCampanhasAtivas() {
   }
 }
 
-cron.schedule('* * * * *', () => {
-  const ativas = db.listarCampanhasAtivas();
+cron.schedule('* * * * *', async () => {
+  const ativas = await db.listarCampanhasAtivas();
   for (const campanha of ativas) {
     const dataFim = new Date(campanha.data_fim);
     if (dataFim <= new Date() && timersAtivos.has(campanha.id)) {
@@ -336,12 +336,12 @@ const usuariosOnline = new Map();
 io.on('connection', (socket) => {
   console.log(`🔌 Cliente conectado: ${socket.id}`);
 
-  socket.on('entrar_campanha', (campanhaId) => {
+  socket.on('entrar_campanha', async (campanhaId) => {
     socket.join(`campanha_${campanhaId}`);
     console.log(`👤 ${socket.id} entrou na campanha ${campanhaId}`);
 
-    const campanha = db.buscarCampanhaPorId(campanhaId);
-    const itens = db.listarItensPorCampanha(campanhaId);
+    const campanha = await db.buscarCampanhaPorId(campanhaId);
+    const itens = await db.listarItensPorCampanha(campanhaId);
 
     socket.emit('estado_campanha', {
       campanha,
@@ -359,13 +359,13 @@ io.on('connection', (socket) => {
     const { campanhaId, itemId, usuarioId, valor } = data;
 
     try {
-      const campanha = db.buscarCampanhaPorId(campanhaId);
+      const campanha = await db.buscarCampanhaPorId(campanhaId);
       if (!campanha || campanha.status !== 'ativo') {
         socket.emit('erro_lance', { mensagem: 'Campanha não está ativa' });
         return;
       }
 
-      const item = db.buscarItemPorId(itemId);
+      const item = await db.buscarItemPorId(itemId);
       if (!item || item.status !== 'ativo') {
         socket.emit('erro_lance', { mensagem: 'Item não está disponível' });
         return;
@@ -376,7 +376,7 @@ io.on('connection', (socket) => {
         return;
       }
 
-      const lance = db.criarLance({
+      const lance = await db.criarLance({
         item_id: itemId,
         campanha_id: campanhaId,
         usuario_id: usuarioId,
@@ -385,10 +385,10 @@ io.on('connection', (socket) => {
         user_agent: socket.handshake.headers['user-agent']
       });
 
-      db.atualizarLanceAtual(itemId, valor, usuarioId);
-      db.atualizarTotaisCampanha(campanhaId);
+      await db.atualizarLanceAtual(itemId, valor, usuarioId);
+      await await db.atualizarTotaisCampanha(campanhaId);
 
-      const usuario = db.buscarUsuarioPorId(usuarioId);
+      const usuario = await db.buscarUsuarioPorId(usuarioId);
 
       io.to(`campanha_${campanhaId}`).emit('lance_recebido', {
         lance: {
@@ -415,8 +415,8 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('solicitar_timer', (campanhaId) => {
-    const campanha = db.buscarCampanhaPorId(campanhaId);
+  socket.on('solicitar_timer', async (campanhaId) => {
+    const campanha = await db.buscarCampanhaPorId(campanhaId);
     if (campanha) {
       const dataFim = new Date(campanha.data_fim);
       const restante = Math.max(0, dataFim.getTime() - Date.now());
@@ -446,23 +446,23 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-app.get('/api/campanhas/ativas', (req, res) => {
+app.get('/api/campanhas/ativas', async (req, res) => {
   try {
-    const campanhas = db.listarCampanhasAtivas();
+    const campanhas = await db.listarCampanhasAtivas();
     res.json({ sucesso: true, campanhas });
   } catch (err) {
     res.status(500).json({ erro: 'Erro ao buscar campanhas' });
   }
 });
 
-app.get('/api/campanhas/:slug', (req, res) => {
+app.get('/api/campanhas/:slug', async (req, res) => {
   try {
-    const campanha = db.buscarCampanhaPorSlug(req.params.slug);
+    const campanha = await db.buscarCampanhaPorSlug(req.params.slug);
     if (!campanha) {
       return res.status(404).json({ erro: 'Campanha não encontrada' });
     }
 
-    const itens = db.listarItensPorCampanha(campanha.id);
+    const itens = await db.listarItensPorCampanha(campanha.id);
     const totalOnline = io.sockets.adapter.rooms.get(`campanha_${campanha.id}`)?.size || 0;
 
     res.json({ 
@@ -478,7 +478,7 @@ app.get('/api/campanhas/:slug', (req, res) => {
   }
 });
 
-app.post('/api/usuarios', (req, res) => {
+app.post('/api/usuarios', async (req, res) => {
   try {
     const { nome, email, telefone, cpf, influencer_ref } = req.body;
 
@@ -487,23 +487,23 @@ app.post('/api/usuarios', (req, res) => {
     }
 
     if (cpf) {
-      const existente = db.buscarUsuarioPorCPF(cpf);
+      const existente = await db.buscarUsuarioPorCPF(cpf);
       if (existente) {
         return res.json({ sucesso: true, usuario: existente, existente: true });
       }
     }
 
     if (email) {
-      const existente = db.buscarUsuarioPorEmail(email);
+      const existente = await db.buscarUsuarioPorEmail(email);
       if (existente) {
         return res.json({ sucesso: true, usuario: existente, existente: true });
       }
     }
 
     if (influencer_ref) {
-      const influencer = db.buscarInfluencerPorCodigo(influencer_ref);
+      const influencer = await db.buscarInfluencerPorCodigo(influencer_ref);
       if (influencer) {
-        db.registrarEventoInfluencer({
+        await db.registrarEventoInfluencer({
           influencer_id: influencer.id,
           tipo_evento: 'clique',
           ip_address: req.ip,
@@ -512,19 +512,19 @@ app.post('/api/usuarios', (req, res) => {
       }
     }
 
-    const usuario = db.criarUsuario({ nome, email, telefone, cpf, influencer_ref });
+    const usuario = await db.criarUsuario({ nome, email, telefone, cpf, influencer_ref });
 
     if (influencer_ref) {
-      const influencer = db.buscarInfluencerPorCodigo(influencer_ref);
+      const influencer = await db.buscarInfluencerPorCodigo(influencer_ref);
       if (influencer) {
-        db.registrarEventoInfluencer({
+        await db.registrarEventoInfluencer({
           influencer_id: influencer.id,
           usuario_id: usuario.id,
           tipo_evento: 'cadastro',
           ip_address: req.ip,
           user_agent: req.headers['user-agent']
         });
-        db.atualizarEstatisticasInfluencer(influencer.id);
+        await await db.atualizarEstatisticasInfluencer(influencer.id);
       }
     }
 
@@ -535,14 +535,14 @@ app.post('/api/usuarios', (req, res) => {
   }
 });
 
-app.get('/api/usuarios/:id', (req, res) => {
+app.get('/api/usuarios/:id', async (req, res) => {
   try {
-    const usuario = db.buscarUsuarioPorId(req.params.id);
+    const usuario = await db.buscarUsuarioPorId(req.params.id);
     if (!usuario) {
       return res.status(404).json({ erro: 'Usuário não encontrado' });
     }
 
-    const lances = db.listarLancesPorUsuario(usuario.id);
+    const lances = await db.listarLancesPorUsuario(usuario.id);
     res.json({ sucesso: true, usuario: { ...usuario, lances } });
   } catch (err) {
     res.status(500).json({ erro: 'Erro ao buscar usuário' });
@@ -557,9 +557,9 @@ app.post('/api/pagamentos/gerar-pix', lanceLimiter, async (req, res) => {
       return res.status(400).json({ erro: 'Dados incompletos' });
     }
 
-    const usuario = db.buscarUsuarioPorId(usuario_id);
-    const item = db.buscarItemPorId(item_id);
-    const campanha = db.buscarCampanhaPorId(campanha_id);
+    const usuario = await db.buscarUsuarioPorId(usuario_id);
+    const item = await db.buscarItemPorId(item_id);
+    const campanha = await db.buscarCampanhaPorId(campanha_id);
 
     if (!usuario || !item || !campanha) {
       return res.status(404).json({ erro: 'Dados não encontrados' });
@@ -569,7 +569,7 @@ app.post('/api/pagamentos/gerar-pix', lanceLimiter, async (req, res) => {
       return res.status(400).json({ erro: 'Campanha não está ativa' });
     }
 
-    const lance = db.criarLance({
+    const lance = await db.criarLance({
       item_id,
       campanha_id,
       usuario_id,
@@ -579,7 +579,7 @@ app.post('/api/pagamentos/gerar-pix', lanceLimiter, async (req, res) => {
       user_agent: req.headers['user-agent']
     });
 
-    const pagamento = db.criarPagamento({
+    const pagamento = await db.criarPagamento({
       lance_id: lance.id,
       usuario_id,
       item_id,
@@ -620,7 +620,7 @@ app.post('/api/pagamentos/gerar-pix', lanceLimiter, async (req, res) => {
           qrCodeBase64 = mpResponse.data.point_of_interaction.transaction_data.qr_code_base64;
           mpId = mpResponse.data.id.toString();
 
-          db.atualizarStatusPagamento(pagamento.id, 'pendente', mpResponse.data.status);
+          await db.atualizarStatusPagamento(pagamento.id, 'pendente', mpResponse.data.status);
         }
       } catch (mpErr) {
         console.error('Erro Mercado Pago:', mpErr.response?.data || mpErr.message);
@@ -659,7 +659,7 @@ app.post('/api/webhooks/mercado-pago', async (req, res) => {
 
     if (type === 'payment' && data && data.id) {
       const mpId = data.id.toString();
-      const pagamento = db.buscarPagamentoPorMpId(mpId);
+      const pagamento = await db.buscarPagamentoPorMpId(mpId);
 
       if (pagamento) {
         const mpResponse = await axios.get(
@@ -670,13 +670,13 @@ app.post('/api/webhooks/mercado-pago', async (req, res) => {
         const status = mpResponse.data.status;
 
         if (status === 'approved') {
-          db.atualizarStatusPagamento(pagamento.id, 'aprovado', status);
+          await db.atualizarStatusPagamento(pagamento.id, 'aprovado', status);
 
-          const lance = db.buscarLancePorId(pagamento.lance_id);
+          const lance = await db.buscarLancePorId(pagamento.lance_id);
           if (lance) {
-            db.atualizarCampanha(lance.id, { status: 'confirmado' });
-            db.atualizarTotaisCampanha(pagamento.campanha_id);
-            db.atualizarGastosUsuario(pagamento.usuario_id);
+            await db.atualizarCampanha(lance.id, { status: 'confirmado' });
+            await db.atualizarTotaisCampanha(pagamento.campanha_id);
+            await db.atualizarGastosUsuario(pagamento.usuario_id);
 
             io.to(`campanha_${pagamento.campanha_id}`).emit('pagamento_confirmado', {
               lanceId: lance.id,
@@ -697,9 +697,9 @@ app.post('/api/webhooks/mercado-pago', async (req, res) => {
   }
 });
 
-app.get('/api/pagamentos/:id', (req, res) => {
+app.get('/api/pagamentos/:id', async (req, res) => {
   try {
-    const pagamento = db.buscarPagamentoPorId(req.params.id);
+    const pagamento = await db.buscarPagamentoPorId(req.params.id);
     if (!pagamento) {
       return res.status(404).json({ erro: 'Pagamento não encontrado' });
     }
@@ -709,13 +709,13 @@ app.get('/api/pagamentos/:id', (req, res) => {
   }
 });
 
-app.get('/api/campanhas/:id/rankings', (req, res) => {
+app.get('/api/campanhas/:id/rankings', async (req, res) => {
   try {
     const campanhaId = req.params.id;
 
-    const maiorLance = db.buscarRankingMaiorLance(campanhaId);
-    const maisLances = db.buscarRankingLances(campanhaId);
-    const menosLances = db.buscarRankingMenorLance(campanhaId);
+    const maiorLance = await db.buscarRankingMaiorLance(campanhaId);
+    const maisLances = await db.buscarRankingLances(campanhaId);
+    const menosLances = await db.buscarRankingMenorLance(campanhaId);
 
     res.json({
       sucesso: true,
@@ -765,11 +765,11 @@ app.get('/api/admin/verificar', verificarTokenAdmin, (req, res) => {
   res.json({ sucesso: true, admin: true });
 });
 
-app.get('/api/admin/dashboard', verificarTokenAdmin, (req, res) => {
+app.get('/api/admin/dashboard', verificarTokenAdmin, async (req, res) => {
   try {
-    const stats = db.getDashboardStats();
-    const campanhasRecentes = db.listarCampanhas().slice(0, 5);
-    const pagamentosPendentes = db.listarPagamentosPendentes().slice(0, 10);
+    const stats = await db.getDashboardStats();
+    const campanhasRecentes = (await db.listarCampanhas()).slice(0, 5);
+    const pagamentosPendentes = (await db.listarPagamentosPendentes()).slice(0, 10);
 
     res.json({
       sucesso: true,
@@ -782,16 +782,16 @@ app.get('/api/admin/dashboard', verificarTokenAdmin, (req, res) => {
   }
 });
 
-app.get('/api/admin/campanhas', verificarTokenAdmin, (req, res) => {
+app.get('/api/admin/campanhas', verificarTokenAdmin, async (req, res) => {
   try {
-    const campanhas = db.listarCampanhas();
+    const campanhas = await db.listarCampanhas();
     res.json({ sucesso: true, campanhas });
   } catch (err) {
     res.status(500).json({ erro: 'Erro ao listar campanhas' });
   }
 });
 
-app.post('/api/admin/campanhas', verificarTokenAdmin, upload.single('premio_imagem'), (req, res) => {
+app.post('/api/admin/campanhas', verificarTokenAdmin, upload.single('premio_imagem'), async (req, res) => {
   try {
     const dados = req.body;
 
@@ -801,7 +801,7 @@ app.post('/api/admin/campanhas', verificarTokenAdmin, upload.single('premio_imag
 
     const slug = dados.slug || gerarSlug(dados.nome);
 
-    const existente = db.buscarCampanhaPorSlug(slug);
+    const existente = await db.buscarCampanhaPorSlug(slug);
     if (existente) {
       return res.status(400).json({ erro: 'Já existe uma campanha com este identificador' });
     }
@@ -812,11 +812,11 @@ app.post('/api/admin/campanhas', verificarTokenAdmin, upload.single('premio_imag
       premio_imagem: req.file ? `/uploads/${req.file.filename}` : dados.premio_imagem || null
     };
 
-    const campanha = db.criarCampanha(campanhaData);
+    const campanha = await db.criarCampanha(campanhaData);
 
     if (dados.itens && Array.isArray(dados.itens)) {
       for (const itemData of dados.itens) {
-        db.criarItem({
+        await db.criarItem({
           campanha_id: campanha.id,
           ...itemData
         });
@@ -830,9 +830,9 @@ app.post('/api/admin/campanhas', verificarTokenAdmin, upload.single('premio_imag
   }
 });
 
-app.get('/api/admin/campanhas/:id', verificarTokenAdmin, (req, res) => {
+app.get('/api/admin/campanhas/:id', verificarTokenAdmin, async (req, res) => {
   try {
-    const stats = db.getCampanhaStats(req.params.id);
+    const stats = await db.getCampanhaStats(req.params.id);
     if (!stats) {
       return res.status(404).json({ erro: 'Campanha não encontrada' });
     }
@@ -842,7 +842,7 @@ app.get('/api/admin/campanhas/:id', verificarTokenAdmin, (req, res) => {
   }
 });
 
-app.put('/api/admin/campanhas/:id', verificarTokenAdmin, upload.single('premio_imagem'), (req, res) => {
+app.put('/api/admin/campanhas/:id', verificarTokenAdmin, upload.single('premio_imagem'), async (req, res) => {
   try {
     const id = req.params.id;
     const dados = req.body;
@@ -851,8 +851,8 @@ app.put('/api/admin/campanhas/:id', verificarTokenAdmin, upload.single('premio_i
       dados.premio_imagem = `/uploads/${req.file.filename}`;
     }
 
-    db.atualizarCampanha(id, dados);
-    const campanha = db.buscarCampanhaPorId(id);
+    await db.atualizarCampanha(id, dados);
+    const campanha = await db.buscarCampanhaPorId(id);
 
     res.json({ sucesso: true, campanha });
   } catch (err) {
@@ -860,10 +860,10 @@ app.put('/api/admin/campanhas/:id', verificarTokenAdmin, upload.single('premio_i
   }
 });
 
-app.post('/api/admin/campanhas/:id/ativar', verificarTokenAdmin, (req, res) => {
+app.post('/api/admin/campanhas/:id/ativar', verificarTokenAdmin, async (req, res) => {
   try {
     const id = req.params.id;
-    const campanha = db.buscarCampanhaPorId(id);
+    const campanha = await db.buscarCampanhaPorId(id);
 
     if (!campanha) {
       return res.status(404).json({ erro: 'Campanha não encontrada' });
@@ -873,10 +873,10 @@ app.post('/api/admin/campanhas/:id/ativar', verificarTokenAdmin, (req, res) => {
       return res.status(400).json({ erro: 'Campanha já está ativa' });
     }
 
-    db.ativarCampanha(id);
+    await db.ativarCampanha(id);
     iniciarTimerCampanha(id);
 
-    const atualizada = db.buscarCampanhaPorId(id);
+    const atualizada = await db.buscarCampanhaPorId(id);
     io.emit('campanha_ativada', { campanhaId: id, campanha: atualizada });
 
     res.json({ sucesso: true, campanha: atualizada });
@@ -885,10 +885,10 @@ app.post('/api/admin/campanhas/:id/ativar', verificarTokenAdmin, (req, res) => {
   }
 });
 
-app.post('/api/admin/campanhas/:id/pausar', verificarTokenAdmin, (req, res) => {
+app.post('/api/admin/campanhas/:id/pausar', verificarTokenAdmin, async (req, res) => {
   try {
     const id = req.params.id;
-    db.pausarCampanha(id);
+    await db.pausarCampanha(id);
     cancelarTimerCampanha(id);
 
     io.emit('campanha_pausada', { campanhaId: id });
@@ -909,13 +909,13 @@ app.post('/api/admin/campanhas/:id/finalizar', verificarTokenAdmin, async (req, 
   }
 });
 
-app.post('/api/admin/campanhas/:id/resetar', verificarTokenAdmin, (req, res) => {
+app.post('/api/admin/campanhas/:id/resetar', verificarTokenAdmin, async (req, res) => {
   try {
     const id = req.params.id;
 
     cancelarTimerCampanha(id);
 
-    db.atualizarCampanha(id, {
+    await db.atualizarCampanha(id, {
       status: 'pendente',
       total_arrecadado: 0,
       total_lances: 0,
@@ -924,9 +924,9 @@ app.post('/api/admin/campanhas/:id/resetar', verificarTokenAdmin, (req, res) => 
       data_fim: null
     });
 
-    const itens = db.listarItensPorCampanha(id);
+    const itens = await db.listarItensPorCampanha(id);
     for (const item of itens) {
-      db.atualizarCampanha(item.id, {
+      await db.atualizarCampanha(item.id, {
         status: 'ativo',
         lance_atual: item.lance_inicial,
         vencedor_id: null,
@@ -940,11 +940,11 @@ app.post('/api/admin/campanhas/:id/resetar', verificarTokenAdmin, (req, res) => 
   }
 });
 
-app.delete('/api/admin/campanhas/:id', verificarTokenAdmin, (req, res) => {
+app.delete('/api/admin/campanhas/:id', verificarTokenAdmin, async (req, res) => {
   try {
     const id = req.params.id;
     cancelarTimerCampanha(id);
-    db.atualizarCampanha(id, { status: 'cancelado' });
+    await await db.atualizarCampanha(id, { status: 'cancelado' });
 
     res.json({ sucesso: true });
   } catch (err) {
@@ -952,10 +952,10 @@ app.delete('/api/admin/campanhas/:id', verificarTokenAdmin, (req, res) => {
   }
 });
 
-app.get('/api/admin/campanhas/:id/exportar', verificarTokenAdmin, (req, res) => {
+app.get('/api/admin/campanhas/:id/exportar', verificarTokenAdmin, async (req, res) => {
   try {
     const campanhaId = req.params.id;
-    const stats = db.getCampanhaStats(campanhaId);
+    const stats = await db.getCampanhaStats(campanhaId);
 
     if (!stats) {
       return res.status(404).json({ erro: 'Campanha não encontrada' });
@@ -976,26 +976,26 @@ app.get('/api/admin/campanhas/:id/exportar', verificarTokenAdmin, (req, res) => 
   }
 });
 
-app.get('/api/admin/usuarios', verificarTokenAdmin, (req, res) => {
+app.get('/api/admin/usuarios', verificarTokenAdmin, async (req, res) => {
   try {
     const { limit = 100, offset = 0 } = req.query;
-    const usuarios = db.listarUsuarios(parseInt(limit), parseInt(offset));
+    const usuarios = await db.listarUsuarios(parseInt(limit), parseInt(offset));
     res.json({ sucesso: true, usuarios });
   } catch (err) {
     res.status(500).json({ erro: 'Erro ao listar usuários' });
   }
 });
 
-app.get('/api/admin/influencers', verificarTokenAdmin, (req, res) => {
+app.get('/api/admin/influencers', verificarTokenAdmin, async (req, res) => {
   try {
-    const influencers = db.listarInfluencers();
+    const influencers = await db.listarInfluencers();
     res.json({ sucesso: true, influencers });
   } catch (err) {
     res.status(500).json({ erro: 'Erro ao listar influencers' });
   }
 });
 
-app.post('/api/admin/influencers', verificarTokenAdmin, (req, res) => {
+app.post('/api/admin/influencers', verificarTokenAdmin, async (req, res) => {
   try {
     const { nome, email, codigo_ref, comissao_percentual, pix_chave } = req.body;
 
@@ -1003,7 +1003,7 @@ app.post('/api/admin/influencers', verificarTokenAdmin, (req, res) => {
       return res.status(400).json({ erro: 'Nome, email e código de referência são obrigatórios' });
     }
 
-    const influencer = db.criarInfluencer({
+    const influencer = await db.criarInfluencer({
       nome,
       email,
       codigo_ref,
@@ -1020,15 +1020,15 @@ app.post('/api/admin/influencers', verificarTokenAdmin, (req, res) => {
   }
 });
 
-app.get('/api/admin/configuracoes', verificarTokenAdmin, (req, res) => {
+app.get('/api/admin/configuracoes', verificarTokenAdmin, async (req, res) => {
   try {
     const configs = {
-      lanceInicial: db.getConfig('lance_inicial_padrao'),
-      lanceMinimo: db.getConfig('lance_minimo_padrao'),
-      duracaoPadrao: db.getConfig('duracao_padrao_horas'),
-      comissaoPadrao: db.getConfig('comissao_padrao'),
-      siteNome: db.getConfig('site_nome'),
-      siteUrl: db.getConfig('site_url')
+      lanceInicial: await db.getConfig('lance_inicial_padrao'),
+      lanceMinimo: await db.getConfig('lance_minimo_padrao'),
+      duracaoPadrao: await db.getConfig('duracao_padrao_horas'),
+      comissaoPadrao: await db.getConfig('comissao_padrao'),
+      siteNome: await db.getConfig('site_nome'),
+      siteUrl: await db.getConfig('site_url')
     };
     res.json({ sucesso: true, configuracoes: configs });
   } catch (err) {
@@ -1036,11 +1036,11 @@ app.get('/api/admin/configuracoes', verificarTokenAdmin, (req, res) => {
   }
 });
 
-app.put('/api/admin/configuracoes', verificarTokenAdmin, (req, res) => {
+app.put('/api/admin/configuracoes', verificarTokenAdmin, async (req, res) => {
   try {
     const configs = req.body;
     for (const [chave, valor] of Object.entries(configs)) {
-      db.setConfig(chave, valor);
+      await db.setConfig(chave, valor);
     }
     res.json({ sucesso: true });
   } catch (err) {
@@ -1051,9 +1051,9 @@ app.put('/api/admin/configuracoes', verificarTokenAdmin, (req, res) => {
 // ==========================================
 // ROTAS DE INFLUENCER
 // ==========================================
-app.get('/api/influencers/:codigo', (req, res) => {
+app.get('/api/influencers/:codigo', async (req, res) => {
   try {
-    const influencer = db.buscarInfluencerPorCodigo(req.params.codigo);
+    const influencer = await db.buscarInfluencerPorCodigo(req.params.codigo);
     if (!influencer) {
       return res.status(404).json({ erro: 'Influencer não encontrado' });
     }
@@ -1086,17 +1086,17 @@ app.use((req, res) => {
   res.status(404).json({ erro: 'Rota não encontrada' });
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
   console.log('');
   console.log('🚀 LEILÃO FÁCIL v2.0 - Servidor iniciado');
   console.log(`📡 Porta: ${PORT}`);
   console.log(`🌐 Ambiente: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`💾 Banco: SQLite (database.sqlite)`);
+  console.log(`💾 Banco: ${process.env.DATABASE_URL ? 'PostgreSQL (Supabase)' : 'SQLite (local)'}`);
   console.log(`🔐 JWT: ${JWT_SECRET ? 'Configurado' : 'USANDO PADRÃO (INSEGURO!)'}`);
   console.log(`💳 PIX: ${MP_ACCESS_TOKEN ? 'Mercado Pago' : 'Estático (sem token)'}`);
   console.log('');
 
-  verificarCampanhasAtivas();
+  await verificarCampanhasAtivas();
 });
 
 module.exports = { app, server, io };
