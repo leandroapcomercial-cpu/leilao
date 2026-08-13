@@ -76,6 +76,8 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+app.set('trust proxy', 1);
+
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 200,
@@ -86,9 +88,9 @@ const globalLimiter = rateLimit({
 app.use(globalLimiter);
 
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5,
-  message: { erro: 'Muitas tentativas de login. Tente novamente em 15 minutos.' },
+  windowMs: 60 * 1000,
+  max: 10,
+  message: { erro: 'Muitas tentativas de login. Tente novamente em 1 minuto.' },
   skipSuccessfulRequests: true,
 });
 
