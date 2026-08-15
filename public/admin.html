@@ -7,11 +7,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
   <style>
     :root {
       --primary: #2563eb;
       --primary-dark: #1d4ed8;
+      --primary-light: #3b82f6;
       --secondary: #f59e0b;
+      --secondary-light: #fbbf24;
       --success: #10b981;
       --danger: #ef4444;
       --warning: #f59e0b;
@@ -22,15 +25,30 @@
       --border: #e2e8f0;
       --sidebar: #0f172a;
       --sidebar-hover: #1e293b;
+      --card-bg: #ffffff;
+      --shadow: 0 4px 20px rgba(0,0,0,0.08);
+      --shadow-hover: 0 8px 30px rgba(37,99,235,0.15);
+      --glow: 0 0 20px rgba(37,99,235,0.3);
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--light);
+      background: linear-gradient(135deg, #f0f4ff 0%, #f8fafc 50%, #fff7ed 100%);
       color: var(--dark);
       line-height: 1.6;
       min-height: 100vh;
     }
+
+    /* Animações */
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+    @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+    @keyframes glow { 0%,100% { box-shadow: 0 0 5px rgba(37,99,235,0.3); } 50% { box-shadow: 0 0 20px rgba(37,99,235,0.6); } }
+    @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes countUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes borderGlow { 0%,100% { border-color: var(--primary); } 50% { border-color: var(--secondary); } }
+
     .app {
       display: grid;
       grid-template-columns: 260px 1fr;
@@ -41,39 +59,71 @@
       .sidebar { display: none; }
       .sidebar.mobile-open { display: block; position: fixed; inset: 0; z-index: 100; }
     }
+
+    /* Sidebar */
     .sidebar {
-      background: var(--sidebar);
+      background: linear-gradient(180deg, var(--sidebar) 0%, #1a1f3d 100%);
       color: white;
       padding: 1.5rem 1rem;
       display: flex;
       flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+    .sidebar::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(37,99,235,0.1) 0%, transparent 70%);
+      animation: float 6s ease-in-out infinite;
+      pointer-events: none;
     }
     .sidebar-logo {
-      font-size: 1.25rem;
+      font-size: 1.35rem;
       font-weight: 800;
       margin-bottom: 2rem;
       padding-bottom: 1rem;
       border-bottom: 1px solid rgba(255,255,255,0.1);
+      position: relative;
+      z-index: 1;
     }
-    .sidebar-logo span { color: var(--secondary); }
+    .sidebar-logo span { color: var(--secondary); text-shadow: 0 0 10px rgba(245,158,11,0.3); }
     .nav-item {
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      padding: 0.75rem 1rem;
-      border-radius: 8px;
+      padding: 0.875rem 1rem;
+      border-radius: 12px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       color: rgba(255,255,255,0.7);
       font-weight: 500;
       font-size: 0.875rem;
+      position: relative;
+      z-index: 1;
+      margin-bottom: 0.25rem;
     }
-    .nav-item:hover, .nav-item.active {
-      background: var(--sidebar-hover);
+    .nav-item:hover {
+      background: rgba(255,255,255,0.08);
       color: white;
+      transform: translateX(4px);
     }
     .nav-item.active {
+      background: linear-gradient(135deg, rgba(37,99,235,0.3) 0%, rgba(37,99,235,0.1) 100%);
+      color: white;
       border-left: 3px solid var(--primary);
+      box-shadow: 0 0 15px rgba(37,99,235,0.2);
+    }
+    .nav-item .badge-live {
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--success);
+      animation: pulse 2s infinite;
     }
     .sidebar-footer {
       margin-top: auto;
@@ -81,10 +131,15 @@
       border-top: 1px solid rgba(255,255,255,0.1);
       font-size: 0.75rem;
       color: rgba(255,255,255,0.5);
+      position: relative;
+      z-index: 1;
     }
+
+    /* Main */
     .main {
       padding: 1.5rem 2rem;
       overflow-y: auto;
+      animation: fadeIn 0.5s ease;
     }
     .header-bar {
       display: flex;
@@ -93,52 +148,100 @@
       margin-bottom: 2rem;
     }
     .header-title {
-      font-size: 1.5rem;
+      font-size: 1.75rem;
       font-weight: 800;
+      background: linear-gradient(135deg, var(--dark) 0%, var(--primary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
     .header-actions {
       display: flex;
       gap: 0.75rem;
     }
+
+    /* Botões gamificados */
     .btn {
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
       padding: 0.625rem 1.25rem;
       border: none;
-      border-radius: 8px;
+      border-radius: 12px;
       font-family: inherit;
       font-size: 0.875rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+    .btn:active::before {
+      width: 300px;
+      height: 300px;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
     }
     .btn-primary {
-      background: var(--primary);
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
       color: white;
+      box-shadow: 0 4px 15px rgba(37,99,235,0.3);
     }
-    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-primary:hover {
+      box-shadow: 0 6px 25px rgba(37,99,235,0.4);
+      animation: glow 2s infinite;
+    }
     .btn-secondary {
       background: var(--white);
       color: var(--dark);
       border: 1px solid var(--border);
     }
-    .btn-secondary:hover { background: var(--light); }
+    .btn-secondary:hover {
+      background: var(--light);
+      box-shadow: var(--shadow-hover);
+    }
     .btn-danger {
-      background: var(--danger);
+      background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
       color: white;
     }
     .btn-success {
-      background: var(--success);
+      background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+      color: white;
+    }
+    .btn-warning {
+      background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
       color: white;
     }
     .btn-sm { padding: 0.375rem 0.75rem; font-size: 0.75rem; }
+    .btn-icon { padding: 0.5rem; border-radius: 10px; }
+
+    /* Cards */
     .card {
-      background: var(--white);
-      border-radius: 12px;
+      background: var(--card-bg);
+      border-radius: 16px;
       border: 1px solid var(--border);
       padding: 1.5rem;
       margin-bottom: 1.5rem;
+      box-shadow: var(--shadow);
+      transition: all 0.3s ease;
+      animation: fadeIn 0.5s ease;
+    }
+    .card:hover {
+      box-shadow: var(--shadow-hover);
+      transform: translateY(-2px);
     }
     .card-header {
       display: flex;
@@ -150,11 +253,13 @@
       font-size: 1.125rem;
       font-weight: 700;
     }
+
+    /* Stats */
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 1rem;
-      margin-bottom: 1.5rem;
+      gap: 1.25rem;
+      margin-bottom: 2rem;
     }
     @media (max-width: 900px) {
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
@@ -162,36 +267,72 @@
     .stat-card {
       background: var(--white);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.25rem;
+      border-radius: 16px;
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      animation: fadeIn 0.6s ease backwards;
+    }
+    .stat-card:nth-child(1) { animation-delay: 0.1s; }
+    .stat-card:nth-child(2) { animation-delay: 0.2s; }
+    .stat-card:nth-child(3) { animation-delay: 0.3s; }
+    .stat-card:nth-child(4) { animation-delay: 0.4s; }
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-hover);
+    }
+    .stat-card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 100px;
+      height: 100px;
+      background: radial-gradient(circle, rgba(37,99,235,0.05) 0%, transparent 70%);
+      pointer-events: none;
     }
     .stat-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.25rem;
-      margin-bottom: 0.75rem;
-    }
-    .stat-icon.blue { background: #dbeafe; }
-    .stat-icon.green { background: #d1fae5; }
-    .stat-icon.yellow { background: #fef3c7; }
-    .stat-icon.red { background: #fee2e2; }
-    .stat-value {
       font-size: 1.5rem;
+      margin-bottom: 1rem;
+      transition: transform 0.3s ease;
+    }
+    .stat-card:hover .stat-icon {
+      transform: scale(1.1) rotate(5deg);
+    }
+    .stat-icon.blue { background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); }
+    .stat-icon.green { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); }
+    .stat-icon.yellow { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); }
+    .stat-icon.red { background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); }
+    .stat-icon.purple { background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%); }
+    .stat-value {
+      font-size: 2rem;
       font-weight: 800;
       margin-bottom: 0.25rem;
+      background: linear-gradient(135deg, var(--dark) 0%, var(--primary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: countUp 0.5s ease;
     }
     .stat-label {
       font-size: 0.75rem;
       color: var(--gray);
       text-transform: uppercase;
       letter-spacing: 0.05em;
+      font-weight: 600;
     }
+
+    /* Tabelas */
     .table-container {
       overflow-x: auto;
+      border-radius: 12px;
     }
     table {
       width: 100%;
@@ -199,7 +340,7 @@
       font-size: 0.875rem;
     }
     th, td {
-      padding: 0.875rem 1rem;
+      padding: 1rem;
       text-align: left;
       border-bottom: 1px solid var(--border);
     }
@@ -207,54 +348,74 @@
       font-weight: 600;
       color: var(--gray);
       text-transform: uppercase;
-      font-size: 0.75rem;
-      letter-spacing: 0.05em;
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      background: var(--light);
     }
-    tr:hover { background: var(--light); }
+    tr {
+      transition: all 0.2s ease;
+    }
+    tr:hover {
+      background: linear-gradient(90deg, rgba(37,99,235,0.03) 0%, transparent 100%);
+    }
+
+    /* Badges */
     .badge {
-      display: inline-block;
-      padding: 0.25rem 0.625rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.875rem;
       border-radius: 9999px;
       font-size: 0.75rem;
       font-weight: 600;
+      transition: all 0.3s ease;
     }
-    .badge-green { background: #d1fae5; color: #065f46; }
-    .badge-yellow { background: #fef3c7; color: #92400e; }
-    .badge-red { background: #fee2e2; color: #991b1b; }
-    .badge-gray { background: #f3f4f6; color: #4b5563; }
-    .form-group { margin-bottom: 1rem; }
+    .badge-green { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); color: #065f46; }
+    .badge-yellow { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #92400e; }
+    .badge-red { background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); color: #991b1b; }
+    .badge-gray { background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); color: #4b5563; }
+    .badge-blue { background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); color: #1e40af; }
+
+    /* Forms */
+    .form-group { margin-bottom: 1.25rem; }
     .form-label {
       display: block;
       font-size: 0.875rem;
       font-weight: 600;
-      margin-bottom: 0.375rem;
+      margin-bottom: 0.5rem;
+      color: var(--dark);
     }
     .form-input, .form-select, .form-textarea {
       width: 100%;
-      padding: 0.625rem 0.875rem;
-      border: 1px solid var(--border);
-      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      border: 2px solid var(--border);
+      border-radius: 12px;
       font-family: inherit;
       font-size: 0.875rem;
-      transition: border-color 0.2s;
+      transition: all 0.3s ease;
+      background: var(--white);
     }
     .form-input:focus, .form-select:focus, .form-textarea:focus {
       outline: none;
       border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(37,99,235,0.1);
     }
-    .form-textarea { resize: vertical; min-height: 80px; }
+    .form-textarea { resize: vertical; min-height: 100px; }
     .form-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 1rem;
+      gap: 1.25rem;
     }
     @media (max-width: 640px) {
       .form-grid { grid-template-columns: 1fr; }
     }
+
+    /* Modal */
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.5);
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(8px);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -262,7 +423,7 @@
       padding: 1rem;
       opacity: 0;
       visibility: hidden;
-      transition: all 0.3s;
+      transition: all 0.3s ease;
     }
     .modal-overlay.active {
       opacity: 1;
@@ -270,123 +431,194 @@
     }
     .modal {
       background: var(--white);
-      border-radius: 16px;
+      border-radius: 20px;
       width: 100%;
-      max-width: 600px;
+      max-width: 700px;
       max-height: 90vh;
       overflow-y: auto;
-      transform: scale(0.95);
-      transition: transform 0.3s;
+      transform: scale(0.9) translateY(20px);
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 25px 50px rgba(0,0,0,0.25);
     }
     .modal-overlay.active .modal {
-      transform: scale(1);
+      transform: scale(1) translateY(0);
     }
     .modal-header {
-      padding: 1.25rem 1.5rem;
+      padding: 1.5rem 2rem;
       border-bottom: 1px solid var(--border);
       display: flex;
       justify-content: space-between;
       align-items: center;
+      background: linear-gradient(135deg, var(--light) 0%, var(--white) 100%);
     }
-    .modal-title { font-size: 1.125rem; font-weight: 700; }
+    .modal-title { font-size: 1.25rem; font-weight: 700; }
     .modal-close {
       background: none;
       border: none;
-      font-size: 1.5rem;
+      font-size: 1.75rem;
       cursor: pointer;
       color: var(--gray);
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
     }
-    .modal-body { padding: 1.5rem; }
+    .modal-close:hover {
+      background: var(--light);
+      color: var(--danger);
+      transform: rotate(90deg);
+    }
+    .modal-body { padding: 2rem; }
     .modal-footer {
-      padding: 1rem 1.5rem;
+      padding: 1.25rem 2rem;
       border-top: 1px solid var(--border);
       display: flex;
       justify-content: flex-end;
       gap: 0.75rem;
+      background: var(--light);
     }
+
+    /* Toast */
     .toast-container {
       position: fixed;
-      bottom: 1rem;
-      right: 1rem;
+      bottom: 1.5rem;
+      right: 1.5rem;
       z-index: 1001;
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: 0.75rem;
     }
     .toast {
       background: var(--dark);
       color: white;
       padding: 1rem 1.5rem;
-      border-radius: 12px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-      animation: slideIn 0.3s ease;
+      border-radius: 14px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      animation: slideInRight 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
       max-width: 400px;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 500;
     }
-    .toast.success { background: var(--success); }
-    .toast.error { background: var(--danger); }
-    @keyframes slideIn {
-      from { transform: translateX(100%); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
-    }
+    .toast.success { background: linear-gradient(135deg, var(--success) 0%, #059669 100%); }
+    .toast.error { background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%); }
+    .toast.warning { background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%); }
+    .toast.info { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); }
+
+    /* Login */
     .login-page {
       display: flex;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      background: linear-gradient(135deg, var(--primary) 0%, #1e3a8a 50%, var(--primary-dark) 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    .login-page::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      pointer-events: none;
     }
     .login-box {
       background: var(--white);
-      border-radius: 16px;
-      padding: 2.5rem;
+      border-radius: 24px;
+      padding: 3rem;
       width: 100%;
-      max-width: 400px;
-      box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+      max-width: 420px;
+      box-shadow: 0 25px 80px rgba(0,0,0,0.3);
+      position: relative;
+      z-index: 1;
+      animation: fadeIn 0.6s ease;
     }
     .login-logo {
       text-align: center;
-      font-size: 1.5rem;
+      font-size: 1.75rem;
       font-weight: 800;
-      margin-bottom: 2rem;
+      margin-bottom: 2.5rem;
       color: var(--primary);
     }
     .login-logo span { color: var(--secondary); }
-    .chart-container {
-      position: relative;
-      height: 300px;
-    }
-    .section { display: none; }
-    .section.active { display: block; }
-    .empty-state {
-      text-align: center;
-      padding: 3rem;
-      color: var(--gray);
-    }
+
+    /* Campanha Card */
     .campanha-card {
       background: var(--white);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.25rem;
+      border-radius: 16px;
+      padding: 1.5rem;
       margin-bottom: 1rem;
-      transition: all 0.2s;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      animation: fadeIn 0.5s ease;
+    }
+    .campanha-card::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: linear-gradient(180deg, var(--primary) 0%, var(--secondary) 100%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .campanha-card:hover::before {
+      opacity: 1;
     }
     .campanha-card:hover {
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      box-shadow: var(--shadow-hover);
+      transform: translateY(-3px);
     }
     .campanha-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 0.75rem;
+      margin-bottom: 1rem;
     }
     .campanha-nome {
       font-weight: 700;
-      font-size: 1rem;
+      font-size: 1.1rem;
+    }
+    .campanha-slug {
+      font-size: 0.8rem;
+      color: var(--primary);
+      cursor: pointer;
+      text-decoration: underline;
+      transition: all 0.2s ease;
+    }
+    .campanha-slug:hover {
+      color: var(--primary-dark);
+      text-shadow: 0 0 8px rgba(37,99,235,0.2);
     }
     .campanha-meta {
-      font-size: 0.75rem;
+      font-size: 0.8rem;
       color: var(--gray);
       margin-top: 0.25rem;
+    }
+    .campanha-stats {
+      display: flex;
+      gap: 2rem;
+      font-size: 0.9rem;
+      margin: 1rem 0;
+      flex-wrap: wrap;
+    }
+    .campanha-stat {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .campanha-stat strong {
+      background: linear-gradient(135deg, var(--dark) 0%, var(--primary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
     .campanha-actions {
       display: flex;
@@ -396,17 +628,152 @@
     }
     .progress-bar {
       width: 100%;
-      height: 8px;
+      height: 10px;
       background: var(--light);
-      border-radius: 4px;
+      border-radius: 5px;
       overflow: hidden;
       margin-top: 0.75rem;
+      position: relative;
     }
     .progress-fill {
       height: 100%;
-      background: var(--primary);
-      border-radius: 4px;
-      transition: width 0.5s ease;
+      background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+      border-radius: 5px;
+      transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+    .progress-fill::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 30px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3));
+      animation: shimmer 2s infinite;
+    }
+
+    /* Sections */
+    .section { display: none; }
+    .section.active { display: block; animation: fadeIn 0.4s ease; }
+
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--gray);
+    }
+    .empty-state-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    /* Chart */
+    .chart-container {
+      position: relative;
+      height: 300px;
+    }
+
+    /* Live indicator */
+    .live-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.75rem;
+      background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+      color: #065f46;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+      box-shadow: 0 0 8px var(--success);
+    }
+
+    /* Aviso configurações */
+    .aviso-box {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border: 1px solid #f59e0b;
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.875rem;
+      color: #92400e;
+      font-weight: 500;
+    }
+
+    /* Milestones */
+    .milestone-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    @media (max-width: 768px) {
+      .milestone-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .milestone-item {
+      background: var(--light);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+    .milestone-item:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+    }
+    .milestone-percent {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+    .milestone-label {
+      font-size: 0.75rem;
+      color: var(--gray);
+      margin-top: 0.25rem;
+    }
+
+    /* Activity feed */
+    .activity-feed {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .activity-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      border-radius: 10px;
+      transition: all 0.2s ease;
+      font-size: 0.85rem;
+    }
+    .activity-item:hover {
+      background: var(--light);
+    }
+    .activity-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+    .activity-time {
+      font-size: 0.75rem;
+      color: var(--gray);
+      margin-left: auto;
     }
   </style>
 </head>
@@ -454,7 +821,11 @@
         <div class="nav-item" onclick="logout()">
           🚪 Sair
         </div>
-        <p style="margin-top:0.5rem;">v2.0.0</p>
+        <div style="margin-top:0.75rem;display:flex;align-items:center;gap:0.5rem;">
+          <span class="badge-live"></span>
+          <span style="font-size:0.7rem;">Tempo Real</span>
+        </div>
+        <p style="margin-top:0.5rem;">v2.1.0</p>
       </div>
     </aside>
 
@@ -465,6 +836,10 @@
         <div class="header-bar">
           <h1 class="header-title">📊 Dashboard</h1>
           <div class="header-actions">
+            <div class="live-indicator">
+              <span class="live-dot"></span>
+              <span>Atualizando...</span>
+            </div>
             <button class="btn btn-secondary" onclick="carregarDashboard()">🔄 Atualizar</button>
           </div>
         </div>
@@ -486,29 +861,43 @@
             <div class="stat-label">Arrecadado</div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon red">🎯</div>
+            <div class="stat-icon purple">🎯</div>
             <div class="stat-value" id="dashLances">0</div>
             <div class="stat-label">Lances</div>
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">📈 Campanhas Recentes</h3>
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:1.5rem;">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">📈 Campanhas Recentes</h3>
+            </div>
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>Status</th>
+                    <th>Lances</th>
+                    <th>Arrecadado</th>
+                    <th>Acoes</th>
+                  </tr>
+                </thead>
+                <tbody id="dashCampanhasRecentes"></tbody>
+              </table>
+            </div>
           </div>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Nome</th>
-                  <th>Status</th>
-                  <th>Lances</th>
-                  <th>Arrecadado</th>
-                  <th>Acoes</th>
-                </tr>
-              </thead>
-              <tbody id="dashCampanhasRecentes"></tbody>
-            </table>
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">🔔 Atividades</h3>
+            </div>
+            <div class="activity-feed" id="activityFeed">
+              <div class="empty-state" style="padding:2rem;">
+                <div class="empty-state-icon">📋</div>
+                <p>Sem atividades recentes</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -580,6 +969,11 @@
         <div class="header-bar">
           <h1 class="header-title">⚙️ Configuracoes</h1>
         </div>
+
+        <div class="aviso-box">
+          ⚠️ <strong>Atenção:</strong> Estas configurações definem os valores PADRÃO para novas campanhas. Campanhas em andamento NÃO serão alteradas.
+        </div>
+
         <div class="card">
           <div class="form-grid">
             <div class="form-group">
@@ -613,17 +1007,26 @@
     </main>
   </div>
 
-  <!-- Modal Nova Campanha -->
+  <!-- Modal Nova/Editar Campanha -->
   <div class="modal-overlay" id="modalCampanha">
     <div class="modal">
       <div class="modal-header">
-        <h3 class="modal-title">➕ Nova Campanha</h3>
+        <h3 class="modal-title" id="campModalTitle">➕ Nova Campanha</h3>
         <button class="modal-close" onclick="fecharModal('modalCampanha')">&times;</button>
       </div>
       <div class="modal-body">
+        <input type="hidden" id="campEditId">
         <div class="form-group">
           <label class="form-label">Nome da Campanha *</label>
-          <input type="text" class="form-input" id="campNome" placeholder="Ex: Leilao de Celular">
+          <input type="text" class="form-input" id="campNome" placeholder="Ex: Leilao de Celular" oninput="atualizarSlugPreview()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">URL (Slug)</label>
+          <div style="display:flex;align-items:center;gap:0.5rem;">
+            <span style="color:var(--gray);font-size:0.875rem;">/campanha/</span>
+            <input type="text" class="form-input" id="campSlug" placeholder="nome-da-campanha" style="flex:1;">
+          </div>
+          <p style="font-size:0.75rem;color:var(--gray);margin-top:0.25rem;">Clique para copiar o link completo após salvar</p>
         </div>
         <div class="form-group">
           <label class="form-label">Descricao</label>
@@ -666,7 +1069,7 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="fecharModal('modalCampanha')">Cancelar</button>
-        <button class="btn btn-primary" onclick="criarCampanha()">✅ Criar Campanha</button>
+        <button class="btn btn-primary" onclick="salvarCampanha()">✅ Salvar Campanha</button>
       </div>
     </div>
   </div>
@@ -675,10 +1078,11 @@
   <div class="modal-overlay" id="modalInfluencer">
     <div class="modal">
       <div class="modal-header">
-        <h3 class="modal-title">➕ Novo Influencer</h3>
+        <h3 class="modal-title" id="infModalTitle">➕ Novo Influencer</h3>
         <button class="modal-close" onclick="fecharModal('modalInfluencer')">&times;</button>
       </div>
       <div class="modal-body">
+        <input type="hidden" id="infEditId">
         <div class="form-group">
           <label class="form-label">Nome *</label>
           <input type="text" class="form-input" id="infNome" placeholder="Nome do influencer">
@@ -699,29 +1103,116 @@
           <label class="form-label">Chave PIX</label>
           <input type="text" class="form-input" id="infPix" placeholder="CPF, Email ou Chave PIX">
         </div>
+
+        <div style="margin-top:1.5rem;padding-top:1.5rem;border-top:2px solid var(--border);">
+          <h4 style="margin-bottom:1rem;font-size:1rem;">🏆 Premios por Meta Atingida</h4>
+          <p style="font-size:0.8rem;color:var(--gray);margin-bottom:1rem;">Valor que o influencer recebe ao atingir cada percentual do leilao</p>
+          <div class="milestone-grid">
+            <div class="milestone-item">
+              <div class="milestone-percent">25%</div>
+              <input type="number" step="0.01" class="form-input" id="infPremio25" placeholder="R$ 0" style="margin-top:0.5rem;text-align:center;">
+              <div class="milestone-label">Premio</div>
+            </div>
+            <div class="milestone-item">
+              <div class="milestone-percent">50%</div>
+              <input type="number" step="0.01" class="form-input" id="infPremio50" placeholder="R$ 0" style="margin-top:0.5rem;text-align:center;">
+              <div class="milestone-label">Premio</div>
+            </div>
+            <div class="milestone-item">
+              <div class="milestone-percent">75%</div>
+              <input type="number" step="0.01" class="form-input" id="infPremio75" placeholder="R$ 0" style="margin-top:0.5rem;text-align:center;">
+              <div class="milestone-label">Premio</div>
+            </div>
+            <div class="milestone-item">
+              <div class="milestone-percent">100%</div>
+              <input type="number" step="0.01" class="form-input" id="infPremio100" placeholder="R$ 0" style="margin-top:0.5rem;text-align:center;">
+              <div class="milestone-label">Premio</div>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="fecharModal('modalInfluencer')">Cancelar</button>
-        <button class="btn btn-primary" onclick="criarInfluencer()">✅ Criar Influencer</button>
+        <button class="btn btn-primary" onclick="salvarInfluencer()">✅ Salvar Influencer</button>
       </div>
     </div>
   </div>
 
   <!-- Toast Container -->
   <div class="toast-container" id="toastContainer"></div>
-
   <script>
     const API_URL = window.location.origin;
     let token = localStorage.getItem('lf_admin_token');
+    let socket = null;
     let campanhasData = [];
     let influencersData = [];
+    let atividadesData = [];
 
+    // ==========================================
+    // INICIALIZACAO
+    // ==========================================
     document.addEventListener('DOMContentLoaded', () => {
       if (token) {
         verificarToken();
       }
     });
 
+    function conectarSocket() {
+      if (socket) return;
+      socket = io();
+
+      socket.on('connect', () => {
+        console.log('Socket conectado');
+        socket.emit('join_admin');
+      });
+
+      // Atualizacoes em tempo real
+      socket.on('campanha_criada', (data) => {
+        mostrarToast('Nova campanha criada: ' + data.campanha.nome, 'info');
+        adicionarAtividade('campanha_criada', 'Nova campanha criada', data.campanha.nome);
+        if (document.getElementById('sec-campanhas').classList.contains('active')) {
+          carregarCampanhas();
+        }
+        carregarDashboard();
+      });
+
+      socket.on('campanha_atualizada', (data) => {
+        mostrarToast('Campanha atualizada: ' + data.campanha.nome, 'info');
+        adicionarAtividade('campanha_editada', 'Campanha editada', data.campanha.nome);
+        if (document.getElementById('sec-campanhas').classList.contains('active')) {
+          carregarCampanhas();
+        }
+        carregarDashboard();
+      });
+
+      socket.on('campanha_ativada', (data) => {
+        mostrarToast('Campanha ativada!', 'success');
+        adicionarAtividade('campanha_ativada', 'Campanha ativada', 'ID: ' + data.campanhaId);
+        carregarCampanhas();
+        carregarDashboard();
+      });
+
+      socket.on('campanha_pausada', (data) => {
+        mostrarToast('Campanha pausada', 'warning');
+        carregarCampanhas();
+        carregarDashboard();
+      });
+
+      socket.on('influencer_atualizado', (data) => {
+        mostrarToast('Influencer atualizado: ' + data.influencer.nome, 'info');
+        if (document.getElementById('sec-influencers').classList.contains('active')) {
+          carregarInfluencers();
+        }
+      });
+
+      socket.on('configuracoes_atualizadas', (data) => {
+        mostrarToast('Configuracoes atualizadas (afetam apenas novas campanhas)', 'info');
+      });
+    }
+
+    // ==========================================
+    // AUTENTICACAO
+    // ==========================================
     async function verificarToken() {
       try {
         const response = await fetch(API_URL + '/api/admin/verificar', {
@@ -729,6 +1220,7 @@
         });
         if (response.ok) {
           mostrarApp();
+          conectarSocket();
           carregarDashboard();
         } else {
           logout();
@@ -755,6 +1247,7 @@
           token = data.token;
           localStorage.setItem('lf_admin_token', token);
           mostrarApp();
+          conectarSocket();
           carregarDashboard();
           mostrarToast('Login realizado com sucesso!', 'success');
         } else {
@@ -773,10 +1266,14 @@
     function logout() {
       localStorage.removeItem('lf_admin_token');
       token = null;
+      if (socket) { socket.disconnect(); socket = null; }
       document.getElementById('appPage').style.display = 'none';
       document.getElementById('loginPage').style.display = 'flex';
     }
 
+    // ==========================================
+    // NAVEGACAO
+    // ==========================================
     function mostrarSecao(secao) {
       document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -789,6 +1286,9 @@
       if (secao === 'configuracoes') carregarConfiguracoes();
     }
 
+    // ==========================================
+    // DASHBOARD
+    // ==========================================
     async function carregarDashboard() {
       try {
         const response = await fetch(API_URL + '/api/admin/dashboard', {
@@ -796,10 +1296,10 @@
         });
         const data = await response.json();
         if (data.sucesso) {
-          document.getElementById('dashUsuarios').textContent = data.stats.totalUsuarios;
-          document.getElementById('dashCampanhas').textContent = data.stats.campanhasAtivas + '/' + data.stats.totalCampanhas;
+          animarNumero('dashUsuarios', data.stats.totalUsuarios);
+          animarNumero('dashCampanhas', data.stats.campanhasAtivas + '/' + data.stats.totalCampanhas);
           document.getElementById('dashArrecadado').textContent = formatarMoeda(data.stats.totalArrecadado);
-          document.getElementById('dashLances').textContent = data.stats.totalLances;
+          animarNumero('dashLances', data.stats.totalLances);
 
           const tbody = document.getElementById('dashCampanhasRecentes');
           tbody.innerHTML = data.campanhasRecentes.map(c => {
@@ -808,7 +1308,7 @@
             if (c.status === 'ativo') { badgeClass = 'badge-green'; badgeText = 'Ativo'; }
             else if (c.status === 'finalizado') { badgeClass = 'badge-red'; badgeText = 'Finalizado'; }
             else if (c.status === 'pendente') { badgeClass = 'badge-yellow'; badgeText = 'Pendente'; }
-            return '<tr><td>' + c.nome + '</td><td><span class="badge ' + badgeClass + '">' + badgeText + '</span></td><td>' + (c.total_lances || 0) + '</td><td>' + formatarMoeda(c.total_arrecadado || 0) + '</td><td><button class="btn btn-sm btn-primary" onclick="verCampanha(' + c.id + ')">Ver</button></td></tr>';
+            return '<tr><td><strong>' + c.nome + '</strong><br><span style="font-size:0.75rem;color:var(--primary);cursor:pointer;" onclick="copiarLinkCampanha('' + c.slug + '')">/' + c.slug + '</span></td><td><span class="badge ' + badgeClass + '">' + badgeText + '</span></td><td>' + (c.total_lances || 0) + '</td><td>' + formatarMoeda(c.total_arrecadado || 0) + '</td><td><button class="btn btn-sm btn-primary" onclick="editarCampanha(' + c.id + ')">✏️ Editar</button></td></tr>';
           }).join('');
         }
       } catch (err) {
@@ -816,6 +1316,17 @@
       }
     }
 
+    function animarNumero(id, valor) {
+      const el = document.getElementById(id);
+      el.style.animation = 'none';
+      el.offsetHeight; // trigger reflow
+      el.textContent = valor;
+      el.style.animation = 'countUp 0.5s ease';
+    }
+
+    // ==========================================
+    // CAMPANHAS
+    // ==========================================
     async function carregarCampanhas() {
       try {
         const response = await fetch(API_URL + '/api/admin/campanhas', {
@@ -826,7 +1337,7 @@
           campanhasData = data.campanhas;
           const container = document.getElementById('campanhasList');
           if (campanhasData.length === 0) {
-            container.innerHTML = '<div class="empty-state"><h3>Nenhuma campanha criada</h3><p>Crie sua primeira campanha para comecar.</p></div>';
+            container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🏷️</div><h3>Nenhuma campanha criada</h3><p>Crie sua primeira campanha para comecar.</p></div>';
             return;
           }
           container.innerHTML = campanhasData.map(c => {
@@ -846,12 +1357,13 @@
             } else if (c.status === 'pausado') {
               acoes += '<button class="btn btn-sm btn-success" onclick="ativarCampanha(' + c.id + ')">▶️ Retomar</button>';
             }
+            acoes += '<button class="btn btn-sm btn-primary" onclick="editarCampanha(' + c.id + ')">✏️ Editar</button>';
             acoes += '<button class="btn btn-sm btn-secondary" onclick="exportarCampanha(' + c.id + ')">📥 Exportar</button>';
             acoes += '<button class="btn btn-sm btn-danger" onclick="resetarCampanha(' + c.id + ')">🔄 Resetar</button>';
 
             const progresso = c.meta_valor > 0 ? Math.min(100, ((c.total_arrecadado || 0) / c.meta_valor) * 100) : 0;
 
-            return '<div class="campanha-card"><div class="campanha-header"><div><div class="campanha-nome">' + c.nome + '</div><div class="campanha-meta">Slug: ' + c.slug + ' | Duracao: ' + c.duracao_horas + 'h | Lance min: R$ ' + (c.lance_minimo || 0.01) + '</div></div><span class="badge ' + statusClass + '">' + statusText + '</span></div><div style="display:flex;gap:2rem;font-size:0.875rem;margin:0.75rem 0;"><div>💰 <strong>' + formatarMoeda(c.total_arrecadado || 0) + '</strong> arrecadado</div><div>🎯 <strong>' + (c.total_lances || 0) + '</strong> lances</div><div>👥 <strong>' + (c.total_participantes || 0) + '</strong> participantes</div></div>' + (c.meta_valor > 0 ? '<div class="progress-bar"><div class="progress-fill" style="width:' + progresso + '%"></div></div><div style="font-size:0.75rem;color:var(--gray);margin-top:0.25rem;">Meta: ' + formatarMoeda(c.meta_valor) + ' (' + Math.round(progresso) + '%)</div>' : '') + '<div class="campanha-actions">' + acoes + '</div></div>';
+            return '<div class="campanha-card"><div class="campanha-header"><div><div class="campanha-nome">' + c.nome + '</div><div class="campanha-slug" onclick="copiarLinkCampanha('' + c.slug + '')">🔗 /' + c.slug + '</div><div class="campanha-meta">Duracao: ' + c.duracao_horas + 'h | Lance min: R$ ' + (c.lance_minimo || 0.01) + '</div></div><span class="badge ' + statusClass + '">' + statusText + '</span></div><div class="campanha-stats"><div class="campanha-stat">💰 <strong>' + formatarMoeda(c.total_arrecadado || 0) + '</strong> arrecadado</div><div class="campanha-stat">🎯 <strong>' + (c.total_lances || 0) + '</strong> lances</div><div class="campanha-stat">👥 <strong>' + (c.total_participantes || 0) + '</strong> participantes</div></div>' + (c.meta_valor > 0 ? '<div class="progress-bar"><div class="progress-fill" style="width:' + progresso + '%"></div></div><div style="font-size:0.75rem;color:var(--gray);margin-top:0.5rem;">Meta: ' + formatarMoeda(c.meta_valor) + ' (' + Math.round(progresso) + '%)</div>' : '') + '<div class="campanha-actions">' + acoes + '</div></div>';
           }).join('');
         }
       } catch (err) {
@@ -859,61 +1371,42 @@
       }
     }
 
-    async function carregarInfluencers() {
-      try {
-        const response = await fetch(API_URL + '/api/admin/influencers', {
-          headers: { 'Authorization': 'Bearer ' + token }
-        });
-        const data = await response.json();
-        if (data.sucesso) {
-          influencersData = data.influencers;
-          const tbody = document.getElementById('influencersList');
-          tbody.innerHTML = influencersData.map(i => {
-            return '<tr><td>' + i.nome + '</td><td><code>' + i.codigo_ref + '</code></td><td>' + i.comissao_percentual + '%</td><td>' + (i.total_cliques || 0) + '</td><td>' + formatarMoeda(i.total_gerado || 0) + '</td><td><button class="btn btn-sm btn-secondary" onclick="copiarLink(' + i.id + ')">📋 Link</button></td></tr>';
-          }).join('');
-        }
-      } catch (err) {
-        mostrarToast('Erro ao carregar influencers', 'error');
-      }
+    function copiarLinkCampanha(slug) {
+      const link = window.location.origin + '/campanha/' + slug;
+      navigator.clipboard.writeText(link).then(() => {
+        mostrarToast('Link copiado: ' + link, 'success');
+      });
     }
 
-    async function carregarUsuarios() {
-      try {
-        const response = await fetch(API_URL + '/api/admin/usuarios', {
-          headers: { 'Authorization': 'Bearer ' + token }
-        });
-        const data = await response.json();
-        if (data.sucesso) {
-          const tbody = document.getElementById('usuariosList');
-          tbody.innerHTML = data.usuarios.map(u => {
-            return '<tr><td>' + u.id + '</td><td>' + u.nome + '</td><td>' + (u.email || '-') + '</td><td>' + (u.cpf || '-') + '</td><td>' + (u.total_lances || 0) + '</td><td>' + formatarMoeda(u.total_gasto || 0) + '</td></tr>';
-          }).join('');
-        }
-      } catch (err) {
-        mostrarToast('Erro ao carregar usuarios', 'error');
-      }
+    function abrirModalCampanha() {
+      document.getElementById('campModalTitle').textContent = '➕ Nova Campanha';
+      document.getElementById('campEditId').value = '';
+      limparFormCampanha();
+      abrirModal('modalCampanha');
     }
 
-    async function carregarConfiguracoes() {
-      try {
-        const response = await fetch(API_URL + '/api/admin/configuracoes', {
-          headers: { 'Authorization': 'Bearer ' + token }
-        });
-        const data = await response.json();
-        if (data.sucesso) {
-          document.getElementById('configLanceInicial').value = data.configuracoes.lanceInicial || 0.01;
-          document.getElementById('configLanceMinimo').value = data.configuracoes.lanceMinimo || 0.01;
-          document.getElementById('configDuracao').value = data.configuracoes.duracaoPadrao || 24;
-          document.getElementById('configComissao').value = data.configuracoes.comissaoPadrao || 10;
-          document.getElementById('configSiteNome').value = data.configuracoes.siteNome || 'Leilao Facil';
-          document.getElementById('configSiteUrl').value = data.configuracoes.siteUrl || '';
-        }
-      } catch (err) {
-        mostrarToast('Erro ao carregar configuracoes', 'error');
-      }
+    async function editarCampanha(id) {
+      const campanha = campanhasData.find(c => c.id === id);
+      if (!campanha) return;
+
+      document.getElementById('campModalTitle').textContent = '✏️ Editar Campanha';
+      document.getElementById('campEditId').value = id;
+      document.getElementById('campNome').value = campanha.nome || '';
+      document.getElementById('campSlug').value = campanha.slug || '';
+      document.getElementById('campDescricao').value = campanha.descricao || '';
+      document.getElementById('campDuracao').value = campanha.duracao_horas || 24;
+      document.getElementById('campLanceInicial').value = campanha.lance_inicial || 0.01;
+      document.getElementById('campLanceMinimo').value = campanha.lance_minimo || 0.01;
+      document.getElementById('campMeta').value = campanha.meta_valor || 0;
+      document.getElementById('campPremioNome').value = campanha.premio_nome || '';
+      document.getElementById('campPremioDesc').value = campanha.premio_descricao || '';
+      document.getElementById('campPremioValor').value = campanha.premio_valor || '';
+
+      abrirModal('modalCampanha');
     }
 
-    async function criarCampanha() {
+    async function salvarCampanha() {
+      const id = document.getElementById('campEditId').value;
       const nome = document.getElementById('campNome').value.trim();
       if (!nome) {
         mostrarToast('Nome da campanha e obrigatorio', 'error');
@@ -922,6 +1415,7 @@
 
       const formData = new FormData();
       formData.append('nome', nome);
+      formData.append('slug', document.getElementById('campSlug').value);
       formData.append('descricao', document.getElementById('campDescricao').value);
       formData.append('duracao_horas', document.getElementById('campDuracao').value);
       formData.append('lance_inicial', document.getElementById('campLanceInicial').value);
@@ -937,62 +1431,36 @@
       }
 
       try {
-        const response = await fetch(API_URL + '/api/admin/campanhas', {
-          method: 'POST',
+        const url = id ? API_URL + '/api/admin/campanhas/' + id : API_URL + '/api/admin/campanhas';
+        const method = id ? 'PUT' : 'POST';
+
+        const response = await fetch(url, {
+          method: method,
           headers: { 'Authorization': 'Bearer ' + token },
           body: formData
         });
         const data = await response.json();
         if (data.sucesso) {
           fecharModal('modalCampanha');
-          mostrarToast('Campanha criada com sucesso!', 'success');
+          mostrarToast(id ? 'Campanha atualizada!' : 'Campanha criada!', 'success');
           carregarCampanhas();
+          carregarDashboard();
           limparFormCampanha();
         } else {
-          mostrarToast(data.erro || 'Erro ao criar campanha', 'error');
+          mostrarToast(data.erro || 'Erro ao salvar campanha', 'error');
         }
       } catch (err) {
         mostrarToast('Erro de conexao', 'error');
       }
     }
 
-    async function criarInfluencer() {
-      const nome = document.getElementById('infNome').value.trim();
-      const email = document.getElementById('infEmail').value.trim();
-      const codigo_ref = document.getElementById('infCodigo').value.trim();
-
-      if (!nome || !email || !codigo_ref) {
-        mostrarToast('Preencha todos os campos obrigatorios', 'error');
-        return;
-      }
-
-      try {
-        const response = await fetch(API_URL + '/api/admin/influencers', {
-          method: 'POST',
-          headers: {
-            'Authorization': 'Bearer ' + token,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            nome,
-            email,
-            codigo_ref,
-            comissao_percentual: document.getElementById('infComissao').value,
-            pix_chave: document.getElementById('infPix').value
-          })
-        });
-        const data = await response.json();
-        if (data.sucesso) {
-          fecharModal('modalInfluencer');
-          mostrarToast('Influencer criado com sucesso!', 'success');
-          carregarInfluencers();
-          limparFormInfluencer();
-        } else {
-          mostrarToast(data.erro || 'Erro ao criar influencer', 'error');
-        }
-      } catch (err) {
-        mostrarToast('Erro de conexao', 'error');
-      }
+    function atualizarSlugPreview() {
+      const nome = document.getElementById('campNome').value;
+      const slug = nome.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      document.getElementById('campSlug').value = slug;
     }
 
     async function ativarCampanha(id) {
@@ -1063,6 +1531,153 @@
       window.open(API_URL + '/api/admin/campanhas/' + id + '/exportar?token=' + encodeURIComponent(token), '_blank');
     }
 
+    // ==========================================
+    // INFLUENCERS
+    // ==========================================
+    async function carregarInfluencers() {
+      try {
+        const response = await fetch(API_URL + '/api/admin/influencers', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await response.json();
+        if (data.sucesso) {
+          influencersData = data.influencers;
+          const tbody = document.getElementById('influencersList');
+          tbody.innerHTML = influencersData.map(i => {
+            return '<tr><td><strong>' + i.nome + '</strong></td><td><code style="background:var(--light);padding:0.25rem 0.5rem;border-radius:6px;font-size:0.8rem;">' + i.codigo_ref + '</code></td><td>' + i.comissao_percentual + '%</td><td>' + (i.total_cliques || 0) + '</td><td>' + formatarMoeda(i.total_gerado || 0) + '</td><td><button class="btn btn-sm btn-primary" onclick="editarInfluencer(' + i.id + ')">✏️ Editar</button> <button class="btn btn-sm btn-secondary" onclick="copiarLinkInf(' + i.id + ')">📋 Link</button></td></tr>';
+          }).join('');
+        }
+      } catch (err) {
+        mostrarToast('Erro ao carregar influencers', 'error');
+      }
+    }
+
+    function abrirModalInfluencer() {
+      document.getElementById('infModalTitle').textContent = '➕ Novo Influencer';
+      document.getElementById('infEditId').value = '';
+      limparFormInfluencer();
+      abrirModal('modalInfluencer');
+    }
+
+    async function editarInfluencer(id) {
+      const inf = influencersData.find(i => i.id === id);
+      if (!inf) return;
+
+      document.getElementById('infModalTitle').textContent = '✏️ Editar Influencer';
+      document.getElementById('infEditId').value = id;
+      document.getElementById('infNome').value = inf.nome || '';
+      document.getElementById('infEmail').value = inf.email || '';
+      document.getElementById('infCodigo').value = inf.codigo_ref || '';
+      document.getElementById('infComissao').value = inf.comissao_percentual || 10;
+      document.getElementById('infPix').value = inf.pix_chave || '';
+      document.getElementById('infPremio25').value = inf.premio_25 || '';
+      document.getElementById('infPremio50').value = inf.premio_50 || '';
+      document.getElementById('infPremio75').value = inf.premio_75 || '';
+      document.getElementById('infPremio100').value = inf.premio_100 || '';
+
+      abrirModal('modalInfluencer');
+    }
+
+    async function salvarInfluencer() {
+      const id = document.getElementById('infEditId').value;
+      const nome = document.getElementById('infNome').value.trim();
+      const email = document.getElementById('infEmail').value.trim();
+      const codigo_ref = document.getElementById('infCodigo').value.trim();
+
+      if (!nome || !email || !codigo_ref) {
+        mostrarToast('Preencha todos os campos obrigatorios', 'error');
+        return;
+      }
+
+      const dados = {
+        nome,
+        email,
+        codigo_ref,
+        comissao_percentual: document.getElementById('infComissao').value,
+        pix_chave: document.getElementById('infPix').value,
+        premio_25: document.getElementById('infPremio25').value || 0,
+        premio_50: document.getElementById('infPremio50').value || 0,
+        premio_75: document.getElementById('infPremio75').value || 0,
+        premio_100: document.getElementById('infPremio100').value || 0
+      };
+
+      try {
+        const url = id ? API_URL + '/api/admin/influencers/' + id : API_URL + '/api/admin/influencers';
+        const method = id ? 'PUT' : 'POST';
+
+        const response = await fetch(url, {
+          method: method,
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(dados)
+        });
+        const data = await response.json();
+        if (data.sucesso) {
+          fecharModal('modalInfluencer');
+          mostrarToast(id ? 'Influencer atualizado!' : 'Influencer criado!', 'success');
+          carregarInfluencers();
+          limparFormInfluencer();
+        } else {
+          mostrarToast(data.erro || 'Erro ao salvar influencer', 'error');
+        }
+      } catch (err) {
+        mostrarToast('Erro de conexao', 'error');
+      }
+    }
+
+    function copiarLinkInf(influencerId) {
+      const influencer = influencersData.find(i => i.id === influencerId);
+      if (!influencer) return;
+      const link = window.location.origin + '/?ref=' + influencer.codigo_ref;
+      navigator.clipboard.writeText(link).then(() => {
+        mostrarToast('Link copiado: ' + link, 'success');
+      });
+    }
+
+    // ==========================================
+    // USUARIOS
+    // ==========================================
+    async function carregarUsuarios() {
+      try {
+        const response = await fetch(API_URL + '/api/admin/usuarios', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await response.json();
+        if (data.sucesso) {
+          const tbody = document.getElementById('usuariosList');
+          tbody.innerHTML = data.usuarios.map(u => {
+            return '<tr><td>' + u.id + '</td><td><strong>' + u.nome + '</strong></td><td>' + (u.email || '-') + '</td><td>' + (u.cpf || '-') + '</td><td>' + (u.total_lances || 0) + '</td><td>' + formatarMoeda(u.total_gasto || 0) + '</td></tr>';
+          }).join('');
+        }
+      } catch (err) {
+        mostrarToast('Erro ao carregar usuarios', 'error');
+      }
+    }
+
+    // ==========================================
+    // CONFIGURACOES
+    // ==========================================
+    async function carregarConfiguracoes() {
+      try {
+        const response = await fetch(API_URL + '/api/admin/configuracoes', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await response.json();
+        if (data.sucesso) {
+          document.getElementById('configLanceInicial').value = data.configuracoes.lanceInicial || 0.01;
+          document.getElementById('configLanceMinimo').value = data.configuracoes.lanceMinimo || 0.01;
+          document.getElementById('configDuracao').value = data.configuracoes.duracaoPadrao || 24;
+          document.getElementById('configComissao').value = data.configuracoes.comissaoPadrao || 10;
+          document.getElementById('configSiteNome').value = data.configuracoes.siteNome || 'Leilao Facil';
+          document.getElementById('configSiteUrl').value = data.configuracoes.siteUrl || '';
+        }
+      } catch (err) {
+        mostrarToast('Erro ao carregar configuracoes', 'error');
+      }
+    }
+
     async function salvarConfiguracoes() {
       try {
         const response = await fetch(API_URL + '/api/admin/configuracoes', {
@@ -1080,35 +1695,21 @@
             site_url: document.getElementById('configSiteUrl').value
           })
         });
-        if (response.ok) {
-          mostrarToast('Configuracoes salvas!', 'success');
+        const data = await response.json();
+        if (data.sucesso) {
+          mostrarToast('Configuracoes salvas! (Apenas novas campanhas)', 'success');
+          if (data.aviso) {
+            mostrarToast(data.aviso, 'warning');
+          }
         }
       } catch (err) {
         mostrarToast('Erro ao salvar configuracoes', 'error');
       }
     }
 
-    function copiarLink(influencerId) {
-      const influencer = influencersData.find(i => i.id === influencerId);
-      if (!influencer) return;
-      const link = window.location.origin + '/?ref=' + influencer.codigo_ref;
-      navigator.clipboard.writeText(link).then(() => {
-        mostrarToast('Link copiado: ' + link, 'success');
-      });
-    }
-
-    function verCampanha(id) {
-      mostrarSecao('campanhas');
-    }
-
-    function abrirModalCampanha() {
-      abrirModal('modalCampanha');
-    }
-
-    function abrirModalInfluencer() {
-      abrirModal('modalInfluencer');
-    }
-
+    // ==========================================
+    // UTILIDADES
+    // ==========================================
     function abrirModal(id) {
       document.getElementById(id).classList.add('active');
     }
@@ -1127,6 +1728,7 @@
 
     function limparFormCampanha() {
       document.getElementById('campNome').value = '';
+      document.getElementById('campSlug').value = '';
       document.getElementById('campDescricao').value = '';
       document.getElementById('campPremioNome').value = '';
       document.getElementById('campPremioDesc').value = '';
@@ -1139,13 +1741,23 @@
       document.getElementById('infEmail').value = '';
       document.getElementById('infCodigo').value = '';
       document.getElementById('infPix').value = '';
+      document.getElementById('infPremio25').value = '';
+      document.getElementById('infPremio50').value = '';
+      document.getElementById('infPremio75').value = '';
+      document.getElementById('infPremio100').value = '';
     }
 
     function mostrarToast(mensagem, tipo) {
       const container = document.getElementById('toastContainer');
       const toast = document.createElement('div');
       toast.className = 'toast ' + tipo;
-      toast.textContent = mensagem;
+
+      let icon = 'ℹ️';
+      if (tipo === 'success') icon = '✅';
+      if (tipo === 'error') icon = '❌';
+      if (tipo === 'warning') icon = '⚠️';
+
+      toast.innerHTML = icon + ' ' + mensagem;
       container.appendChild(toast);
       setTimeout(() => {
         toast.style.opacity = '0';
@@ -1154,11 +1766,36 @@
       }, 5000);
     }
 
+    function adicionarAtividade(tipo, mensagem, detalhe) {
+      const feed = document.getElementById('activityFeed');
+      const item = document.createElement('div');
+      item.className = 'activity-item';
+
+      let icon = '📋';
+      if (tipo.includes('campanha')) icon = '🏷️';
+      if (tipo.includes('influencer')) icon = '👥';
+      if (tipo.includes('config')) icon = '⚙️';
+
+      item.innerHTML = '<div class="activity-icon">' + icon + '</div><div><div style="font-weight:600;">' + mensagem + '</div><div style="font-size:0.75rem;color:var(--gray);">' + detalhe + '</div></div><div class="activity-time">Agora</div>';
+
+      // Remove empty state if exists
+      if (feed.querySelector('.empty-state')) {
+        feed.innerHTML = '';
+      }
+
+      feed.insertBefore(item, feed.firstChild);
+
+      // Limita a 20 itens
+      while (feed.children.length > 20) {
+        feed.removeChild(feed.lastChild);
+      }
+    }
+
     function formatarMoeda(valor) {
       return new Intl.NumberFormat('pt-BR', {
         style: 'currency',
         currency: 'BRL'
-      }).format(valor);
+      }).format(valor || 0);
     }
 
     document.getElementById('loginSenha').addEventListener('keypress', (e) => {
