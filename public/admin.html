@@ -734,18 +734,31 @@ async function salvarCampanha() {
     premio_imagem: $('#campPremioImg').value.trim() || null
   };
 
+  console.log('[ADMIN] Body a ser enviado:', JSON.stringify(body));
+
   try {
     if (id) {
       await apiPut('/api/admin/campanhas/' + id, body);
       toast('Campanha atualizada com sucesso', 'success');
     } else {
-      await apiPost('/api/admin/campanhas', body);
+      const res = await fetch(API + '/api/admin/campanhas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify(body)
+      });
+      console.log('[ADMIN] Status POST:', res.status);
+      const data = await res.json();
+      console.log('[ADMIN] Resposta POST:', JSON.stringify(data));
+      if (!res.ok) {
+        throw new Error(data.erro || 'Erro ' + res.status);
+      }
       toast('Campanha criada com sucesso', 'success');
     }
     closeModal('modalCampanha');
     loadCampanhas();
     loadDashboard();
   } catch (e) {
+    console.error('[ADMIN] Erro salvarCampanha:', e);
     toast('Erro ao salvar campanha: ' + e.message, 'error');
   }
 }

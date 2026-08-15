@@ -809,16 +809,24 @@ app.get('/api/admin/campanhas', verificarTokenAdmin, async (req, res) => {
 app.post('/api/admin/campanhas', verificarTokenAdmin, async (req, res) => {
   try {
     const dados = req.body;
-    console.log('[DEBUG] POST /api/admin/campanhas - body recebido:', JSON.stringify(dados));
+    console.log('[DEBUG] POST /api/admin/campanhas - headers:', JSON.stringify(req.headers['content-type']));
+    console.log('[DEBUG] POST /api/admin/campanhas - body:', JSON.stringify(dados));
 
-    if (!dados) {
-      console.log('[DEBUG] Body esta vazio!');
-      return res.status(400).json({ erro: 'Body da requisicao esta vazio. Envie JSON com Content-Type: application/json' });
+    if (!dados || Object.keys(dados).length === 0) {
+      console.log('[DEBUG] Body vazio ou invalido');
+      return res.status(400).json({ 
+        erro: 'Body vazio. Verifique se esta enviando Content-Type: application/json',
+        bodyRecebido: dados,
+        headers: req.headers['content-type']
+      });
     }
 
     if (!dados.nome || dados.nome.trim().length < 3) {
       console.log('[DEBUG] Nome invalido:', dados.nome);
-      return res.status(400).json({ erro: 'Nome da campanha e obrigatorio (minimo 3 caracteres)' });
+      return res.status(400).json({ 
+        erro: 'Nome da campanha e obrigatorio (minimo 3 caracteres)',
+        bodyRecebido: dados 
+      });
     }
 
     const slug = dados.slug || gerarSlug(dados.nome);
@@ -1176,7 +1184,7 @@ app.use((req, res) => {
 
 server.listen(PORT, async () => {
   console.log('');
-  console.log('LEILAO FACIL v2.1 - Servidor iniciado');
+  console.log('LEILAO FACIL v2.1.3 - Servidor iniciado (DEBUG MODE)');
   console.log(`Database module: database-pg.js`);
   console.log(`Porta: ${PORT}`);
   console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
