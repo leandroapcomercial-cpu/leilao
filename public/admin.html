@@ -786,7 +786,7 @@
         <label class="form-label">Senha de Administrador</label>
         <input type="password" class="form-input" id="loginSenha" placeholder="Digite a senha">
       </div>
-      <button class="btn btn-primary" style="width:100%;" onclick="fazerLogin()">
+      <button class="btn btn-primary" style="width:100%;" id="btnLogin">
         🔓 Entrar no Painel
       </button>
       <p style="text-align:center;margin-top:1rem;font-size:0.875rem;color:var(--gray);">
@@ -1152,6 +1152,23 @@
     // INICIALIZACAO
     // ==========================================
     document.addEventListener('DOMContentLoaded', () => {
+      console.log('DOM carregado, token:', token ? 'existe' : 'nao existe');
+
+      // Event listener do botao login (sem onclick inline)
+      const btnLogin = document.getElementById('btnLogin');
+      if (btnLogin) {
+        btnLogin.addEventListener('click', fazerLogin);
+      }
+
+      // Event listener do input senha (Enter)
+      const inputSenha = document.getElementById('loginSenha');
+      if (inputSenha) {
+        inputSenha.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') fazerLogin();
+        });
+        inputSenha.focus();
+      }
+
       if (token) {
         verificarToken();
       }
@@ -1231,18 +1248,31 @@
     }
 
     async function fazerLogin() {
+      console.log('Tentando login...');
       const senha = document.getElementById('loginSenha').value;
       if (!senha) {
         mostrarToast('Digite a senha', 'error');
         return;
       }
+
+      // Feedback visual no botao
+      const btn = document.getElementById('btnLogin');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '⏳ Verificando...';
+      btn.disabled = true;
+
       try {
+        console.log('Enviando request para:', API_URL + '/api/admin/login');
         const response = await fetch(API_URL + '/api/admin/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ senha })
         });
+
+        console.log('Response status:', response.status);
         const data = await response.json();
+        console.log('Response data:', data);
+
         if (data.sucesso) {
           token = data.token;
           localStorage.setItem('lf_admin_token', token);
@@ -1252,9 +1282,14 @@
           mostrarToast('Login realizado com sucesso!', 'success');
         } else {
           mostrarToast(data.erro || 'Senha incorreta', 'error');
+          btn.innerHTML = originalText;
+          btn.disabled = false;
         }
       } catch (err) {
-        mostrarToast('Erro de conexao', 'error');
+        console.error('Erro no login:', err);
+        mostrarToast('Erro de conexao. Verifique sua internet.', 'error');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
       }
     }
 
@@ -1798,9 +1833,7 @@
       }).format(valor || 0);
     }
 
-    document.getElementById('loginSenha').addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') fazerLogin();
-    });
+    // Enter ja tratado no DOMContentLoaded
   </script>
 </body>
 </html>
