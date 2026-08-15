@@ -336,6 +336,22 @@ cron.schedule('* * * * *', async () => {
 // ==========================================
 const usuariosOnline = new Map();
 
+// Namespace para admin (tempo real)
+const adminIo = io.of('/admin');
+
+adminIo.on('connection', (socket) => {
+  console.log(`🔌 Admin conectado: ${socket.id}`);
+
+  socket.on('join_admin', () => {
+    socket.join('admin_room');
+    console.log(`👤 Admin ${socket.id} entrou na sala`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`🔌 Admin desconectado: ${socket.id}`);
+  });
+});
+
 io.on('connection', (socket) => {
   console.log(`🔌 Cliente conectado: ${socket.id}`);
 
@@ -826,6 +842,10 @@ app.post('/api/admin/campanhas', verificarTokenAdmin, upload.single('premio_imag
       }
     }
 
+    // Emitir em tempo real
+    io.emit('campanha_criada', { campanha });
+    await db.registrarAtividade('campanha_criada', `Nova campanha "${campanha.nome}" criada`, { campanhaId: campanha.id });
+
     res.status(201).json({ sucesso: true, campanha });
   } catch (err) {
     console.error('Erro ao criar campanha:', err);
@@ -854,11 +874,28 @@ app.put('/api/admin/campanhas/:id', verificarTokenAdmin, upload.single('premio_i
       dados.premio_imagem = `/uploads/${req.file.filename}`;
     }
 
-    await db.atualizarCampanha(id, dados);
-    const campanha = await db.buscarCampanhaPorId(id);
+    // Se mudou o nome, atualizar slug automaticamente
+    if (dados.nome && !dados.slug) {
+      const novoSlug = gerarSlug(dados.nome);
+      const existente = await db.buscarCampanhaPorSlug(novoSlug);
+      if (!existente || existente.id == id) {
+        dados.slug = novoSlug;
+      } else {
+        dados.slug = novoSlug + '-' + Date.now();
+      }
+    }
+
+    const campanha = await db.atualizarCampanhaCompleta(id, dados);
+
+    // Emitir atualização em tempo real
+    io.emit('campanha_atualizada', { campanha });
+
+    // Registrar atividade
+    await db.registrarAtividade('campanha_editada', `Campanha "${campanha.nome}" atualizada`, { campanhaId: id });
 
     res.json({ sucesso: true, campanha });
   } catch (err) {
+    console.error('Erro ao atualizar campanha:', err);
     res.status(500).json({ erro: 'Erro ao atualizar campanha' });
   }
 });
@@ -881,6 +918,7 @@ app.post('/api/admin/campanhas/:id/ativar', verificarTokenAdmin, async (req, res
 
     const atualizada = await db.buscarCampanhaPorId(id);
     io.emit('campanha_ativada', { campanhaId: id, campanha: atualizada });
+    await db.registrarAtividade('campanha_ativada', `Campanha "${atualizada.nome}" ativada`, { campanhaId: id });
 
     res.json({ sucesso: true, campanha: atualizada });
   } catch (err) {
@@ -895,6 +933,7 @@ app.post('/api/admin/campanhas/:id/pausar', verificarTokenAdmin, async (req, res
     cancelarTimerCampanha(id);
 
     io.emit('campanha_pausada', { campanhaId: id });
+    await db.registrarAtividade('campanha_pausada', `Campanha ${id} pausada`, { campanhaId: id });
 
     res.json({ sucesso: true });
   } catch (err) {
@@ -1000,7 +1039,7 @@ app.get('/api/admin/influencers', verificarTokenAdmin, async (req, res) => {
 
 app.post('/api/admin/influencers', verificarTokenAdmin, async (req, res) => {
   try {
-    const { nome, email, codigo_ref, comissao_percentual, pix_chave } = req.body;
+    const { nome, email, codigo_ref, comissao_percentual, pix_chave, premio_25, premio_50, premio_75, premio_100 } = req.body;
 
     if (!nome || !email || !codigo_ref) {
       return res.status(400).json({ erro: 'Nome, email e código de referência são obrigatórios' });
@@ -1011,7 +1050,11 @@ app.post('/api/admin/influencers', verificarTokenAdmin, async (req, res) => {
       email,
       codigo_ref,
       comissao_percentual: parseInt(comissao_percentual) || COMISSAO_PADRAO,
-      pix_chave
+      pix_chave,
+      premio_25: parseFloat(premio_25) || 0,
+      premio_50: parseFloat(premio_50) || 0,
+      premio_75: parseFloat(premio_75) || 0,
+      premio_100: parseFloat(premio_100) || 0
     });
 
     res.status(201).json({ sucesso: true, influencer });
@@ -1020,6 +1063,40 @@ app.post('/api/admin/influencers', verificarTokenAdmin, async (req, res) => {
       return res.status(400).json({ erro: 'Código de referência ou email já existe' });
     }
     res.status(500).json({ erro: 'Erro ao criar influencer' });
+  }
+});
+
+app.put('/api/admin/influencers/:id', verificarTokenAdmin, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const dados = req.body;
+
+    // Campos permitidos para edição
+    const camposPermitidos = ['nome', 'email', 'codigo_ref', 'comissao_percentual', 'pix_chave', 'ativo', 'premio_25', 'premio_50', 'premio_75', 'premio_100'];
+    const updateData = {};
+    camposPermitidos.forEach(campo => {
+      if (dados[campo] !== undefined) updateData[campo] = dados[campo];
+    });
+
+    const influencer = await db.atualizarInfluencer(id, updateData);
+    if (!influencer) {
+      return res.status(404).json({ erro: 'Influencer não encontrado' });
+    }
+
+    io.emit('influencer_atualizado', { influencer });
+    res.json({ sucesso: true, influencer });
+  } catch (err) {
+    console.error('Erro ao atualizar influencer:', err);
+    res.status(500).json({ erro: 'Erro ao atualizar influencer' });
+  }
+});
+
+app.get('/api/admin/influencers/:id/milestones', verificarTokenAdmin, async (req, res) => {
+  try {
+    const milestones = await db.buscarMilestonesPorInfluencer(req.params.id);
+    res.json({ sucesso: true, milestones });
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro ao buscar milestones' });
   }
 });
 
@@ -1045,9 +1122,23 @@ app.put('/api/admin/configuracoes', verificarTokenAdmin, async (req, res) => {
     for (const [chave, valor] of Object.entries(configs)) {
       await db.setConfig(chave, valor);
     }
-    res.json({ sucesso: true });
+
+    // Registrar que configurações foram alteradas (só afeta novas campanhas)
+    await db.registrarAtividade('configuracoes_alteradas', 'Configurações padrão atualizadas. Novas campanhas usarão estes valores.', configs);
+
+    io.emit('configuracoes_atualizadas', { configs });
+    res.json({ sucesso: true, aviso: 'Estas alterações só afetarão novas campanhas. Campanhas em andamento permanecem inalteradas.' });
   } catch (err) {
     res.status(500).json({ erro: 'Erro ao salvar configurações' });
+  }
+});
+
+app.get('/api/admin/atividades', verificarTokenAdmin, async (req, res) => {
+  try {
+    const atividades = await db.buscarAtividadesRecentes(50);
+    res.json({ sucesso: true, atividades });
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro ao buscar atividades' });
   }
 });
 

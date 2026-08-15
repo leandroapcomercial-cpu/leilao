@@ -497,6 +497,125 @@ async function initSchema() {
 
 initSchema();
 
+
+// ==========================================
+// FUNÇÕES DE EDIÇÃO DE CAMPANHA
+// ==========================================
+async function atualizarCampanhaCompleta(id, dados) {
+  const campos = Object.keys(dados).filter(k => dados[k] !== undefined && k !== 'id');
+  if (campos.length === 0) return null;
+
+  const sets = campos.map((k, i) => `${k} = $${i + 1}`).join(', ');
+  const values = campos.map(k => dados[k]);
+  values.push(id);
+
+  const result = await pool.query(
+    `UPDATE campanhas SET ${sets}, updated_at = CURRENT_TIMESTAMP WHERE id = $${values.length} RETURNING *`,
+    values
+  );
+  return result.rows[0];
+}
+
+async function atualizarSlugCampanha(id, novoSlug) {
+  const result = await pool.query(
+    'UPDATE campanhas SET slug = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
+    [novoSlug, id]
+  );
+  return result.rows[0];
+}
+
+// ==========================================
+// FUNÇÕES DE EDIÇÃO DE INFLUENCER
+// ==========================================
+async function atualizarInfluencer(id, dados) {
+  const campos = Object.keys(dados).filter(k => dados[k] !== undefined && k !== 'id');
+  if (campos.length === 0) return null;
+
+  const sets = campos.map((k, i) => `${k} = $${i + 1}`).join(', ');
+  const values = campos.map(k => dados[k]);
+  values.push(id);
+
+  const result = await pool.query(
+    `UPDATE influencers SET ${sets} WHERE id = $${values.length} RETURNING *`,
+    values
+  );
+  return result.rows[0];
+}
+
+// ==========================================
+// FUNÇÕES DE MILESTONES (METAS)
+// ==========================================
+async function criarMilestone(dados) {
+  const result = await pool.query(
+    'INSERT INTO influencer_milestones (influencer_id, campanha_id, percentual, valor_premio) VALUES ($1, $2, $3, $4) RETURNING id',
+    [dados.influencer_id, dados.campanha_id, dados.percentual, dados.valor_premio]
+  );
+  return { id: result.rows[0].id, ...dados };
+}
+
+async function buscarMilestonesPorInfluencer(influencerId) {
+  return queryAll(
+    'SELECT * FROM influencer_milestones WHERE influencer_id = $1 ORDER BY percentual',
+    [influencerId]
+  );
+}
+
+async function buscarMilestonesPorCampanha(campanhaId) {
+  return queryAll(
+    'SELECT m.*, i.nome as influencer_nome FROM influencer_milestones m JOIN influencers i ON m.influencer_id = i.id WHERE m.campanha_id = $1 ORDER BY m.percentual',
+    [campanhaId]
+  );
+}
+
+async function atualizarStatusMilestone(id, status) {
+  const dataField = status === 'atingido' ? 'data_atingido' : status === 'pago' ? 'data_pagamento' : null;
+  const sql = dataField 
+    ? `UPDATE influencer_milestones SET status = $1, ${dataField} = CURRENT_TIMESTAMP WHERE id = $2`
+    : 'UPDATE influencer_milestones SET status = $1 WHERE id = $2';
+  const result = await pool.query(sql, [status, id]);
+  return { changes: result.rowCount };
+}
+
+async function verificarMilestonesCampanha(campanhaId) {
+  const campanha = await buscarCampanhaPorId(campanhaId);
+  if (!campanha || !campanha.meta_valor || campanha.meta_valor <= 0) return [];
+
+  const percentualAtingido = Math.min(100, ((campanha.total_arrecadado || 0) / campanha.meta_valor) * 100);
+  const milestones = [25, 50, 75, 100].filter(p => percentualAtingido >= p);
+
+  const resultado = [];
+  for (const pct of milestones) {
+    const existentes = await pool.query(
+      'SELECT * FROM influencer_milestones WHERE campanha_id = $1 AND percentual = $2',
+      [campanhaId, pct]
+    );
+    resultado.push({
+      percentual: pct,
+      atingido: percentualAtingido >= pct,
+      registros: existentes.rows
+    });
+  }
+  return resultado;
+}
+
+// ==========================================
+// ACTIVITY LOG (PARA TEMPO REAL)
+// ==========================================
+async function registrarAtividade(tipo, mensagem, dados = null) {
+  const result = await pool.query(
+    'INSERT INTO activity_log (tipo, mensagem, dados) VALUES ($1, $2, $3) RETURNING id',
+    [tipo, mensagem, dados ? JSON.stringify(dados) : null]
+  );
+  return { id: result.rows[0].id };
+}
+
+async function buscarAtividadesRecentes(limit = 50) {
+  return queryAll(
+    'SELECT * FROM activity_log ORDER BY created_at DESC LIMIT $1',
+    [limit]
+  );
+}
+
 module.exports = {
   db: pool,
   // Usuários
@@ -522,5 +641,13 @@ module.exports = {
   // Config
   getConfig, setConfig,
   // Dashboard
-  getDashboardStats, getCampanhaStats
+  getDashboardStats, getCampanhaStats,
+  // Edição
+  atualizarCampanhaCompleta, atualizarSlugCampanha,
+  atualizarInfluencer,
+  // Milestones
+  criarMilestone, buscarMilestonesPorInfluencer, buscarMilestonesPorCampanha,
+  atualizarStatusMilestone, verificarMilestonesCampanha,
+  // Activity Log
+  registrarAtividade, buscarAtividadesRecentes
 };
