@@ -18,7 +18,7 @@ const axios = require('axios');
 const cron = require('node-cron');
 const { v4: uuidv4 } = require('uuid');
 
-const db = require('./database');
+const db = require('./database-pg');
 
 // ==========================================
 // CONFIGURACAO
@@ -778,7 +778,9 @@ app.get('/api/admin/verificar', verificarTokenAdmin, (req, res) => {
 
 app.get('/api/admin/dashboard', verificarTokenAdmin, async (req, res) => {
   try {
+    console.log('[DEBUG] GET /api/admin/dashboard - iniciando');
     const stats = await db.getDashboardStats();
+    console.log('[DEBUG] Dashboard stats:', JSON.stringify(stats));
     const campanhasRecentes = (await db.listarCampanhas()).slice(0, 5);
     const pagamentosPendentes = (await db.listarPagamentosPendentes()).slice(0, 10);
 
@@ -789,8 +791,8 @@ app.get('/api/admin/dashboard', verificarTokenAdmin, async (req, res) => {
       pagamentosPendentes
     });
   } catch (err) {
-    console.error('Erro dashboard:', err);
-    res.status(500).json({ erro: 'Erro ao carregar dashboard' });
+    console.error('[DEBUG] Erro dashboard:', err.message, err.stack);
+    res.status(500).json({ erro: 'Erro ao carregar dashboard: ' + err.message });
   }
 });
 
@@ -807,8 +809,15 @@ app.get('/api/admin/campanhas', verificarTokenAdmin, async (req, res) => {
 app.post('/api/admin/campanhas', verificarTokenAdmin, async (req, res) => {
   try {
     const dados = req.body;
+    console.log('[DEBUG] POST /api/admin/campanhas - body recebido:', JSON.stringify(dados));
+
+    if (!dados) {
+      console.log('[DEBUG] Body esta vazio!');
+      return res.status(400).json({ erro: 'Body da requisicao esta vazio. Envie JSON com Content-Type: application/json' });
+    }
 
     if (!dados.nome || dados.nome.trim().length < 3) {
+      console.log('[DEBUG] Nome invalido:', dados.nome);
       return res.status(400).json({ erro: 'Nome da campanha e obrigatorio (minimo 3 caracteres)' });
     }
 
@@ -1168,6 +1177,7 @@ app.use((req, res) => {
 server.listen(PORT, async () => {
   console.log('');
   console.log('LEILAO FACIL v2.1 - Servidor iniciado');
+  console.log(`Database module: database-pg.js`);
   console.log(`Porta: ${PORT}`);
   console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
   console.log(`Banco: ${process.env.DATABASE_URL ? 'PostgreSQL (Supabase)' : 'SQLite (local)'}`);
