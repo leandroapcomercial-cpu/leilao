@@ -1154,6 +1154,26 @@
     document.addEventListener('DOMContentLoaded', () => {
       console.log('DOM carregado, token:', token ? 'existe' : 'nao existe');
 
+      // DELEGAÇÃO DE EVENTOS - resolve todos os data-action
+      document.addEventListener('click', (e) => {
+        const el = e.target.closest('[data-action]');
+        if (!el) return;
+
+        const action = el.dataset.action;
+        const id = el.dataset.id;
+        const slug = el.dataset.slug;
+
+        if (action === 'copiar-link' && slug) copiarLinkCampanha(slug);
+        if (action === 'editar' && id) editarCampanha(parseInt(id));
+        if (action === 'ativar' && id) ativarCampanha(parseInt(id));
+        if (action === 'pausar' && id) pausarCampanha(parseInt(id));
+        if (action === 'finalizar' && id) finalizarCampanha(parseInt(id));
+        if (action === 'exportar' && id) exportarCampanha(parseInt(id));
+        if (action === 'resetar' && id) resetarCampanha(parseInt(id));
+        if (action === 'editar-influencer' && id) editarInfluencer(parseInt(id));
+        if (action === 'copiar-link-inf' && id) copiarLinkInf(parseInt(id));
+      });
+
       // Event listener do botao login (sem onclick inline)
       const btnLogin = document.getElementById('btnLogin');
       if (btnLogin) {
@@ -1343,7 +1363,7 @@
             if (c.status === 'ativo') { badgeClass = 'badge-green'; badgeText = 'Ativo'; }
             else if (c.status === 'finalizado') { badgeClass = 'badge-red'; badgeText = 'Finalizado'; }
             else if (c.status === 'pendente') { badgeClass = 'badge-yellow'; badgeText = 'Pendente'; }
-            return '<tr><td><strong>' + c.nome + '</strong><br><span style="font-size:0.75rem;color:var(--primary);cursor:pointer;" onclick="copiarLinkCampanha(\\' + c.slug + \'">/' + c.slug + '</span></td><td><span class="badge ' + badgeClass + '">' + badgeText + '</span></td><td>' + (c.total_lances || 0) + '</td><td>' + formatarMoeda(c.total_arrecadado || 0) + '</td><td><button class="btn btn-sm btn-primary" onclick="editarCampanha(' + c.id + ')">✏️ Editar</button></td></tr>';
+            return '<tr><td><strong>' + c.nome + '</strong><br><span style="font-size:0.75rem;color:var(--primary);cursor:pointer;" data-action="copiar-link" data-slug="' + c.slug + '">/' + c.slug + '</span></td><td><span class="badge ' + badgeClass + '">' + badgeText + '</span></td><td>' + (c.total_lances || 0) + '</td><td>' + formatarMoeda(c.total_arrecadado || 0) + '</td><td><button class="btn btn-sm btn-primary" data-action="editar" data-id="' + c.id + '">✏️ Editar</button></td></tr>';
           }).join('');
         }
       } catch (err) {
@@ -1385,20 +1405,20 @@
 
             let acoes = '';
             if (c.status === 'pendente') {
-              acoes += '<button class="btn btn-sm btn-success" onclick="ativarCampanha(' + c.id + ')">▶️ Ativar</button>';
+              acoes += '<button class="btn btn-sm btn-success" data-action="ativar" data-id="' + c.id + '">▶️ Ativar</button>';
             } else if (c.status === 'ativo') {
-              acoes += '<button class="btn btn-sm btn-secondary" onclick="pausarCampanha(' + c.id + ')">⏸️ Pausar</button>';
-              acoes += '<button class="btn btn-sm btn-danger" onclick="finalizarCampanha(' + c.id + ')">🏁 Finalizar</button>';
+              acoes += '<button class="btn btn-sm btn-secondary" data-action="pausar" data-id="' + c.id + '">⏸️ Pausar</button>';
+              acoes += '<button class="btn btn-sm btn-danger" data-action="finalizar" data-id="' + c.id + '">🏁 Finalizar</button>';
             } else if (c.status === 'pausado') {
-              acoes += '<button class="btn btn-sm btn-success" onclick="ativarCampanha(' + c.id + ')">▶️ Retomar</button>';
+              acoes += '<button class="btn btn-sm btn-success" data-action="ativar" data-id="' + c.id + '">▶️ Retomar</button>';
             }
-            acoes += '<button class="btn btn-sm btn-primary" onclick="editarCampanha(' + c.id + ')">✏️ Editar</button>';
-            acoes += '<button class="btn btn-sm btn-secondary" onclick="exportarCampanha(' + c.id + ')">📥 Exportar</button>';
-            acoes += '<button class="btn btn-sm btn-danger" onclick="resetarCampanha(' + c.id + ')">🔄 Resetar</button>';
+            acoes += '<button class="btn btn-sm btn-primary" data-action="editar" data-id="' + c.id + '">✏️ Editar</button>';
+            acoes += '<button class="btn btn-sm btn-secondary" data-action="exportar" data-id="' + c.id + '">📥 Exportar</button>';
+            acoes += '<button class="btn btn-sm btn-danger" data-action="resetar" data-id="' + c.id + '">🔄 Resetar</button>';
 
             const progresso = c.meta_valor > 0 ? Math.min(100, ((c.total_arrecadado || 0) / c.meta_valor) * 100) : 0;
 
-            return '<div class="campanha-card"><div class="campanha-header"><div><div class="campanha-nome">' + c.nome + '</div><div class="campanha-slug" onclick="copiarLinkCampanha(\\' + c.slug + \\\')">🔗 /' + c.slug + '</div><div class="campanha-meta">Duracao: ' + c.duracao_horas + 'h | Lance min: R$ ' + (c.lance_minimo || 0.01) + '</div></div><span class="badge ' + statusClass + '">' + statusText + '</span></div><div class="campanha-stats"><div class="campanha-stat">💰 <strong>' + formatarMoeda(c.total_arrecadado || 0) + '</strong> arrecadado</div><div class="campanha-stat">🎯 <strong>' + (c.total_lances || 0) + '</strong> lances</div><div class="campanha-stat">👥 <strong>' + (c.total_participantes || 0) + '</strong> participantes</div></div>' + (c.meta_valor > 0 ? '<div class="progress-bar"><div class="progress-fill" style="width:' + progresso + '%"></div></div><div style="font-size:0.75rem;color:var(--gray);margin-top:0.5rem;">Meta: ' + formatarMoeda(c.meta_valor) + ' (' + Math.round(progresso) + '%)</div>' : \\') + '<div class="campanha-actions">' + acoes + '</div></div>';
+            return '<div class="campanha-card"><div class="campanha-header"><div><div class="campanha-nome">' + c.nome + '</div><div class="campanha-slug" data-action="copiar-link" data-slug="\\' + c.slug + \\\'">🔗 /' + c.slug + '</div><div class="campanha-meta">Duracao: ' + c.duracao_horas + 'h | Lance min: R$ ' + (c.lance_minimo || 0.01) + '</div></div><span class="badge ' + statusClass + '">' + statusText + '</span></div><div class="campanha-stats"><div class="campanha-stat">💰 <strong>' + formatarMoeda(c.total_arrecadado || 0) + '</strong> arrecadado</div><div class="campanha-stat">🎯 <strong>' + (c.total_lances || 0) + '</strong> lances</div><div class="campanha-stat">👥 <strong>' + (c.total_participantes || 0) + '</strong> participantes</div></div>' + (c.meta_valor > 0 ? '<div class="progress-bar"><div class="progress-fill" style="width:' + progresso + '%"></div></div><div style="font-size:0.75rem;color:var(--gray);margin-top:0.5rem;">Meta: ' + formatarMoeda(c.meta_valor) + ' (' + Math.round(progresso) + '%)</div>' : \\') + '<div class="campanha-actions">' + acoes + '</div></div>';
           }).join('');
         }
       } catch (err) {
@@ -1579,7 +1599,7 @@
           influencersData = data.influencers;
           const tbody = document.getElementById('influencersList');
           tbody.innerHTML = influencersData.map(i => {
-            return '<tr><td><strong>' + i.nome + '</strong></td><td><code style="background:var(--light);padding:0.25rem 0.5rem;border-radius:6px;font-size:0.8rem;">' + i.codigo_ref + '</code></td><td>' + i.comissao_percentual + '%</td><td>' + (i.total_cliques || 0) + '</td><td>' + formatarMoeda(i.total_gerado || 0) + '</td><td><button class="btn btn-sm btn-primary" onclick="editarInfluencer(' + i.id + ')">✏️ Editar</button> <button class="btn btn-sm btn-secondary" onclick="copiarLinkInf(' + i.id + ')">📋 Link</button></td></tr>';
+            return '<tr><td><strong>' + i.nome + '</strong></td><td><code style="background:var(--light);padding:0.25rem 0.5rem;border-radius:6px;font-size:0.8rem;">' + i.codigo_ref + '</code></td><td>' + i.comissao_percentual + '%</td><td>' + (i.total_cliques || 0) + '</td><td>' + formatarMoeda(i.total_gerado || 0) + '</td><td><button class="btn btn-sm btn-primary" data-action="editar-influencer" data-id="' + i.id + '">✏️ Editar</button> <button class="btn btn-sm btn-secondary" data-action="copiar-link-inf" data-id="' + i.id + '">📋 Link</button></td></tr>';
           }).join('');
         }
       } catch (err) {
@@ -1815,7 +1835,7 @@
 
       // Remove empty state if exists
       if (feed.querySelector('.empty-state')) {
-        feed.innerHTML = '';
+        feed.innerHTML = \';
       }
 
       feed.insertBefore(item, feed.firstChild);
