@@ -533,7 +533,9 @@ function closeModal(id) { $('#' + id).classList.remove('active'); }
 function resetModalCampanha() {
   $('#campId').value = '';
   $('#campNome').value = '';
-  $('#campDataInicio').value = '';
+  const agora = new Date();
+  agora.setMinutes(agora.getMinutes() - agora.getTimezoneOffset());
+  $('#campDataInicio').value = agora.toISOString().slice(0, 16);
   $('#campDuracao').value = '24';
   $('#campLanceInicial').value = '0.01';
   $('#campLanceMinimo').value = '0.01';
@@ -702,18 +704,34 @@ function renderCampanhas() {
 
 async function salvarCampanha() {
   const id = $('#campId').value;
+  const nome = $('#campNome').value.trim();
+
+  if (!nome || nome.length < 3) {
+    toast('Nome da campanha e obrigatorio (minimo 3 caracteres)', 'error');
+    $('#campNome').focus();
+    return;
+  }
+
+  let dataInicio = $('#campDataInicio').value;
+  if (!dataInicio) {
+    const agora = new Date();
+    agora.setMinutes(agora.getMinutes() - agora.getTimezoneOffset());
+    dataInicio = agora.toISOString().slice(0, 16);
+    $('#campDataInicio').value = dataInicio;
+  }
+
   const body = {
-    nome: $('#campNome').value.trim(),
-    data_inicio: $('#campDataInicio').value,
+    nome: nome,
+    data_inicio: dataInicio,
     duracao_horas: parseInt($('#campDuracao').value) || 24,
     lance_inicial: parseFloat($('#campLanceInicial').value) || 0.01,
     lance_minimo: parseFloat($('#campLanceMinimo').value) || 0.01,
     lance_maximo: parseFloat($('#campLanceMaximo').value) || 1.00,
     meta_valor: parseFloat($('#campMeta').value) || 0,
-    premio_nome: $('#campPremioNome').value.trim(),
-    premio_descricao: $('#campPremioDesc').value.trim(),
+    premio_nome: $('#campPremioNome').value.trim() || null,
+    premio_descricao: $('#campPremioDesc').value.trim() || null,
     premio_valor: parseFloat($('#campPremioValor').value) || 0,
-    premio_imagem: $('#campPremioImg').value.trim()
+    premio_imagem: $('#campPremioImg').value.trim() || null
   };
 
   try {
@@ -837,7 +855,15 @@ async function loadDashboard() {
   try {
     const data = await apiGet('/api/admin/dashboard');
     updateDashboard(data);
-  } catch (e) { console.error(e); }
+  } catch (e) {
+    console.error('Dashboard error:', e);
+    updateDashboard({
+      campanhas_ativas: 0,
+      total_arrecadado: 0,
+      total_lances: 0,
+      total_participantes: 0
+    });
+  }
 }
 
 async function salvarConfiguracoes() {

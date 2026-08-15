@@ -804,7 +804,7 @@ app.get('/api/admin/campanhas', verificarTokenAdmin, async (req, res) => {
   }
 });
 
-app.post('/api/admin/campanhas', verificarTokenAdmin, upload.single('premio_imagem'), async (req, res) => {
+app.post('/api/admin/campanhas', verificarTokenAdmin, async (req, res) => {
   try {
     const dados = req.body;
 
@@ -821,7 +821,7 @@ app.post('/api/admin/campanhas', verificarTokenAdmin, upload.single('premio_imag
     const campanhaData = {
       ...dados,
       slug,
-      premio_imagem: req.file ? `/uploads/${req.file.filename}` : (dados.premio_imagem || null)
+      premio_imagem: dados.premio_imagem || null
     };
 
     const campanha = await db.criarCampanha(campanhaData);
@@ -854,14 +854,10 @@ app.get('/api/admin/campanhas/:id', verificarTokenAdmin, async (req, res) => {
   }
 });
 
-app.put('/api/admin/campanhas/:id', verificarTokenAdmin, upload.single('premio_imagem'), async (req, res) => {
+app.put('/api/admin/campanhas/:id', verificarTokenAdmin, async (req, res) => {
   try {
     const id = req.params.id;
     const dados = req.body;
-
-    if (req.file) {
-      dados.premio_imagem = `/uploads/${req.file.filename}`;
-    }
 
     if (dados.nome && !dados.slug) {
       const novoSlug = gerarSlug(dados.nome);

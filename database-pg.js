@@ -513,7 +513,12 @@ async function atualizarStatusPagamento(id, status, mpStatus = null) {
 }
 
 async function listarPagamentosPendentes() {
-  return queryAll("SELECT * FROM pagamentos WHERE status = 'pendente' ORDER BY created_at DESC");
+  try {
+    return queryAll("SELECT * FROM pagamentos WHERE status = 'pendente' ORDER BY created_at DESC");
+  } catch (e) {
+    console.warn('listarPagamentosPendentes falhou:', e.message);
+    return [];
+  }
 }
 
 // ==========================================
@@ -536,20 +541,39 @@ async function setConfig(chave, valor) {
 // DASHBOARD / ESTATISTICAS
 // ==========================================
 async function getDashboardStats() {
-  const totalUsuarios = (await queryWithRetry('SELECT COUNT(*) as count FROM usuarios')).rows[0].count;
-  const totalCampanhas = (await queryWithRetry('SELECT COUNT(*) as count FROM campanhas')).rows[0].count;
-  const campanhasAtivas = (await queryWithRetry("SELECT COUNT(*) as count FROM campanhas WHERE status = 'ativa'")).rows[0].count;
-  const totalLances = (await queryWithRetry("SELECT COUNT(*) as count FROM lances WHERE status = 'confirmado'")).rows[0].count;
-  const totalArrecadado = (await queryWithRetry("SELECT COALESCE(SUM(valor), 0) as total FROM lances WHERE status = 'confirmado'")).rows[0].total;
-  const totalPagamentosPendentes = (await queryWithRetry("SELECT COUNT(*) as count FROM pagamentos WHERE status = 'pendente'")).rows[0].count;
+  const safeCount = async (sql, fallback = 0) => {
+    try {
+      const r = await queryWithRetry(sql);
+      return parseInt(r.rows[0]?.count || fallback);
+    } catch (e) {
+      console.warn('Dashboard query falhou (tabela pode nao existir):', e.message);
+      return fallback;
+    }
+  };
+  const safeSum = async (sql, fallback = 0) => {
+    try {
+      const r = await queryWithRetry(sql);
+      return parseFloat(r.rows[0]?.total || fallback);
+    } catch (e) {
+      console.warn('Dashboard query falhou (tabela pode nao existir):', e.message);
+      return fallback;
+    }
+  };
+
+  const totalUsuarios = await safeCount('SELECT COUNT(*) as count FROM usuarios');
+  const totalCampanhas = await safeCount('SELECT COUNT(*) as count FROM campanhas');
+  const campanhasAtivas = await safeCount("SELECT COUNT(*) as count FROM campanhas WHERE status = 'ativa'");
+  const totalLances = await safeCount("SELECT COUNT(*) as count FROM lances WHERE status = 'confirmado'");
+  const totalArrecadado = await safeSum("SELECT COALESCE(SUM(valor), 0) as total FROM lances WHERE status = 'confirmado'");
+  const totalPagamentosPendentes = await safeCount("SELECT COUNT(*) as count FROM pagamentos WHERE status = 'pendente'");
 
   return {
-    total_usuarios: parseInt(totalUsuarios),
-    total_campanhas: parseInt(totalCampanhas),
-    campanhas_ativas: parseInt(campanhasAtivas),
-    total_lances: parseInt(totalLances),
-    total_arrecadado: parseFloat(totalArrecadado),
-    total_pagamentos_pendentes: parseInt(totalPagamentosPendentes)
+    total_usuarios: totalUsuarios,
+    total_campanhas: totalCampanhas,
+    campanhas_ativas: campanhasAtivas,
+    total_lances: totalLances,
+    total_arrecadado: totalArrecadado,
+    total_pagamentos_pendentes: totalPagamentosPendentes
   };
 }
 
