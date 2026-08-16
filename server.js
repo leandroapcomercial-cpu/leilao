@@ -829,10 +829,11 @@ app.post('/api/admin/campanhas', verificarTokenAdmin, async (req, res) => {
       });
     }
 
-    const slug = dados.slug || gerarSlug(dados.nome);
+    let slug = dados.slug || gerarSlug(dados.nome);
     const existente = await db.buscarCampanhaPorSlug(slug);
     if (existente) {
-      return res.status(400).json({ erro: 'Ja existe uma campanha com este identificador' });
+      slug = slug + '-' + Date.now();
+      console.log('[DEBUG] Slug conflitante, novo slug:', slug);
     }
 
     const campanhaData = {
@@ -883,6 +884,13 @@ app.put('/api/admin/campanhas/:id', verificarTokenAdmin, async (req, res) => {
         dados.slug = novoSlug;
       } else {
         dados.slug = novoSlug + '-' + Date.now();
+      }
+    }
+    // Se enviou slug manualmente e ja existe em outra campanha, adicionar sufixo
+    if (dados.slug) {
+      const existente = await db.buscarCampanhaPorSlug(dados.slug);
+      if (existente && String(existente.id) !== String(id)) {
+        dados.slug = dados.slug + '-' + Date.now();
       }
     }
 

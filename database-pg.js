@@ -79,7 +79,7 @@ async function buscarUsuarioPorCPF(cpf) {
 }
 
 async function listarUsuarios(limit = 100, offset = 0) {
-  return queryAll('SELECT * FROM usuarios ORDER BY created_at DESC LIMIT $1 OFFSET $2', [limit, offset]);
+  return queryAll('SELECT * FROM usuarios ORDER BY id DESC LIMIT $1 OFFSET $2', [limit, offset]);
 }
 
 async function atualizarGastosUsuario(usuarioId) {
@@ -126,7 +126,7 @@ async function buscarInfluencerPorId(id) {
 }
 
 async function listarInfluencers() {
-  return queryAll('SELECT * FROM influencers ORDER BY created_at DESC');
+  return queryAll('SELECT * FROM influencers ORDER BY id DESC');
 }
 
 async function atualizarEstatisticasInfluencer(influencerId) {
@@ -207,9 +207,9 @@ async function buscarCampanhaAtiva() {
 
 async function listarCampanhas(status = null) {
   if (status) {
-    return queryAll('SELECT * FROM campanhas WHERE status = $1 ORDER BY created_at DESC', [status]);
+    return queryAll('SELECT * FROM campanhas WHERE status = $1 ORDER BY id DESC', [status]);
   }
-  return queryAll('SELECT * FROM campanhas ORDER BY created_at DESC');
+  return queryAll('SELECT * FROM campanhas ORDER BY id DESC');
 }
 
 async function listarCampanhasAtivas() {
@@ -514,7 +514,7 @@ async function atualizarStatusPagamento(id, status, mpStatus = null) {
 
 async function listarPagamentosPendentes() {
   try {
-    return queryAll("SELECT * FROM pagamentos WHERE status = 'pendente' ORDER BY created_at DESC");
+    return queryAll("SELECT * FROM pagamentos WHERE status = 'pendente' ORDER BY id DESC");
   } catch (e) {
     console.warn('listarPagamentosPendentes falhou:', e.message);
     return [];
@@ -697,7 +697,7 @@ async function registrarAtividade(tipo, mensagem, dados = null) {
 async function buscarAtividadesRecentes(limit = 50) {
   try {
     return queryAll(
-      'SELECT * FROM activity_log ORDER BY created_at DESC LIMIT $1',
+      'SELECT * FROM activity_log ORDER BY id DESC LIMIT $1',
       [limit]
     );
   } catch (err) {
