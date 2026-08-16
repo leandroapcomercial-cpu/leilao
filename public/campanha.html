@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LeilaoFacil - Campanha</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',system-ui,-apple-system,sans-serif;}
+body{background:#0f172a;color:#f1f5f9;min-height:100vh;padding:40px 20px;}
+.container{max-width:800px;margin:0 auto;}
+.logo{font-size:28px;font-weight:800;background:linear-gradient(90deg,#60a5fa,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:24px;text-align:center;}
+.card{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:28px;margin-bottom:20px;}
+.premio-img{width:100%;max-width:400px;border-radius:12px;margin:0 auto 20px;display:block;}
+h1{font-size:24px;margin-bottom:8px;}
+h2{font-size:18px;color:#94a3b8;margin-bottom:16px;font-weight:500;}
+.info-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #334155;}
+.info-row:last-child{border-bottom:none;}
+.info-label{color:#94a3b8;font-size:13px;}
+.info-value{font-weight:600;}
+.btn{display:block;width:100%;padding:14px;border-radius:10px;background:#2563eb;color:#fff;text-align:center;text-decoration:none;font-weight:700;font-size:15px;margin-top:20px;border:none;cursor:pointer;}
+.btn:hover{background:#1d4ed8;}
+.status-badge{display:inline-block;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;text-transform:uppercase;}
+.status-ativo{background:rgba(16,185,129,0.15);color:#10b981;}
+.status-pendente{background:rgba(99,102,241,0.15);color:#818cf8;}
+.status-pausado{background:rgba(245,158,11,0.15);color:#f59e0b;}
+.status-finalizado{background:rgba(148,163,184,0.15);color:#94a3b8;}
+.timer{font-size:36px;font-weight:800;text-align:center;margin:20px 0;color:#60a5fa;}
+.loading{text-align:center;padding:40px;color:#94a3b8;}
+.error{text-align:center;padding:40px;color:#ef4444;}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="logo">LeilaoFacil</div>
+  <div id="campanha"><div class="card loading">Carregando campanha...</div></div>
+</div>
+<script>
+const slug = window.location.pathname.split('/').pop();
+const STATUS_LABELS = { pendente: 'Pendente', ativo: 'Ativa', pausado: 'Pausada', finalizado: 'Finalizada', cancelado: 'Cancelada' };
+
+function fmtMoney(v) {
+  return 'R$ ' + (parseFloat(v) || 0).toFixed(2).replace('.', ',');
+}
+
+function fmtDate(d) {
+  if (!d) return '-';
+  return new Date(d).toLocaleString('pt-BR');
+}
+
+async function carregar() {
+  try {
+    const r = await fetch('/api/campanhas/' + slug);
+    const data = await r.json();
+    if (!data.sucesso || !data.campanha) {
+      document.getElementById('campanha').innerHTML = '<div class="card error"><h2>Campanha nao encontrada</h2><p>Verifique o link ou tente novamente.</p></div>';
+      return;
+    }
+    const c = data.campanha;
+    const statusClass = 'status-' + (c.status || 'finalizado');
+    const statusLabel = STATUS_LABELS[c.status] || c.status || '-';
+
+    let html = '<div class="card">';
+    if (c.premio_imagem) html += '<img src="' + c.premio_imagem + '" class="premio-img" alt="Premio">';
+    html += '<h1>' + (c.nome || 'Campanha') + '</h1>';
+    html += '<p><span class="status-badge ' + statusClass + '">' + statusLabel + '</span></p>';
+
+    html += '<div class="info-row"><span class="info-label">Premio</span><span class="info-value">' + (c.premio_nome || '-') + '</span></div>';
+    html += '<div class="info-row"><span class="info-label">Descricao</span><span class="info-value">' + (c.premio_descricao || '-') + '</span></div>';
+    html += '<div class="info-row"><span class="info-label">Valor do premio</span><span class="info-value">' + fmtMoney(c.premio_valor) + '</span></div>';
+    html += '<div class="info-row"><span class="info-label">Lance inicial</span><span class="info-value">' + fmtMoney(c.lance_inicial) + '</span></div>';
+    html += '<div class="info-row"><span class="info-label">Lance maximo</span><span class="info-value">' + fmtMoney(c.lance_maximo) + '</span></div>';
+    html += '<div class="info-row"><span class="info-label">Meta</span><span class="info-value">' + fmtMoney(c.meta_valor) + '</span></div>';
+    html += '<div class="info-row"><span class="info-label">Arrecadado</span><span class="info-value">' + fmtMoney(c.total_arrecadado) + '</span></div>';
+    html += '<div class="info-row"><span class="info-label">Inicio</span><span class="info-value">' + fmtDate(c.data_inicio) + '</span></div>';
+    html += '<div class="info-row"><span class="info-label">Termino</span><span class="info-value">' + fmtDate(c.data_fim) + '</span></div>';
+    html += '<div class="info-row"><span class="info-label">Participantes online</span><span class="info-value">' + (c.totalOnline || 0) + '</span></div>';
+
+    if (c.status === 'ativo') {
+      html += '<a href="/" class="btn">Participar do Leilao</a>';
+    } else if (c.status === 'pendente') {
+      html += '<p style="text-align:center;color:#94a3b8;margin-top:16px;">Esta campanha ainda nao foi iniciada.</p>';
+    } else {
+      html += '<p style="text-align:center;color:#94a3b8;margin-top:16px;">Esta campanha ja foi encerrada.</p>';
+    }
+
+    html += '</div>';
+    document.getElementById('campanha').innerHTML = html;
+  } catch (e) {
+    document.getElementById('campanha').innerHTML = '<div class="card error"><h2>Erro ao carregar campanha</h2><p>Tente novamente mais tarde.</p></div>';
+  }
+}
+carregar();
+</script>
+</body>
+</html>

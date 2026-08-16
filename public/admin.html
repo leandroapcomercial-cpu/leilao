@@ -196,10 +196,10 @@ body{background:var(--bg);color:var(--text);min-height:100vh;}
         <button id="btnNovaCampanha" class="btn btn-primary btn-glow">+ Nova Campanha</button>
       </div>
       <div class="tabs">
-        <button class="tab" data-tab="ativa">Ativas</button>
+        <button class="tab" data-tab="ativo">Ativas</button>
         <button class="tab" data-tab="pendente">Pendentes</button>
-        <button class="tab" data-tab="pausada">Pausadas</button>
-        <button class="tab" data-tab="finalizada">Finalizadas</button>
+        <button class="tab" data-tab="pausado">Pausadas</button>
+        <button class="tab" data-tab="finalizado">Finalizadas</button>
         <button class="tab active" data-tab="todas">Todas</button>
       </div>
       <div id="campanhasContent" class="campanhas-panel">
@@ -407,6 +407,7 @@ body{background:var(--bg);color:var(--text);min-height:100vh;}
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 const API = '';
+const STATUS_LABELS = { pendente: 'Pendente', ativo: 'Ativa', pausado: 'Pausada', finalizado: 'Finalizada', cancelado: 'Cancelada' };
 let socket = null;
 let token = localStorage.getItem('admin_token') || '';
 let currentSection = 'dashboard';
@@ -706,21 +707,21 @@ function renderCampanhas() {
 
   lista.forEach(c => {
     const pct = c.meta_valor > 0 ? Math.min(100, Math.round((c.total_arrecadado / c.meta_valor) * 100)) : 0;
-    const statusClass = 'status-' + (c.status || 'finalizada');
+    const statusClass = 'status-' + (c.status || 'finalizado');
     const slugUrl = window.location.origin + '/campanha/' + (c.slug || c.id);
 
     html += '<tr>';
     html += '<td><strong>' + (c.nome || 'Sem nome') + '</strong><br><span style="font-size:11px;color:var(--text-muted);">' + fmtDate(c.data_inicio) + '</span></td>';
     html += '<td><a href="' + slugUrl + '" target="_blank" class="slug-link">/' + (c.slug || c.id) + '</a></td>';
-    html += '<td><span class="status-badge ' + statusClass + '">' + (c.status || '-') + '</span></td>';
+    html += '<td><span class="status-badge ' + statusClass + '">' + (STATUS_LABELS[c.status] || c.status || '-') + '</span></td>';
     html += '<td>' + fmtMoney(c.total_arrecadado) + '<br><span style="font-size:11px;color:var(--text-muted);">Meta: ' + fmtMoney(c.meta_valor) + '</span></td>';
     html += '<td><div class="progress-bar"><div class="fill" style="width:' + pct + '%"></div></div><span style="font-size:11px;">' + pct + '%</span></td>';
     html += '<td>';
     html += '<button class="btn btn-sm btn-primary" data-action="editar-camp" data-id="' + c.id + '">Editar</button> ';
-    if (c.status === 'ativa') {
+    if (c.status === 'ativo') {
       html += '<button class="btn btn-sm btn-warning" data-action="pausar-camp" data-id="' + c.id + '">Pausar</button> ';
       html += '<button class="btn btn-sm btn-danger" data-action="finalizar-camp" data-id="' + c.id + '">Finalizar</button>';
-    } else if (c.status === 'pausada') {
+    } else if (c.status === 'pausado') {
       html += '<button class="btn btn-sm btn-success" data-action="ativar-camp" data-id="' + c.id + '">Ativar</button> ';
       html += '<button class="btn btn-sm btn-danger" data-action="finalizar-camp" data-id="' + c.id + '">Finalizar</button>';
     } else if (c.status === 'pendente') {

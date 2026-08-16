@@ -219,7 +219,7 @@ async function iniciarTimerCampanha(campanhaId) {
   }
 
   const campanha = await db.buscarCampanhaPorId(campanhaId);
-  if (!campanha || campanha.status !== 'ativa') return;
+  if (!campanha || campanha.status !== 'ativo') return;
 
   const dataFim = new Date(campanha.data_fim);
   const agora = new Date();
@@ -377,7 +377,7 @@ io.on('connection', (socket) => {
 
     try {
       const campanha = await db.buscarCampanhaPorId(campanhaId);
-      if (!campanha || campanha.status !== 'ativa') {
+      if (!campanha || campanha.status !== 'ativo') {
         socket.emit('erro_lance', { mensagem: 'Campanha nao esta ativa' });
         return;
       }
@@ -582,7 +582,7 @@ app.post('/api/pagamentos/gerar-pix', lanceLimiter, async (req, res) => {
       return res.status(404).json({ erro: 'Dados nao encontrados' });
     }
 
-    if (campanha.status !== 'ativa') {
+    if (campanha.status !== 'ativo') {
       return res.status(400).json({ erro: 'Campanha nao esta ativa' });
     }
 
@@ -918,7 +918,7 @@ app.post('/api/admin/campanhas/:id/ativar', verificarTokenAdmin, async (req, res
       return res.status(404).json({ erro: 'Campanha nao encontrada' });
     }
 
-    if (campanha.status === 'ativa') {
+    if (campanha.status === 'ativo') {
       return res.status(400).json({ erro: 'Campanha ja esta ativa' });
     }
 

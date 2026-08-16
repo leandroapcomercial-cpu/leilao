@@ -202,7 +202,7 @@ async function buscarCampanhaPorSlug(slug) {
 }
 
 async function buscarCampanhaAtiva() {
-  return queryOne("SELECT * FROM campanhas WHERE status = 'ativa' ORDER BY data_inicio DESC LIMIT 1");
+  return queryOne("SELECT * FROM campanhas WHERE status = 'ativo' ORDER BY data_inicio DESC LIMIT 1");
 }
 
 async function listarCampanhas(status = null) {
@@ -213,7 +213,7 @@ async function listarCampanhas(status = null) {
 }
 
 async function listarCampanhasAtivas() {
-  return queryAll("SELECT * FROM campanhas WHERE status = 'ativa' ORDER BY data_inicio DESC");
+  return queryAll("SELECT * FROM campanhas WHERE status = 'ativo' ORDER BY data_inicio DESC");
 }
 
 async function atualizarCampanha(id, dados) {
@@ -256,7 +256,7 @@ async function atualizarSlugCampanha(id, novoSlug) {
 
 async function encerrarCampanha(id) {
   const result = await queryWithRetry(
-    "UPDATE campanhas SET status = 'finalizada', data_fim = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $1",
+    "UPDATE campanhas SET status = 'finalizado', data_fim = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $1",
     [id]
   );
   return { changes: result.rowCount };
@@ -264,7 +264,7 @@ async function encerrarCampanha(id) {
 
 async function pausarCampanha(id) {
   const result = await queryWithRetry(
-    "UPDATE campanhas SET status = 'pausada', updated_at = CURRENT_TIMESTAMP WHERE id = $1",
+    "UPDATE campanhas SET status = 'pausado', updated_at = CURRENT_TIMESTAMP WHERE id = $1",
     [id]
   );
   return { changes: result.rowCount };
@@ -277,7 +277,7 @@ async function ativarCampanha(id) {
 
   const dataFim = new Date(Date.now() + (campanha.duracao_horas || 24) * 60 * 60 * 1000).toISOString();
   const result = await queryWithRetry(
-    "UPDATE campanhas SET status = 'ativa', data_inicio = $1, data_fim = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3",
+    "UPDATE campanhas SET status = 'ativo', data_inicio = $1, data_fim = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3",
     [now, dataFim, id]
   );
   return { changes: result.rowCount };
@@ -562,7 +562,7 @@ async function getDashboardStats() {
 
   const totalUsuarios = await safeCount('SELECT COUNT(*) as count FROM usuarios');
   const totalCampanhas = await safeCount('SELECT COUNT(*) as count FROM campanhas');
-  const campanhasAtivas = await safeCount("SELECT COUNT(*) as count FROM campanhas WHERE status = 'ativa'");
+  const campanhasAtivas = await safeCount("SELECT COUNT(*) as count FROM campanhas WHERE status = 'ativo'");
   const totalLances = await safeCount("SELECT COUNT(*) as count FROM lances WHERE status = 'confirmado'");
   const totalArrecadado = await safeSum("SELECT COALESCE(SUM(valor), 0) as total FROM lances WHERE status = 'confirmado'");
   const totalPagamentosPendentes = await safeCount("SELECT COUNT(*) as count FROM pagamentos WHERE status = 'pendente'");
