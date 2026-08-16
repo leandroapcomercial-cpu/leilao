@@ -1170,6 +1170,13 @@ app.get('/api/influencers/:codigo', async (req, res) => {
 });
 
 // ==========================================
+// ROTAS PUBLICAS DE CAMPANHA (PAGINAS HTML)
+// ==========================================
+app.get('/campanha/:slug', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'campanha.html'));
+});
+
+// ==========================================
 // ERROS E INICIALIZACAO
 // ==========================================
 

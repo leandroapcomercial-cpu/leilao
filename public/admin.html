@@ -72,6 +72,7 @@ body{background:var(--bg);color:var(--text);min-height:100vh;}
 .status-badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.3px;}
 .status-ativa{background:rgba(16,185,129,0.15);color:var(--success);}
 .status-pausada{background:rgba(245,158,11,0.15);color:var(--warning);}
+.status-pendente{background:rgba(99,102,241,0.15);color:#818cf8;}
 .status-finalizada{background:rgba(148,163,184,0.15);color:var(--text-muted);}
 .slug-link{color:#60a5fa;font-size:12px;text-decoration:none;font-family:monospace;background:rgba(37,99,235,0.1);padding:4px 10px;border-radius:6px;transition:all 0.15s;}
 .slug-link:hover{background:rgba(37,99,235,0.2);}
@@ -194,9 +195,10 @@ body{background:var(--bg);color:var(--text);min-height:100vh;}
         <button id="btnNovaCampanha" class="btn btn-primary btn-glow">+ Nova Campanha</button>
       </div>
       <div class="tabs">
-        <button class="tab active" data-tab="ativas">Ativas</button>
-        <button class="tab" data-tab="pausadas">Pausadas</button>
-        <button class="tab" data-tab="finalizadas">Finalizadas</button>
+        <button class="tab active" data-tab="ativa">Ativas</button>
+        <button class="tab" data-tab="pendente">Pendentes</button>
+        <button class="tab" data-tab="pausada">Pausadas</button>
+        <button class="tab" data-tab="finalizada">Finalizadas</button>
         <button class="tab" data-tab="todas">Todas</button>
       </div>
       <div id="campanhasContent" class="tab-content active">
@@ -888,10 +890,10 @@ async function salvarConfiguracoes() {
     chave_pix_padrao: $('#cfgPix').value.trim()
   };
   try {
-    await apiPost('/api/admin/configuracoes', body);
+    await apiPut('/api/admin/configuracoes', body);
     toast('Configuracoes salvas! Afetam apenas novas campanhas.', 'success');
   } catch (e) {
-    toast('Erro ao salvar configuracoes', 'error');
+    toast('Erro ao salvar configuracoes: ' + e.message, 'error');
   }
 }
 
