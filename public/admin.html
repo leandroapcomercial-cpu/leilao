@@ -109,6 +109,7 @@ body{background:var(--bg);color:var(--text);min-height:100vh;}
 .tab:hover{color:var(--text);background:rgba(37,99,235,0.05);}
 .tab.active{color:#60a5fa;border-bottom-color:var(--primary);background:rgba(37,99,235,0.08);}
 .tab-content{display:none;}
+.campanhas-panel{display:block;}
 .tab-content.active{display:block;animation:fadeIn 0.3s ease-out;}
 .milestone-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px;}
 .milestone-card{background:rgba(37,99,235,0.08);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center;transition:all 0.2s;}
@@ -201,7 +202,7 @@ body{background:var(--bg);color:var(--text);min-height:100vh;}
         <button class="tab" data-tab="finalizada">Finalizadas</button>
         <button class="tab active" data-tab="todas">Todas</button>
       </div>
-      <div id="campanhasContent" class="tab-content active">
+      <div id="campanhasContent" class="campanhas-panel">
         <div id="listaCampanhas"></div>
       </div>
     </div>
@@ -523,7 +524,12 @@ function showSection(name) {
   console.log('[ADMIN] showSection:', name);
   currentSection = name;
   $$('.nav-link').forEach(a => a.classList.toggle('active', a.dataset.section === name));
-  $$('.tab-content').forEach(t => t.classList.toggle('active', t.id === 'sec-' + name));
+  // SO afetar tab-content de NAVEGACAO PRINCIPAL (id comecando com sec-)
+  $$('.tab-content').forEach(t => {
+    if (t.id && t.id.startsWith('sec-')) {
+      t.classList.toggle('active', t.id === 'sec-' + name);
+    }
+  });
   if (name === 'campanhas') { console.log('[ADMIN] Chamando loadCampanhas()'); loadCampanhas(); }
   if (name === 'influencers') loadInfluencers();
   if (name === 'usuarios') loadUsuarios();
@@ -726,6 +732,8 @@ function renderCampanhas() {
 
   html += '</tbody></table>';
   container.innerHTML = html;
+  console.log('[ADMIN] HTML inserido no listaCampanhas. Length:', html.length);
+  console.log('[ADMIN] Container visivel?', container.offsetParent !== null);
 }
 
 async function salvarCampanha() {
@@ -830,6 +838,8 @@ function renderInfluencers() {
 
   html += '</tbody></table>';
   container.innerHTML = html;
+  console.log('[ADMIN] HTML inserido no listaCampanhas. Length:', html.length);
+  console.log('[ADMIN] Container visivel?', container.offsetParent !== null);
 }
 
 async function salvarInfluencer() {
@@ -887,6 +897,8 @@ function renderUsuarios() {
   });
   html += '</tbody></table>';
   container.innerHTML = html;
+  console.log('[ADMIN] HTML inserido no listaCampanhas. Length:', html.length);
+  console.log('[ADMIN] Container visivel?', container.offsetParent !== null);
 }
 
 // ===== CONFIGURACOES =====
