@@ -195,11 +195,11 @@ body{background:var(--bg);color:var(--text);min-height:100vh;}
         <button id="btnNovaCampanha" class="btn btn-primary btn-glow">+ Nova Campanha</button>
       </div>
       <div class="tabs">
-        <button class="tab active" data-tab="ativa">Ativas</button>
+        <button class="tab" data-tab="ativa">Ativas</button>
         <button class="tab" data-tab="pendente">Pendentes</button>
         <button class="tab" data-tab="pausada">Pausadas</button>
         <button class="tab" data-tab="finalizada">Finalizadas</button>
-        <button class="tab" data-tab="todas">Todas</button>
+        <button class="tab active" data-tab="todas">Todas</button>
       </div>
       <div id="campanhasContent" class="tab-content active">
         <div id="listaCampanhas"></div>
@@ -520,10 +520,11 @@ async function doLogin() {
 
 // ===== NAVEGAÇÃO =====
 function showSection(name) {
+  console.log('[ADMIN] showSection:', name);
   currentSection = name;
   $$('.nav-link').forEach(a => a.classList.toggle('active', a.dataset.section === name));
   $$('.tab-content').forEach(t => t.classList.toggle('active', t.id === 'sec-' + name));
-  if (name === 'campanhas') loadCampanhas();
+  if (name === 'campanhas') { console.log('[ADMIN] Chamando loadCampanhas()'); loadCampanhas(); }
   if (name === 'influencers') loadInfluencers();
   if (name === 'usuarios') loadUsuarios();
 }
@@ -655,23 +656,43 @@ function initSocket() {
 // ===== CAMPANHAS =====
 async function loadCampanhas() {
   try {
+    console.log('[ADMIN] Carregando campanhas...');
     const data = await apiGet('/api/admin/campanhas');
+    console.log('[ADMIN] Resposta campanhas:', JSON.stringify(data).substring(0, 500));
     campanhasCache = data.campanhas || [];
+    console.log('[ADMIN] campanhasCache length:', campanhasCache.length);
+    if (campanhasCache.length > 0) {
+      console.log('[ADMIN] Primeira campanha:', JSON.stringify(campanhasCache[0]));
+      console.log('[ADMIN] Status da primeira:', campanhasCache[0].status);
+    }
     renderCampanhas();
-  } catch (e) { console.error(e); toast('Erro ao carregar campanhas', 'error'); }
+  } catch (e) { 
+    console.error('[ADMIN] Erro loadCampanhas:', e);
+    toast('Erro ao carregar campanhas', 'error'); 
+  }
 }
 
 function renderCampanhas() {
   const tab = document.querySelector('.tabs .tab.active');
   const filtro = tab ? tab.dataset.tab : 'todas';
+  console.log('[ADMIN] renderCampanhas - filtro:', filtro, '| cache:', campanhasCache.length);
+
+  const container = $('#listaCampanhas');
+
+  if (!campanhasCache.length) {
+    container.innerHTML = '<div class="empty-state"><p>Nenhuma campanha cadastrada.</p></div>';
+    return;
+  }
+
   const lista = campanhasCache.filter(c => {
     if (filtro === 'todas') return true;
     return c.status === filtro;
   });
 
-  const container = $('#listaCampanhas');
+  console.log('[ADMIN] Filtradas:', lista.length, 'de', campanhasCache.length);
+
   if (!lista.length) {
-    container.innerHTML = '<div class="empty-state"><p>Nenhuma campanha encontrada.</p></div>';
+    container.innerHTML = '<div class="empty-state"><p>Nenhuma campanha com status <strong>' + filtro + '</strong>. Total no sistema: ' + campanhasCache.length + '</p></div>';
     return;
   }
 
@@ -685,7 +706,7 @@ function renderCampanhas() {
     html += '<tr>';
     html += '<td><strong>' + (c.nome || 'Sem nome') + '</strong><br><span style="font-size:11px;color:var(--text-muted);">' + fmtDate(c.data_inicio) + '</span></td>';
     html += '<td><a href="' + slugUrl + '" target="_blank" class="slug-link">/' + (c.slug || c.id) + '</a></td>';
-    html += '<td><span class="status-badge ' + statusClass + '">' + (c.status || 'finalizada') + '</span></td>';
+    html += '<td><span class="status-badge ' + statusClass + '">' + (c.status || '-') + '</span></td>';
     html += '<td>' + fmtMoney(c.total_arrecadado) + '<br><span style="font-size:11px;color:var(--text-muted);">Meta: ' + fmtMoney(c.meta_valor) + '</span></td>';
     html += '<td><div class="progress-bar"><div class="fill" style="width:' + pct + '%"></div></div><span style="font-size:11px;">' + pct + '%</span></td>';
     html += '<td>';
@@ -694,6 +715,9 @@ function renderCampanhas() {
       html += '<button class="btn btn-sm btn-warning" data-action="pausar-camp" data-id="' + c.id + '">Pausar</button> ';
       html += '<button class="btn btn-sm btn-danger" data-action="finalizar-camp" data-id="' + c.id + '">Finalizar</button>';
     } else if (c.status === 'pausada') {
+      html += '<button class="btn btn-sm btn-success" data-action="ativar-camp" data-id="' + c.id + '">Ativar</button> ';
+      html += '<button class="btn btn-sm btn-danger" data-action="finalizar-camp" data-id="' + c.id + '">Finalizar</button>';
+    } else if (c.status === 'pendente') {
       html += '<button class="btn btn-sm btn-success" data-action="ativar-camp" data-id="' + c.id + '">Ativar</button> ';
       html += '<button class="btn btn-sm btn-danger" data-action="finalizar-camp" data-id="' + c.id + '">Finalizar</button>';
     }
