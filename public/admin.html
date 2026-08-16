@@ -797,14 +797,51 @@ async function salvarCampanha() {
   }
 }
 
-async function mudarStatusCampanha(id, status) {
+async function ativarCampanha(id) {
   try {
-    await apiPut('/api/admin/campanhas/' + id, { status: status });
-    toast('Status alterado para ' + status, 'success');
+    const res = await fetch(API + '/api/admin/campanhas/' + id + '/ativar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.erro || 'Erro ' + res.status);
+    toast('Campanha ativada com sucesso', 'success');
     loadCampanhas();
     loadDashboard();
   } catch (e) {
-    toast('Erro ao alterar status', 'error');
+    toast('Erro ao ativar: ' + e.message, 'error');
+  }
+}
+
+async function pausarCampanha(id) {
+  try {
+    const res = await fetch(API + '/api/admin/campanhas/' + id + '/pausar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.erro || 'Erro ' + res.status);
+    toast('Campanha pausada', 'success');
+    loadCampanhas();
+    loadDashboard();
+  } catch (e) {
+    toast('Erro ao pausar: ' + e.message, 'error');
+  }
+}
+
+async function finalizarCampanhaAdmin(id) {
+  try {
+    const res = await fetch(API + '/api/admin/campanhas/' + id + '/finalizar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.erro || 'Erro ' + res.status);
+    toast('Campanha finalizada', 'success');
+    loadCampanhas();
+    loadDashboard();
+  } catch (e) {
+    toast('Erro ao finalizar: ' + e.message, 'error');
   }
 }
 
@@ -987,9 +1024,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const c = campanhasCache.find(x => String(x.id) === String(id));
       if (c) { fillModalCampanha(c); openModal('modalCampanha'); }
     }
-    else if (action === 'pausar-camp' && id) mudarStatusCampanha(id, 'pausada');
-    else if (action === 'ativar-camp' && id) mudarStatusCampanha(id, 'ativa');
-    else if (action === 'finalizar-camp' && id) mudarStatusCampanha(id, 'finalizada');
+    else if (action === 'pausar-camp' && id) pausarCampanha(id);
+    else if (action === 'ativar-camp' && id) ativarCampanha(id);
+    else if (action === 'finalizar-camp' && id) finalizarCampanhaAdmin(id);
     else if (action === 'copiar-slug' && slug) {
       navigator.clipboard.writeText(window.location.origin + '/campanha/' + slug);
       toast('Link copiado!', 'success');
