@@ -3,1055 +3,223 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LeilaoFacil Admin v2.1</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>Leilão Fácil - Admin</title>
 <style>
-:root{--primary:#2563eb;--primary-dark:#1d4ed8;--success:#10b981;--danger:#ef4444;--warning:#f59e0b;--bg:#0f172a;--card:#1e293b;--text:#f1f5f9;--text-muted:#94a3b8;--border:#334155;}
-*{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',sans-serif;}
-body{background:var(--bg);color:var(--text);min-height:100vh;}
-@keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
-@keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.02);}}
-@keyframes shimmer{0%{background-position:-200% 0;}100%{background-position:200% 0;}}
-@keyframes glow{0%,100%{box-shadow:0 0 5px rgba(37,99,235,0.3);}50%{box-shadow:0 0 20px rgba(37,99,235,0.6);}}
-@keyframes countUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
-.login-container{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 50%,#0f172a 100%);padding:20px;}
-.login-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:40px;width:100%;max-width:420px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);animation:fadeIn 0.6s ease-out;}
-.login-card h1{text-align:center;font-size:28px;font-weight:800;margin-bottom:8px;background:linear-gradient(90deg,#60a5fa,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-.login-card .subtitle{text-align:center;color:var(--text-muted);font-size:14px;margin-bottom:28px;}
-.login-card label{display:block;font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;}
-.login-card input{width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:10px;background:#0f172a;color:var(--text);font-size:15px;transition:all 0.2s;}
-.login-card input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,0.15);}
-.login-card button{width:100%;padding:14px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.2s;margin-top:20px;position:relative;overflow:hidden;}
-.login-card button:hover{transform:translateY(-2px);box-shadow:0 10px 25px -5px rgba(37,99,235,0.4);animation:glow 1.5s infinite;}
-.login-card button:active{transform:translateY(0);}
-.login-card button:disabled{opacity:0.6;cursor:not-allowed;transform:none;animation:none;}
-.login-card .error-msg{color:var(--danger);font-size:13px;margin-top:12px;text-align:center;display:none;}
-.login-card .hint{text-align:center;color:var(--text-muted);font-size:12px;margin-top:16px;}
-#app{display:none;}
-.sidebar{width:260px;background:var(--card);border-right:1px solid var(--border);height:100vh;position:fixed;left:0;top:0;display:flex;flex-direction:column;padding:20px 0;z-index:100;}
-.sidebar .logo{padding:0 24px 20px;font-size:20px;font-weight:800;background:linear-gradient(90deg,#60a5fa,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-.sidebar nav{flex:1;}
-.sidebar nav a{display:flex;align-items:center;padding:12px 24px;color:var(--text-muted);text-decoration:none;font-size:14px;font-weight:500;transition:all 0.15s;border-left:3px solid transparent;margin:2px 0;}
-.sidebar nav a:hover{color:var(--text);background:rgba(37,99,235,0.08);}
-.sidebar nav a.active{color:#60a5fa;border-left-color:var(--primary);background:rgba(37,99,235,0.1);}
-.sidebar nav a svg{width:18px;height:18px;margin-right:12px;opacity:0.7;}
-.sidebar nav a.active svg{opacity:1;}
-.main-content{margin-left:260px;padding:28px 32px;min-height:100vh;}
-.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;}
-.header h2{font-size:24px;font-weight:700;}
-.header .badge{background:var(--card);border:1px solid var(--border);padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;color:var(--text-muted);}
-.header .badge.online{border-color:var(--success);color:var(--success);}
-.header .badge.offline{border-color:var(--danger);color:var(--danger);}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;margin-bottom:28px;}
-.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;animation:fadeIn 0.5s ease-out;transition:all 0.2s;position:relative;overflow:hidden;}
-.stat-card:hover{transform:translateY(-3px);border-color:rgba(37,99,235,0.3);box-shadow:0 10px 30px -10px rgba(0,0,0,0.3);}
-.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--primary),#60a5fa);opacity:0.7;}
-.stat-card .label{font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;}
-.stat-card .value{font-size:28px;font-weight:800;color:var(--text);animation:countUp 0.4s ease-out;}
-.stat-card .change{font-size:12px;margin-top:6px;font-weight:500;}
-.stat-card .change.up{color:var(--success);}
-.stat-card .change.down{color:var(--danger);}
-.section{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;animation:fadeIn 0.5s ease-out;}
-.section h3{font-size:18px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:10px;}
-.section h3 .count{background:var(--primary);color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all 0.15s;text-decoration:none;}
-.btn-primary{background:var(--primary);color:#fff;}
-.btn-primary:hover{background:var(--primary-dark);transform:translateY(-1px);box-shadow:0 4px 12px rgba(37,99,235,0.3);}
-.btn-success{background:var(--success);color:#fff;}
-.btn-success:hover{background:#059669;transform:translateY(-1px);}
-.btn-danger{background:var(--danger);color:#fff;}
-.btn-danger:hover{background:#dc2626;transform:translateY(-1px);}
-.btn-warning{background:var(--warning);color:#000;}
-.btn-sm{padding:6px 12px;font-size:12px;}
-.btn-glow{animation:glow 2s infinite;}
-.table{width:100%;border-collapse:collapse;font-size:13px;}
-.table th{text-align:left;padding:12px 16px;color:var(--text-muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border);}
-.table td{padding:14px 16px;border-bottom:1px solid var(--border);vertical-align:middle;}
-.table tr:hover td{background:rgba(37,99,235,0.04);}
-.table tr:last-child td{border-bottom:none;}
-.status-badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.3px;}
-.status-ativa{background:rgba(16,185,129,0.15);color:var(--success);}
-.status-pausada{background:rgba(245,158,11,0.15);color:var(--warning);}
-.status-pendente{background:rgba(99,102,241,0.15);color:#818cf8;}
-.status-finalizada{background:rgba(148,163,184,0.15);color:var(--text-muted);}
-.slug-link{color:#60a5fa;font-size:12px;text-decoration:none;font-family:monospace;background:rgba(37,99,235,0.1);padding:4px 10px;border-radius:6px;transition:all 0.15s;}
-.slug-link:hover{background:rgba(37,99,235,0.2);}
-.progress-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:8px;}
-.progress-bar .fill{height:100%;background:linear-gradient(90deg,var(--primary),#60a5fa);border-radius:4px;transition:width 0.6s ease;}
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px;backdrop-filter:blur(4px);}
-.modal-overlay.active{display:flex;}
-.modal{background:var(--card);border:1px solid var(--border);border-radius:16px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;animation:fadeIn 0.3s ease-out;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);}
-.modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
-.modal-header h3{font-size:18px;font-weight:700;}
-.modal-header .close-btn{background:none;border:none;color:var(--text-muted);font-size:24px;cursor:pointer;padding:0;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:8px;transition:all 0.15s;}
-.modal-header .close-btn:hover{color:var(--text);background:rgba(239,68,68,0.1);}
-.modal-body{padding:24px;}
-.form-group{margin-bottom:16px;}
-.form-group label{display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;}
-.form-group input,.form-group select,.form-group textarea{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:#0f172a;color:var(--text);font-size:14px;transition:all 0.2s;}
-.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,0.15);}
-.form-group textarea{min-height:80px;resize:vertical;}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-.form-hint{font-size:11px;color:var(--text-muted);margin-top:4px;}
-.activity-feed{max-height:320px;overflow-y:auto;}
-.activity-item{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);animation:fadeIn 0.3s ease-out;}
-.activity-item:last-child{border-bottom:none;}
-.activity-item .dot{width:8px;height:8px;border-radius:50%;margin-top:6px;flex-shrink:0;}
-.activity-item .dot.success{background:var(--success);}
-.activity-item .dot.warning{background:var(--warning);}
-.activity-item .dot.info{background:var(--primary);}
-.activity-item .text{font-size:13px;line-height:1.5;}
-.activity-item .time{font-size:11px;color:var(--text-muted);margin-top:2px;}
-.empty-state{text-align:center;padding:40px;color:var(--text-muted);}
-.empty-state svg{width:48px;height:48px;margin-bottom:12px;opacity:0.4;}
-.tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:0;}
-.tab{padding:10px 18px;font-size:13px;font-weight:600;color:var(--text-muted);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:all 0.15s;border-radius:6px 6px 0 0;}
-.tab:hover{color:var(--text);background:rgba(37,99,235,0.05);}
-.tab.active{color:#60a5fa;border-bottom-color:var(--primary);background:rgba(37,99,235,0.08);}
-.tab-content{display:none;}
-.campanhas-panel{display:block;}
-.tab-content.active{display:block;animation:fadeIn 0.3s ease-out;}
-.milestone-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px;}
-.milestone-card{background:rgba(37,99,235,0.08);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center;transition:all 0.2s;}
-.milestone-card:hover{transform:translateY(-2px);border-color:rgba(37,99,235,0.3);}
-.milestone-card .pct{font-size:20px;font-weight:800;color:#60a5fa;}
-.milestone-card .label{font-size:11px;color:var(--text-muted);margin-top:4px;}
-.milestone-card input{width:100%;margin-top:10px;text-align:center;font-size:14px;padding:8px;}
-.toast{position:fixed;bottom:24px;right:24px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 20px;font-size:13px;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,0.3);z-index:2000;transform:translateY(100px);opacity:0;transition:all 0.3s ease;}
-.toast.show{transform:translateY(0);opacity:1;}
-.toast.success{border-left:4px solid var(--success);}
-.toast.error{border-left:4px solid var(--danger);}
-.toast.info{border-left:4px solid var(--primary);}
-@media(max-width:768px){.sidebar{width:100%;height:auto;position:relative;}.main-content{margin-left:0;}.grid{grid-template-columns:1fr;}.form-row{grid-template-columns:1fr;}}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
+.login-overlay{position:fixed;inset:0;background:#0f172a;z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}
+.login-box{background:#1e293b;border-radius:16px;padding:40px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);text-align:center}
+.login-box h1{color:#3b82f6;font-size:28px;margin-bottom:8px}
+.login-box p{color:#94a3b8;margin-bottom:24px}
+.login-box input{width:100%;padding:14px 16px;border:2px solid #334155;border-radius:10px;background:#0f172a;color:#e2e8f0;font-size:15px;margin-bottom:16px;outline:none;transition:border 0.3s}
+.login-box input:focus{border-color:#3b82f6}
+.login-box button{width:100%;padding:14px;border:none;border-radius:10px;background:#3b82f6;color:#fff;font-size:16px;font-weight:600;cursor:pointer;transition:all 0.3s}
+.login-box button:hover{background:#2563eb}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:260px;background:#1e293b;border-right:1px solid #334155;padding:20px 0;overflow-y:auto;z-index:100}
+.sidebar .logo{padding:0 24px 24px;font-size:22px;font-weight:700;color:#3b82f6;border-bottom:1px solid #334155;margin-bottom:16px}
+.sidebar .logo span{color:#e2e8f0}
+.sidebar nav a{display:flex;align-items:center;gap:12px;padding:12px 24px;color:#94a3b8;text-decoration:none;font-size:14px;font-weight:500;transition:all 0.3s;border-left:3px solid transparent}
+.sidebar nav a:hover{background:#334155;color:#e2e8f0}
+.sidebar nav a.active{background:#334155;color:#3b82f6;border-left-color:#3b82f6}
+.main{margin-left:260px;padding:24px}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid #334155}
+.header h2{font-size:24px;color:#e2e8f0}
+.btn{padding:8px 16px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.3s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:#3b82f6;color:#fff}
+.btn-primary:hover{background:#2563eb}
+.btn-success{background:#10b981;color:#fff}
+.btn-success:hover{background:#059669}
+.btn-warning{background:#f59e0b;color:#fff}
+.btn-warning:hover{background:#d97706}
+.btn-danger{background:#ef4444;color:#fff}
+.btn-danger:hover{background:#dc2626}
+.btn-secondary{background:#334155;color:#e2e8f0}
+.btn-secondary:hover{background:#475569}
+.card{background:#1e293b;border-radius:12px;padding:20px;border:1px solid #334155;margin-bottom:20px}
+.card h3{font-size:16px;color:#e2e8f0;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.stat-card{background:#1e293b;border-radius:12px;padding:20px;border:1px solid #334155;text-align:center}
+.stat-card .number{font-size:32px;font-weight:700;color:#3b82f6}
+.stat-card .label{font-size:13px;color:#94a3b8;margin-top:4px}
+.tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.tab-btn{padding:8px 16px;border:none;border-radius:8px;background:#334155;color:#94a3b8;cursor:pointer;font-weight:600;font-size:13px;transition:all 0.3s}
+.tab-btn.active{background:#3b82f6;color:#fff}
+.tab-btn:hover:not(.active){background:#475569}
+.table{width:100%;border-collapse:collapse}
+.table th{text-align:left;padding:12px 16px;font-size:12px;text-transform:uppercase;color:#94a3b8;font-weight:600;border-bottom:1px solid #334155}
+.table td{padding:12px 16px;font-size:14px;color:#e2e8f0;border-bottom:1px solid #334155}
+.table tr:hover{background:#334155}
+.badge{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;text-transform:uppercase}
+.badge-pendente{background:#f59e0b20;color:#f59e0b;border:1px solid #f59e0b40}
+.badge-ativo{background:#10b98120;color:#10b981;border:1px solid #10b98140}
+.badge-pausado{background:#f59e0b20;color:#f59e0b;border:1px solid #f59e0b40}
+.badge-finalizado{background:#ef444420;color:#ef4444;border:1px solid #ef444440}
+.badge-cancelada{background:#64748b20;color:#64748b;border:1px solid #64748b40}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;justify-content:center;align-items:center;padding:16px;backdrop-filter:blur(4px)}
+.modal-overlay.active{display:flex}
+.modal{background:#1e293b;border-radius:16px;max-width:500px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;position:relative}
+.modal .close{position:absolute;top:12px;right:16px;font-size:24px;cursor:pointer;color:#94a3b8;background:none;border:none}
+.modal .close:hover{color:#e2e8f0}
+.modal h2{font-size:20px;color:#e2e8f0;margin-bottom:20px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:13px;color:#94a3b8;margin-bottom:6px;font-weight:500}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:10px 14px;border:1px solid #334155;border-radius:8px;background:#0f172a;color:#e2e8f0;font-size:14px;outline:none;transition:border 0.3s}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#3b82f6}
+.form-group textarea{min-height:80px;resize:vertical}
+.toast{position:fixed;bottom:24px;right:24px;padding:14px 20px;border-radius:10px;color:#fff;font-weight:500;z-index:10000;transform:translateY(100px);opacity:0;transition:all 0.4s;box-shadow:0 10px 30px rgba(0,0,0,0.3)}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{background:#10b981}
+.toast.error{background:#ef4444}
+.toast.info{background:#3b82f6}
+.empty-state{text-align:center;padding:40px;color:#94a3b8}
+.empty-state .icon{font-size:48px;margin-bottom:12px}
+@media (max-width:768px){.sidebar{transform:translateX(-100%);transition:transform 0.3s}.sidebar.open{transform:translateX(0)}.main{margin-left:0}}
 </style>
 </head>
 <body>
-
-<!-- LOGIN SCREEN -->
-<div id="loginScreen" class="login-container">
-  <div class="login-card">
-    <h1>LeilaoFacil Admin</h1>
-    <p class="subtitle">Painel de Controle v2.1</p>
-    <label for="adminSenha">Senha de Administrador</label>
-    <input type="password" id="adminSenha" placeholder="Digite sua senha" autocomplete="current-password">
-    <button id="btnLogin" type="button">
-      <span id="loginText">Entrar no Painel</span>
-    </button>
-    <div id="loginError" class="error-msg"></div>
-    <p class="hint">Acesso restrito ao administrador</p>
-  </div>
+<div class="login-overlay" id="loginOverlay">
+<div class="login-box">
+<h1>⚡ Leilão Fácil</h1>
+<p>Painel Administrativo</p>
+<input type="password" id="senhaAdmin" placeholder="Digite sua senha">
+<button onclick="fazerLogin()">🔐 Entrar no Painel</button>
 </div>
-
-<!-- APP -->
-<div id="app">
-  <aside class="sidebar">
-    <div class="logo">LeilaoFacil</div>
-    <nav>
-      <a href="#" class="nav-link active" data-section="dashboard">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-        Dashboard
-      </a>
-      <a href="#" class="nav-link" data-section="campanhas">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-        Campanhas
-      </a>
-      <a href="#" class="nav-link" data-section="influencers">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        Influencers
-      </a>
-      <a href="#" class="nav-link" data-section="usuarios">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        Usuarios
-      </a>
-      <a href="#" class="nav-link" data-section="configuracoes">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        Configuracoes
-      </a>
-    </nav>
-  </aside>
-
-  <main class="main-content">
-    <!-- DASHBOARD -->
-    <div id="sec-dashboard" class="tab-content active">
-      <div class="header">
-        <h2>Dashboard</h2>
-        <span id="connStatus" class="badge offline">Offline</span>
-      </div>
-      <div class="grid">
-        <div class="stat-card"><div class="label">Campanhas Ativas</div><div class="value" id="dashCampanhas">0</div></div>
-        <div class="stat-card"><div class="label">Total Arrecadado</div><div class="value" id="dashArrecadado">R$ 0,00</div></div>
-        <div class="stat-card"><div class="label">Total Lances</div><div class="value" id="dashLances">0</div></div>
-        <div class="stat-card"><div class="label">Participantes</div><div class="value" id="dashParticipantes">0</div></div>
-      </div>
-      <div class="section">
-        <h3>Atividade em Tempo Real</h3>
-        <div id="activityFeed" class="activity-feed"></div>
-      </div>
-    </div>
-
-    <!-- CAMPANHAS -->
-    <div id="sec-campanhas" class="tab-content">
-      <div class="header">
-        <h2>Campanhas</h2>
-        <button id="btnNovaCampanha" class="btn btn-primary btn-glow">+ Nova Campanha</button>
-      </div>
-      <div class="tabs">
-        <button class="tab" data-tab="ativo">Ativas</button>
-        <button class="tab" data-tab="pendente">Pendentes</button>
-        <button class="tab" data-tab="pausado">Pausadas</button>
-        <button class="tab" data-tab="finalizado">Finalizadas</button>
-        <button class="tab active" data-tab="todas">Todas</button>
-      </div>
-      <div id="campanhasContent" class="campanhas-panel">
-        <div id="listaCampanhas"></div>
-      </div>
-    </div>
-
-    <!-- INFLUENCERS -->
-    <div id="sec-influencers" class="tab-content">
-      <div class="header">
-        <h2>Influencers</h2>
-        <button id="btnNovoInfluencer" class="btn btn-primary">+ Novo Influencer</button>
-      </div>
-      <div id="listaInfluencers"></div>
-    </div>
-
-    <!-- USUARIOS -->
-    <div id="sec-usuarios" class="tab-content">
-      <div class="header"><h2>Usuarios</h2></div>
-      <div id="listaUsuarios"></div>
-    </div>
-
-    <!-- CONFIGURACOES -->
-    <div id="sec-configuracoes" class="tab-content">
-      <div class="header"><h2>Configuracoes</h2></div>
-      <div class="section">
-        <h3>Configuracoes Padrao para Novas Campanhas</h3>
-        <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">
-          <strong style="color:var(--warning);">Aviso:</strong> Estas configuracoes afetam APENAS novas campanhas. Campanhas em andamento permanecem inalteradas.
-        </p>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Lance Inicial Padrao (R$)</label>
-            <input type="number" id="cfgLanceInicial" step="0.01" value="0.01">
-          </div>
-          <div class="form-group">
-            <label>Lance Minimo Padrao (R$)</label>
-            <input type="number" id="cfgLanceMinimo" step="0.01" value="0.01">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Lance Maximo Padrao (R$)</label>
-            <input type="number" id="cfgLanceMaximo" step="0.01" value="1.00">
-          </div>
-          <div class="form-group">
-            <label>Duracao Padrao (horas)</label>
-            <input type="number" id="cfgDuracao" value="24">
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Chave PIX Padrao</label>
-          <input type="text" id="cfgPix" value="leleko.pix@gmail.com">
-        </div>
-        <button id="btnSalvarConfig" class="btn btn-success" style="margin-top:8px;">Salvar Configuracoes</button>
-      </div>
-    </div>
-  </main>
 </div>
-
-<!-- MODAL CAMPANHA -->
-<div id="modalCampanha" class="modal-overlay">
-  <div class="modal">
-    <div class="modal-header">
-      <h3 id="tituloModalCampanha">Nova Campanha</h3>
-      <button class="close-btn" data-close="modalCampanha">&times;</button>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="campId">
-      <div class="form-group">
-        <label>Nome da Campanha</label>
-        <input type="text" id="campNome" placeholder="Ex: Leilao de Verao">
-        <div class="form-hint">O slug da URL sera gerado automaticamente a partir do nome.</div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Data Inicio</label>
-          <input type="datetime-local" id="campDataInicio">
-        </div>
-        <div class="form-group">
-          <label>Duracao (horas)</label>
-          <input type="number" id="campDuracao" value="24">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Lance Inicial (R$)</label>
-          <input type="number" id="campLanceInicial" step="0.01" value="0.01">
-        </div>
-        <div class="form-group">
-          <label>Lance Minimo (R$)</label>
-          <input type="number" id="campLanceMinimo" step="0.01" value="0.01">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Lance Maximo (R$)</label>
-          <input type="number" id="campLanceMaximo" step="0.01" value="1.00">
-        </div>
-        <div class="form-group">
-          <label>Meta de Arrecadacao (R$)</label>
-          <input type="number" id="campMeta" step="0.01" value="0">
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Nome do Premio</label>
-        <input type="text" id="campPremioNome" placeholder="Ex: iPhone 15 Pro">
-      </div>
-      <div class="form-group">
-        <label>Descricao do Premio</label>
-        <textarea id="campPremioDesc" placeholder="Descricao detalhada do premio..."></textarea>
-      </div>
-      <div class="form-group">
-        <label>Valor do Premio (R$)</label>
-        <input type="number" id="campPremioValor" step="0.01" value="0">
-      </div>
-      <div class="form-group">
-        <label>Imagem do Premio (URL)</label>
-        <input type="text" id="campPremioImg" placeholder="https://...">
-      </div>
-      <div id="campSlugBox" style="display:none;margin-bottom:16px;">
-        <label>URL da Campanha</label>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <a id="campSlugLink" href="#" target="_blank" class="slug-link"></a>
-          <button class="btn btn-sm btn-primary" data-action="copiar-slug">Copiar</button>
-        </div>
-      </div>
-      <div style="display:flex;gap:10px;justify-content:flex-end;">
-        <button class="btn" data-close="modalCampanha" style="background:var(--border);color:var(--text);">Cancelar</button>
-        <button id="btnSalvarCampanha" class="btn btn-success">Salvar Campanha</button>
-      </div>
-    </div>
-  </div>
+<div class="sidebar" id="sidebar">
+<div class="logo">⚡ <span>Leilão</span> Fácil</div>
+<nav>
+<a href="#" class="active" data-section="dashboard" onclick="showSection('dashboard')">📊 Dashboard</a>
+<a href="#" data-section="campanhas" onclick="showSection('campanhas')">🎯 Campanhas</a>
+<a href="#" data-section="influencers" onclick="showSection('influencers')">👥 Influencers</a>
+<a href="#" data-section="usuarios" onclick="showSection('usuarios')">👤 Usuários</a>
+<a href="#" data-section="configuracoes" onclick="showSection('configuracoes')">⚙️ Configurações</a>
+</nav>
 </div>
-
-<!-- MODAL INFLUENCER -->
-<div id="modalInfluencer" class="modal-overlay">
-  <div class="modal">
-    <div class="modal-header">
-      <h3 id="tituloModalInfluencer">Novo Influencer</h3>
-      <button class="close-btn" data-close="modalInfluencer">&times;</button>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="infId">
-      <div class="form-row">
-        <div class="form-group">
-          <label>Nome</label>
-          <input type="text" id="infNome" placeholder="Nome completo">
-        </div>
-        <div class="form-group">
-          <label>Email</label>
-          <input type="email" id="infEmail" placeholder="email@exemplo.com">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Codigo de Referencia</label>
-          <input type="text" id="infCodigo" placeholder="ex: joao2024">
-        </div>
-        <div class="form-group">
-          <label>Chave PIX</label>
-          <input type="text" id="infPix" placeholder="CPF, email ou chave aleatoria">
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Premios por Milestone (atingimento de meta da campanha)</label>
-        <div class="milestone-grid">
-          <div class="milestone-card">
-            <div class="pct">25%</div>
-            <div class="label">Atingimento</div>
-            <input type="number" id="infPremio25" step="0.01" placeholder="R$ 0,00">
-          </div>
-          <div class="milestone-card">
-            <div class="pct">50%</div>
-            <div class="label">Atingimento</div>
-            <input type="number" id="infPremio50" step="0.01" placeholder="R$ 0,00">
-          </div>
-          <div class="milestone-card">
-            <div class="pct">75%</div>
-            <div class="label">Atingimento</div>
-            <input type="number" id="infPremio75" step="0.01" placeholder="R$ 0,00">
-          </div>
-          <div class="milestone-card">
-            <div class="pct">100%</div>
-            <div class="label">Atingimento</div>
-            <input type="number" id="infPremio100" step="0.01" placeholder="R$ 0,00">
-          </div>
-        </div>
-        <div class="form-hint">O influencer recebe estes valores em premio ao atingir cada percentual da meta da campanha que divulgou.</div>
-      </div>
-      <div style="display:flex;gap:10px;justify-content:flex-end;">
-        <button class="btn" data-close="modalInfluencer" style="background:var(--border);color:var(--text);">Cancelar</button>
-        <button id="btnSalvarInfluencer" class="btn btn-success">Salvar Influencer</button>
-      </div>
-    </div>
-  </div>
+<div class="main" id="mainContent">
+<div class="header"><h2 id="pageTitle">📊 Dashboard</h2><button class="btn btn-secondary" onclick="logout()">🚪 Sair</button></div>
+<div id="sec-dashboard" class="section-content">
+<div class="stats-grid">
+<div class="stat-card"><div class="number" id="statUsuarios">0</div><div class="label">Usuários</div></div>
+<div class="stat-card"><div class="number" id="statCampanhas">0</div><div class="label">Campanhas</div></div>
+<div class="stat-card"><div class="number" id="statAtivas">0</div><div class="label">Ativas</div></div>
+<div class="stat-card"><div class="number" id="statLances">0</div><div class="label">Lances</div></div>
+<div class="stat-card"><div class="number" id="statArrecadado">R$ 0</div><div class="label">Arrecadado</div></div>
+<div class="stat-card"><div class="number" id="statPendentes">0</div><div class="label">Pagamentos Pendentes</div></div>
 </div>
-
-<div id="toast" class="toast"></div>
-
-<script src="/socket.io/socket.io.js"></script>
+</div>
+<div id="sec-campanhas" class="section-content" style="display:none">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+<h3>🎯 Campanhas</h3>
+<button class="btn btn-primary" onclick="abrirModalCampanha()">➕ Nova Campanha</button>
+</div>
+<div class="tabs">
+<button class="tab-btn active" onclick="filtrarCampanhas('todas')">Todas</button>
+<button class="tab-btn" onclick="filtrarCampanhas('pendente')">Pendentes</button>
+<button class="tab-btn" onclick="filtrarCampanhas('ativo')">Ativas</button>
+<button class="tab-btn" onclick="filtrarCampanhas('pausado')">Pausadas</button>
+<button class="tab-btn" onclick="filtrarCampanhas('finalizado')">Finalizadas</button>
+</div>
+<div id="campanhasList"></div>
+</div>
+<div id="sec-influencers" class="section-content" style="display:none">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+<h3>👥 Influencers</h3>
+<button class="btn btn-primary" onclick="abrirModalInfluencer()">➕ Novo Influencer</button>
+</div>
+<div id="influencersList"></div>
+</div>
+<div id="sec-usuarios" class="section-content" style="display:none">
+<h3>👤 Usuários</h3>
+<div id="usuariosList"></div>
+</div>
+<div id="sec-configuracoes" class="section-content" style="display:none">
+<h3>⚙️ Configurações</h3>
+<div class="card">
+<div class="form-group"><label>Lance Padrão (R$)</label><input type="number" id="configLance" step="0.01" value="0.01"></div>
+<div class="form-group"><label>Duração Padrão (horas)</label><input type="number" id="configDuracao" value="24"></div>
+<button class="btn btn-primary" onclick="salvarConfiguracoes()">💾 Salvar</button>
+</div>
+</div>
+</div>
+<div class="modal-overlay" id="modalCampanha">
+<div class="modal">
+<button class="close" onclick="fecharModalCampanha()">✕</button>
+<h2 id="tituloModalCampanha">➕ Nova Campanha</h2>
+<input type="hidden" id="campanhaId">
+<div class="form-group"><label>Nome do Leilão</label><input type="text" id="campNome" placeholder="Ex: Leilão de TESTE 4" oninput="gerarSlugAuto()"></div>
+<div class="form-group"><label>Slug (URL)</label><input type="text" id="campSlug" placeholder="leilao-de-teste-4"></div>
+<div class="form-group"><label>Descrição</label><textarea id="campDescricao" placeholder="Descrição do prêmio..."></textarea></div>
+<div class="form-group"><label>URL da Imagem do Prêmio</label><input type="text" id="campImagemUrl" placeholder="https://..."></div>
+<div class="form-group"><label>Meta/Valor do Prêmio (R$)</label><input type="number" id="campMeta" step="0.01" value="3.00"></div>
+<div class="form-group"><label>Lance Inicial (R$)</label><input type="number" id="campLanceInicial" step="0.01" value="0.01"></div>
+<div class="form-group"><label>Duração (horas)</label><input type="number" id="campDuracao" value="24"></div>
+<div class="form-group"><label>Influencer</label><select id="campInfluencer"><option value="">Nenhum</option></select></div>
+<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
+<button class="btn btn-secondary" onclick="fecharModalCampanha()">Cancelar</button>
+<button class="btn btn-primary" onclick="salvarCampanha()">💾 Salvar</button>
+</div>
+</div>
+</div>
+<div class="modal-overlay" id="modalInfluencer">
+<div class="modal">
+<button class="close" onclick="fecharModalInfluencer()">✕</button>
+<h2 id="tituloModalInfluencer">➕ Novo Influencer</h2>
+<input type="hidden" id="influencerId">
+<div class="form-group"><label>Nome</label><input type="text" id="infNome" placeholder="Nome do influencer"></div>
+<div class="form-group"><label>E-mail</label><input type="email" id="infEmail" placeholder="email@exemplo.com"></div>
+<div class="form-group"><label>Telefone</label><input type="text" id="infTelefone" placeholder="(11) 99999-9999"></div>
+<div class="form-group"><label>Código</label><input type="text" id="infCodigo" placeholder="Código único"></div>
+<div class="form-group"><label>Comissão (%)</label><input type="number" id="infComissao" step="0.01" value="0"></div>
+<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
+<button class="btn btn-secondary" onclick="fecharModalInfluencer()">Cancelar</button>
+<button class="btn btn-primary" onclick="salvarInfluencer()">💾 Salvar</button>
+</div>
+</div>
+</div>
+<div class="toast" id="toast"></div>
 <script>
-
-// ===== UTILIDADES =====
-const $ = (sel) => document.querySelector(sel);
-const $$ = (sel) => document.querySelectorAll(sel);
-const API = '';
-const STATUS_LABELS = { pendente: 'Pendente', ativo: 'Ativa', pausado: 'Pausada', finalizado: 'Finalizada', cancelado: 'Cancelada' };
-let socket = null;
-let token = localStorage.getItem('admin_token') || '';
-let currentSection = 'dashboard';
-let campanhasCache = [];
-let influencersCache = [];
-let usuariosCache = [];
-
-function toast(msg, type) {
-  const t = $('#toast');
-  t.textContent = msg;
-  t.className = 'toast ' + (type || 'info');
-  setTimeout(() => t.classList.add('show'), 10);
-  setTimeout(() => t.classList.remove('show'), 3000);
-}
-
-function fmtMoney(v) {
-  return 'R$ ' + (parseFloat(v) || 0).toFixed(2).replace('.', ',');
-}
-
-function fmtDate(d) {
-  if (!d) return '-';
-  const dt = new Date(d);
-  return dt.toLocaleString('pt-BR');
-}
-
-function slugify(str) {
-  return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').substring(0, 60);
-}
-
-async function apiGet(path) {
-  const r = await fetch(API + path, { headers: { 'Authorization': 'Bearer ' + token } });
-  if (r.status === 401) { logout(); throw new Error('Nao autorizado'); }
-  if (!r.ok) throw new Error('Erro ' + r.status);
-  return r.json();
-}
-
-async function apiPost(path, body) {
-  const r = await fetch(API + path, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-    body: JSON.stringify(body)
-  });
-  if (r.status === 401) { logout(); throw new Error('Nao autorizado'); }
-  if (!r.ok) throw new Error('Erro ' + r.status);
-  return r.json();
-}
-
-async function apiPut(path, body) {
-  const r = await fetch(API + path, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-    body: JSON.stringify(body)
-  });
-  if (r.status === 401) { logout(); throw new Error('Nao autorizado'); }
-  if (!r.ok) throw new Error('Erro ' + r.status);
-  return r.json();
-}
-
-function logout() {
-  localStorage.removeItem('admin_token');
-  token = '';
-  $('#app').style.display = 'none';
-  $('#loginScreen').style.display = 'flex';
-  $('#adminSenha').value = '';
-  if (socket) { socket.disconnect(); socket = null; }
-}
-
-// ===== LOGIN =====
-async function doLogin() {
-  const senha = $('#adminSenha').value.trim();
-  const btn = $('#btnLogin');
-  const txt = $('#loginText');
-  const err = $('#loginError');
-
-  if (!senha) {
-    err.textContent = 'Digite a senha';
-    err.style.display = 'block';
-    return;
-  }
-
-  btn.disabled = true;
-  txt.textContent = 'Verificando...';
-  err.style.display = 'none';
-
-  try {
-    const res = await fetch(API + '/api/admin/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ senha: senha })
-    });
-    const data = await res.json();
-    if (data.token) {
-      token = data.token;
-      localStorage.setItem('admin_token', token);
-      $('#loginScreen').style.display = 'none';
-      $('#app').style.display = 'block';
-      initApp();
-    } else {
-      err.textContent = data.erro || 'Senha incorreta';
-      err.style.display = 'block';
-    }
-  } catch (e) {
-    err.textContent = 'Erro de conexao. Tente novamente.';
-    err.style.display = 'block';
-    console.error('Login error:', e);
-  } finally {
-    btn.disabled = false;
-    txt.textContent = 'Entrar no Painel';
-  }
-}
-
-// ===== NAVEGAÇÃO =====
-function showSection(name) {
-  console.log('[ADMIN] showSection:', name);
-  currentSection = name;
-  $$('.nav-link').forEach(a => a.classList.toggle('active', a.dataset.section === name));
-  // SO afetar tab-content de NAVEGACAO PRINCIPAL (id comecando com sec-)
-  $$('.tab-content').forEach(t => {
-    if (t.id && t.id.startsWith('sec-')) {
-      t.classList.toggle('active', t.id === 'sec-' + name);
-    }
-  });
-  if (name === 'campanhas') { console.log('[ADMIN] Chamando loadCampanhas()'); loadCampanhas(); }
-  if (name === 'influencers') loadInfluencers();
-  if (name === 'usuarios') loadUsuarios();
-}
-
-// ===== MODAIS =====
-function openModal(id) { $('#' + id).classList.add('active'); }
-function closeModal(id) { $('#' + id).classList.remove('active'); }
-
-function resetModalCampanha() {
-  $('#campId').value = '';
-  $('#campNome').value = '';
-  const agora = new Date();
-  agora.setMinutes(agora.getMinutes() - agora.getTimezoneOffset());
-  $('#campDataInicio').value = agora.toISOString().slice(0, 16);
-  $('#campDuracao').value = '24';
-  $('#campLanceInicial').value = '0.01';
-  $('#campLanceMinimo').value = '0.01';
-  $('#campLanceMaximo').value = '1.00';
-  $('#campMeta').value = '0';
-  $('#campPremioNome').value = '';
-  $('#campPremioDesc').value = '';
-  $('#campPremioValor').value = '0';
-  $('#campPremioImg').value = '';
-  $('#campSlugBox').style.display = 'none';
-  $('#tituloModalCampanha').textContent = 'Nova Campanha';
-}
-
-function fillModalCampanha(c) {
-  $('#campId').value = c.id;
-  $('#campNome').value = c.nome || '';
-  $('#campDataInicio').value = c.data_inicio ? c.data_inicio.slice(0, 16) : '';
-  $('#campDuracao').value = c.duracao_horas || 24;
-  $('#campLanceInicial').value = c.lance_inicial || 0.01;
-  $('#campLanceMinimo').value = c.lance_minimo || 0.01;
-  $('#campLanceMaximo').value = c.lance_maximo || 1.00;
-  $('#campMeta').value = c.meta_valor || 0;
-  $('#campPremioNome').value = c.premio_nome || '';
-  $('#campPremioDesc').value = c.premio_descricao || '';
-  $('#campPremioValor').value = c.premio_valor || 0;
-  $('#campPremioImg').value = c.premio_imagem || '';
-  $('#tituloModalCampanha').textContent = 'Editar Campanha';
-  if (c.slug) {
-    $('#campSlugBox').style.display = 'block';
-    const url = window.location.origin + '/campanha/' + c.slug;
-    $('#campSlugLink').href = url;
-    $('#campSlugLink').textContent = url;
-  } else {
-    $('#campSlugBox').style.display = 'none';
-  }
-}
-
-function resetModalInfluencer() {
-  $('#infId').value = '';
-  $('#infNome').value = '';
-  $('#infEmail').value = '';
-  $('#infCodigo').value = '';
-  $('#infPix').value = '';
-  $('#infPremio25').value = '';
-  $('#infPremio50').value = '';
-  $('#infPremio75').value = '';
-  $('#infPremio100').value = '';
-  $('#tituloModalInfluencer').textContent = 'Novo Influencer';
-}
-
-function fillModalInfluencer(i) {
-  $('#infId').value = i.id;
-  $('#infNome').value = i.nome || '';
-  $('#infEmail').value = i.email || '';
-  $('#infCodigo').value = i.codigo_ref || '';
-  $('#infPix').value = i.pix_chave || '';
-  $('#infPremio25').value = i.premio_25 || '';
-  $('#infPremio50').value = i.premio_50 || '';
-  $('#infPremio75').value = i.premio_75 || '';
-  $('#infPremio100').value = i.premio_100 || '';
-  $('#tituloModalInfluencer').textContent = 'Editar Influencer';
-}
-
-// ===== DASHBOARD =====
-function addActivity(text, type) {
-  const feed = $('#activityFeed');
-  const item = document.createElement('div');
-  item.className = 'activity-item';
-  item.innerHTML = '<div class="dot ' + (type || 'info') + '"></div><div><div class="text">' + text + '</div><div class="time">' + new Date().toLocaleTimeString('pt-BR') + '</div></div>';
-  feed.insertBefore(item, feed.firstChild);
-  while (feed.children.length > 20) feed.removeChild(feed.lastChild);
-}
-
-function updateDashboard(data) {
-  $('#dashCampanhas').textContent = data.campanhas_ativas || 0;
-  $('#dashArrecadado').textContent = fmtMoney(data.total_arrecadado);
-  $('#dashLances').textContent = data.total_lances || 0;
-  $('#dashParticipantes').textContent = data.total_participantes || 0;
-}
-
-// ===== SOCKET.IO =====
-function initSocket() {
-  if (socket) return;
-  socket = io({ transports: ['websocket', 'polling'] });
-
-  socket.on('connect', () => {
-    $('#connStatus').textContent = 'Online';
-    $('#connStatus').className = 'badge online';
-    addActivity('Conectado em tempo real', 'success');
-  });
-
-  socket.on('disconnect', () => {
-    $('#connStatus').textContent = 'Offline';
-    $('#connStatus').className = 'badge offline';
-  });
-
-  socket.on('campanha_atualizada', (d) => {
-    addActivity('Campanha atualizada: ' + (d.campanha ? d.campanha.nome : ''), 'info');
-    if (currentSection === 'campanhas') loadCampanhas();
-    if (currentSection === 'dashboard') loadDashboard();
-  });
-
-  socket.on('influencer_atualizado', (d) => {
-    addActivity('Influencer atualizado: ' + (d.influencer ? d.influencer.nome : ''), 'info');
-    if (currentSection === 'influencers') loadInfluencers();
-  });
-
-  socket.on('novo_lance', (d) => {
-    addActivity('Novo lance de R$ ' + (d.valor || 0) + ' na campanha ' + (d.campanha_nome || ''), 'success');
-    if (currentSection === 'dashboard') loadDashboard();
-    if (currentSection === 'campanhas') loadCampanhas();
-  });
-}
-
-// ===== CAMPANHAS =====
-async function loadCampanhas() {
-  try {
-    console.log('[ADMIN] Carregando campanhas...');
-    const data = await apiGet('/api/admin/campanhas');
-    console.log('[ADMIN] Resposta campanhas:', JSON.stringify(data).substring(0, 500));
-    campanhasCache = data.campanhas || [];
-    console.log('[ADMIN] campanhasCache length:', campanhasCache.length);
-    if (campanhasCache.length > 0) {
-      console.log('[ADMIN] Primeira campanha:', JSON.stringify(campanhasCache[0]));
-      console.log('[ADMIN] Status da primeira:', campanhasCache[0].status);
-    }
-    renderCampanhas();
-  } catch (e) { 
-    console.error('[ADMIN] Erro loadCampanhas:', e);
-    toast('Erro ao carregar campanhas', 'error'); 
-  }
-}
-
-function renderCampanhas() {
-  const tab = document.querySelector('.tabs .tab.active');
-  const filtro = tab ? tab.dataset.tab : 'todas';
-  console.log('[ADMIN] renderCampanhas - filtro:', filtro, '| cache:', campanhasCache.length);
-
-  const container = $('#listaCampanhas');
-
-  if (!campanhasCache.length) {
-    container.innerHTML = '<div class="empty-state"><p>Nenhuma campanha cadastrada.</p></div>';
-    return;
-  }
-
-  const lista = campanhasCache.filter(c => {
-    if (filtro === 'todas') return true;
-    return c.status === filtro;
-  });
-
-  console.log('[ADMIN] Filtradas:', lista.length, 'de', campanhasCache.length);
-
-  if (!lista.length) {
-    container.innerHTML = '<div class="empty-state"><p>Nenhuma campanha com status <strong>' + filtro + '</strong>. Total no sistema: ' + campanhasCache.length + '</p></div>';
-    return;
-  }
-
-  let html = '<table class="table"><thead><tr><th>Nome</th><th>Slug/URL</th><th>Status</th><th>Arrecadado</th><th>Progresso</th><th>Acoes</th></tr></thead><tbody>';
-
-  lista.forEach(c => {
-    const pct = c.meta_valor > 0 ? Math.min(100, Math.round((c.total_arrecadado / c.meta_valor) * 100)) : 0;
-    const statusClass = 'status-' + (c.status || 'finalizado');
-    const slugUrl = window.location.origin + '/campanha/' + (c.slug || c.id);
-
-    html += '<tr>';
-    html += '<td><strong>' + (c.nome || 'Sem nome') + '</strong><br><span style="font-size:11px;color:var(--text-muted);">' + fmtDate(c.data_inicio) + '</span></td>';
-    html += '<td><a href="' + slugUrl + '" target="_blank" class="slug-link">/' + (c.slug || c.id) + '</a></td>';
-    html += '<td><span class="status-badge ' + statusClass + '">' + (STATUS_LABELS[c.status] || c.status || '-') + '</span></td>';
-    html += '<td>' + fmtMoney(c.total_arrecadado) + '<br><span style="font-size:11px;color:var(--text-muted);">Meta: ' + fmtMoney(c.meta_valor) + '</span></td>';
-    html += '<td><div class="progress-bar"><div class="fill" style="width:' + pct + '%"></div></div><span style="font-size:11px;">' + pct + '%</span></td>';
-    html += '<td>';
-    html += '<button class="btn btn-sm btn-primary" data-action="editar-camp" data-id="' + c.id + '">Editar</button> ';
-    if (c.status === 'ativo') {
-      html += '<button class="btn btn-sm btn-warning" data-action="pausar-camp" data-id="' + c.id + '">Pausar</button> ';
-      html += '<button class="btn btn-sm btn-danger" data-action="finalizar-camp" data-id="' + c.id + '">Finalizar</button>';
-    } else if (c.status === 'pausado') {
-      html += '<button class="btn btn-sm btn-success" data-action="ativar-camp" data-id="' + c.id + '">Ativar</button> ';
-      html += '<button class="btn btn-sm btn-danger" data-action="finalizar-camp" data-id="' + c.id + '">Finalizar</button>';
-    } else if (c.status === 'pendente') {
-      html += '<button class="btn btn-sm btn-success" data-action="ativar-camp" data-id="' + c.id + '">Ativar</button> ';
-      html += '<button class="btn btn-sm btn-danger" data-action="finalizar-camp" data-id="' + c.id + '">Finalizar</button>';
-    }
-    html += '</td></tr>';
-  });
-
-  html += '</tbody></table>';
-  container.innerHTML = html;
-  console.log('[ADMIN] HTML inserido no listaCampanhas. Length:', html.length);
-  console.log('[ADMIN] Container visivel?', container.offsetParent !== null);
-}
-
-async function salvarCampanha() {
-  const id = $('#campId').value;
-  const nome = $('#campNome').value.trim();
-
-  if (!nome || nome.length < 3) {
-    toast('Nome da campanha e obrigatorio (minimo 3 caracteres)', 'error');
-    $('#campNome').focus();
-    return;
-  }
-
-  let dataInicio = $('#campDataInicio').value;
-  if (!dataInicio) {
-    const agora = new Date();
-    agora.setMinutes(agora.getMinutes() - agora.getTimezoneOffset());
-    dataInicio = agora.toISOString().slice(0, 16);
-    $('#campDataInicio').value = dataInicio;
-  }
-
-  const body = {
-    nome: nome,
-    data_inicio: dataInicio,
-    duracao_horas: parseInt($('#campDuracao').value) || 24,
-    lance_inicial: parseFloat($('#campLanceInicial').value) || 0.01,
-    lance_minimo: parseFloat($('#campLanceMinimo').value) || 0.01,
-    lance_maximo: parseFloat($('#campLanceMaximo').value) || 1.00,
-    meta_valor: parseFloat($('#campMeta').value) || 0,
-    premio_nome: $('#campPremioNome').value.trim() || null,
-    premio_descricao: $('#campPremioDesc').value.trim() || null,
-    premio_valor: parseFloat($('#campPremioValor').value) || 0,
-    premio_imagem: $('#campPremioImg').value.trim() || null
-  };
-
-  console.log('[ADMIN] Body a ser enviado:', JSON.stringify(body));
-
-  try {
-    if (id) {
-      await apiPut('/api/admin/campanhas/' + id, body);
-      toast('Campanha atualizada com sucesso', 'success');
-    } else {
-      const res = await fetch(API + '/api/admin/campanhas', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify(body)
-      });
-      console.log('[ADMIN] Status POST:', res.status);
-      const data = await res.json();
-      console.log('[ADMIN] Resposta POST:', JSON.stringify(data));
-      if (!res.ok) {
-        throw new Error(data.erro || 'Erro ' + res.status);
-      }
-      toast('Campanha criada com sucesso', 'success');
-    }
-    closeModal('modalCampanha');
-    loadCampanhas();
-    loadDashboard();
-  } catch (e) {
-    console.error('[ADMIN] Erro salvarCampanha:', e);
-    toast('Erro ao salvar campanha: ' + e.message, 'error');
-  }
-}
-
-async function ativarCampanha(id) {
-  try {
-    const res = await fetch(API + '/api/admin/campanhas/' + id + '/ativar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.erro || 'Erro ' + res.status);
-    toast('Campanha ativada com sucesso', 'success');
-    loadCampanhas();
-    loadDashboard();
-  } catch (e) {
-    toast('Erro ao ativar: ' + e.message, 'error');
-  }
-}
-
-async function pausarCampanha(id) {
-  try {
-    const res = await fetch(API + '/api/admin/campanhas/' + id + '/pausar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.erro || 'Erro ' + res.status);
-    toast('Campanha pausada', 'success');
-    loadCampanhas();
-    loadDashboard();
-  } catch (e) {
-    toast('Erro ao pausar: ' + e.message, 'error');
-  }
-}
-
-async function finalizarCampanhaAdmin(id) {
-  try {
-    const res = await fetch(API + '/api/admin/campanhas/' + id + '/finalizar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.erro || 'Erro ' + res.status);
-    toast('Campanha finalizada', 'success');
-    loadCampanhas();
-    loadDashboard();
-  } catch (e) {
-    toast('Erro ao finalizar: ' + e.message, 'error');
-  }
-}
-
-// ===== INFLUENCERS =====
-async function loadInfluencers() {
-  try {
-    const data = await apiGet('/api/admin/influencers');
-    influencersCache = data.influencers || [];
-    renderInfluencers();
-  } catch (e) { console.error(e); toast('Erro ao carregar influencers', 'error'); }
-}
-
-function renderInfluencers() {
-  const container = $('#listaInfluencers');
-  if (!influencersCache.length) {
-    container.innerHTML = '<div class="empty-state"><p>Nenhum influencer cadastrado.</p></div>';
-    return;
-  }
-
-  let html = '<table class="table"><thead><tr><th>Nome</th><th>Codigo</th><th>Premios (25/50/75/100%)</th><th>Total Premios</th><th>Acoes</th></tr></thead><tbody>';
-
-  influencersCache.forEach(i => {
-    html += '<tr>';
-    html += '<td><strong>' + (i.nome || 'Sem nome') + '</strong><br><span style="font-size:11px;color:var(--text-muted);">' + (i.email || '') + '</span></td>';
-    html += '<td><code style="background:rgba(37,99,235,0.1);padding:4px 8px;border-radius:4px;font-size:12px;">' + (i.codigo_ref || '-') + '</code></td>';
-    html += '<td>' + fmtMoney(i.premio_25) + ' / ' + fmtMoney(i.premio_50) + ' / ' + fmtMoney(i.premio_75) + ' / ' + fmtMoney(i.premio_100) + '</td>';
-    html += '<td>' + fmtMoney(i.total_premios_recebidos || 0) + '</td>';
-    html += '<td><button class="btn btn-sm btn-primary" data-action="editar-inf" data-id="' + i.id + '">Editar</button></td>';
-    html += '</tr>';
-  });
-
-  html += '</tbody></table>';
-  container.innerHTML = html;
-  console.log('[ADMIN] HTML inserido no listaCampanhas. Length:', html.length);
-  console.log('[ADMIN] Container visivel?', container.offsetParent !== null);
-}
-
-async function salvarInfluencer() {
-  const id = $('#infId').value;
-  const body = {
-    nome: $('#infNome').value.trim(),
-    email: $('#infEmail').value.trim(),
-    codigo_ref: $('#infCodigo').value.trim(),
-    pix_chave: $('#infPix').value.trim(),
-    premio_25: parseFloat($('#infPremio25').value) || 0,
-    premio_50: parseFloat($('#infPremio50').value) || 0,
-    premio_75: parseFloat($('#infPremio75').value) || 0,
-    premio_100: parseFloat($('#infPremio100').value) || 0
-  };
-
-  try {
-    if (id) {
-      await apiPut('/api/admin/influencers/' + id, body);
-      toast('Influencer atualizado com sucesso', 'success');
-    } else {
-      await apiPost('/api/admin/influencers', body);
-      toast('Influencer criado com sucesso', 'success');
-    }
-    closeModal('modalInfluencer');
-    loadInfluencers();
-  } catch (e) {
-    toast('Erro ao salvar influencer: ' + e.message, 'error');
-  }
-}
-
-// ===== USUARIOS =====
-async function loadUsuarios() {
-  try {
-    const data = await apiGet('/api/admin/usuarios');
-    usuariosCache = data.usuarios || [];
-    renderUsuarios();
-  } catch (e) { console.error(e); toast('Erro ao carregar usuarios', 'error'); }
-}
-
-function renderUsuarios() {
-  const container = $('#listaUsuarios');
-  if (!usuariosCache.length) {
-    container.innerHTML = '<div class="empty-state"><p>Nenhum usuario cadastrado.</p></div>';
-    return;
-  }
-
-  let html = '<table class="table"><thead><tr><th>Nome</th><th>Email</th><th>Telefone</th><th>Data Cadastro</th></tr></thead><tbody>';
-  usuariosCache.forEach(u => {
-    html += '<tr>';
-    html += '<td><strong>' + (u.nome || 'Sem nome') + '</strong></td>';
-    html += '<td>' + (u.email || '-') + '</td>';
-    html += '<td>' + (u.telefone || '-') + '</td>';
-    html += '<td>' + fmtDate(u.created_at) + '</td>';
-    html += '</tr>';
-  });
-  html += '</tbody></table>';
-  container.innerHTML = html;
-  console.log('[ADMIN] HTML inserido no listaCampanhas. Length:', html.length);
-  console.log('[ADMIN] Container visivel?', container.offsetParent !== null);
-}
-
-// ===== CONFIGURACOES =====
-async function loadDashboard() {
-  try {
-    const data = await apiGet('/api/admin/dashboard');
-    updateDashboard(data);
-  } catch (e) {
-    console.error('Dashboard error:', e);
-    updateDashboard({
-      campanhas_ativas: 0,
-      total_arrecadado: 0,
-      total_lances: 0,
-      total_participantes: 0
-    });
-  }
-}
-
-async function salvarConfiguracoes() {
-  const body = {
-    lance_inicial_padrao: parseFloat($('#cfgLanceInicial').value) || 0.01,
-    lance_minimo_padrao: parseFloat($('#cfgLanceMinimo').value) || 0.01,
-    lance_maximo_padrao: parseFloat($('#cfgLanceMaximo').value) || 1.00,
-    duracao_padrao: parseInt($('#cfgDuracao').value) || 24,
-    chave_pix_padrao: $('#cfgPix').value.trim()
-  };
-  try {
-    await apiPut('/api/admin/configuracoes', body);
-    toast('Configuracoes salvas! Afetam apenas novas campanhas.', 'success');
-  } catch (e) {
-    toast('Erro ao salvar configuracoes: ' + e.message, 'error');
-  }
-}
-
-// ===== DELEGACAO DE EVENTOS (robusta, sem onclick inline) =====
-document.addEventListener('DOMContentLoaded', () => {
-  // Login
-  $('#btnLogin').addEventListener('click', doLogin);
-  $('#adminSenha').addEventListener('keypress', (e) => { if (e.key === 'Enter') doLogin(); });
-
-  // Navegacao sidebar
-  document.querySelector('.sidebar').addEventListener('click', (e) => {
-    const link = e.target.closest('.nav-link');
-    if (!link) return;
-    e.preventDefault();
-    showSection(link.dataset.section);
-  });
-
-  // Tabs de campanhas
-  document.querySelector('.tabs').addEventListener('click', (e) => {
-    const tab = e.target.closest('.tab');
-    if (!tab) return;
-    $$('.tabs .tab').forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    renderCampanhas();
-  });
-
-  // Botoes principais
-  $('#btnNovaCampanha').addEventListener('click', () => { resetModalCampanha(); openModal('modalCampanha'); });
-  $('#btnNovoInfluencer').addEventListener('click', () => { resetModalInfluencer(); openModal('modalInfluencer'); });
-  $('#btnSalvarCampanha').addEventListener('click', salvarCampanha);
-  $('#btnSalvarInfluencer').addEventListener('click', salvarInfluencer);
-  $('#btnSalvarConfig').addEventListener('click', salvarConfiguracoes);
-
-  // Fechar modais
-  document.addEventListener('click', (e) => {
-    const closeBtn = e.target.closest('[data-close]');
-    if (closeBtn) {
-      closeModal(closeBtn.dataset.close);
-      return;
-    }
-    if (e.target.classList.contains('modal-overlay')) {
-      e.target.classList.remove('active');
-    }
-  });
-
-  // Delegacao geral para botoes dinamicos (campanhas, influencers, etc)
-  document.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-action]');
-    if (!btn) return;
-    const action = btn.dataset.action;
-    const id = btn.dataset.id;
-    const slug = btn.dataset.slug;
-
-    if (action === 'editar-camp' && id) {
-      const c = campanhasCache.find(x => String(x.id) === String(id));
-      if (c) { fillModalCampanha(c); openModal('modalCampanha'); }
-    }
-    else if (action === 'pausar-camp' && id) pausarCampanha(id);
-    else if (action === 'ativar-camp' && id) ativarCampanha(id);
-    else if (action === 'finalizar-camp' && id) finalizarCampanhaAdmin(id);
-    else if (action === 'copiar-slug' && slug) {
-      navigator.clipboard.writeText(window.location.origin + '/campanha/' + slug);
-      toast('Link copiado!', 'success');
-    }
-    else if (action === 'editar-inf' && id) {
-      const i = influencersCache.find(x => String(x.id) === String(id));
-      if (i) { fillModalInfluencer(i); openModal('modalInfluencer'); }
-    }
-  });
-
-  // Auto-login se tem token
-  if (token) {
-    $('#loginScreen').style.display = 'none';
-    $('#app').style.display = 'block';
-    initApp();
-  }
-});
-
-function initApp() {
-  loadDashboard();
-  initSocket();
-  showSection('dashboard');
-  addActivity('Painel carregado', 'info');
-}
+let token=localStorage.getItem('adminToken');
+let campanhasCache=[];
+let influencersCache=[];
+let filtroAtivo='todas';
+
+if(token){document.getElementById('loginOverlay').style.display='none';loadDashboard();loadCampanhas();loadInfluencers();loadUsuarios();}
+
+function fazerLogin(){const senha=document.getElementById('senhaAdmin').value;if(!senha){mostrarToast('Digite a senha','error');return}fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({senha})}).then(r=>r.json()).then(data=>{if(data.sucesso){token=data.token;localStorage.setItem('adminToken',token);document.getElementById('loginOverlay').style.display='none';loadDashboard();loadCampanhas();loadInfluencers();loadUsuarios()}else{mostrarToast(data.erro||'Senha incorreta','error')}}).catch(()=>mostrarToast('Erro ao fazer login','error'))}
+function logout(){localStorage.removeItem('adminToken');token=null;location.reload()}
+function mostrarToast(msg,tipo='info'){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+tipo;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),4000)}
+function showSection(sec){document.querySelectorAll('.section-content').forEach(s=>s.style.display='none');document.querySelectorAll('.sidebar nav a').forEach(a=>a.classList.remove('active'));document.getElementById('sec-'+sec).style.display='block';document.querySelector(`[data-section="${sec}"]`).classList.add('active');document.getElementById('pageTitle').textContent=document.querySelector(`[data-section="${sec}"]`).textContent;if(sec==='dashboard')loadDashboard();if(sec==='campanhas')loadCampanhas();if(sec==='influencers')loadInfluencers();if(sec==='usuarios')loadUsuarios();if(sec==='configuracoes')loadConfiguracoes()}
+
+function gerarSlugAuto(){const nome=document.getElementById('campNome').value;const slugInput=document.getElementById('campSlug');if(!slugInput.value||slugInput.dataset.auto==='true'){slugInput.value=gerarSlug(nome);slugInput.dataset.auto='true'}}
+function gerarSlug(nome){return nome.toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')}
+
+function loadDashboard(){fetch('/api/admin/dashboard',{headers:{'Authorization':'Bearer '+token}}).then(r=>r.json()).then(data=>{if(data.sucesso){document.getElementById('statUsuarios').textContent=data.total_usuarios||0;document.getElementById('statCampanhas').textContent=data.total_campanhas||0;document.getElementById('statAtivas').textContent=data.campanhas_ativas||0;document.getElementById('statLances').textContent=data.total_lances||0;document.getElementById('statArrecadado').textContent='R$ '+(data.total_arrecadado||0).toFixed(2);document.getElementById('statPendentes').textContent=data.total_pagamentos_pendentes||0}}).catch(()=>mostrarToast('Erro ao carregar dashboard','error'))}
+
+function loadCampanhas(){fetch('/api/admin/campanhas',{headers:{'Authorization':'Bearer '+token}}).then(r=>r.json()).then(data=>{if(data.sucesso){campanhasCache=data.campanhas||[];renderCampanhas()}}).catch(()=>mostrarToast('Erro ao carregar campanhas','error'))}
+function filtrarCampanhas(status){filtroAtivo=status;document.querySelectorAll('.tabs .tab-btn').forEach(b=>b.classList.remove('active'));event.target.classList.add('active');renderCampanhas()}
+function renderCampanhas(){const container=document.getElementById('campanhasList');let lista=campanhasCache;if(filtroAtivo!=='todas')lista=lista.filter(c=>c.status===filtroAtivo);if(lista.length===0){container.innerHTML='<div class="empty-state"><div class="icon">📭</div><p>Nenhuma campanha encontrada</p></div>';return}let html='<table class="table"><thead><tr><th>Nome</th><th>Slug</th><th>Status</th><th>Lance Atual</th><th>Ações</th></tr></thead><tbody>';lista.forEach(c=>{const statusLabel={pendente:'Pendente',ativo:'Ativa',pausado:'Pausada',finalizado:'Finalizada',cancelada:'Cancelada'}[c.status]||c.status;const urlLeilao=window.location.origin+'/'+c.slug;html+=`<tr><td><strong>${c.nome}</strong><br><small style="color:#94a3b8">${c.descricao||''}</small></td><td><a href="${urlLeilao}" target="_blank" style="color:#3b82f6;text-decoration:none">/${c.slug}</a></td><td><span class="badge badge-${c.status}">${statusLabel}</span></td><td>R$ ${parseFloat(c.lance_inicial||0).toFixed(2)}</td><td style="white-space:nowrap">${c.status==='pendente'?`<button class="btn btn-success" onclick="ativarCampanha(${c.id})" style="padding:4px 10px;font-size:12px">🚀 Ativar</button> `:(c.status==='ativo'?`<button class="btn btn-warning" onclick="pausarCampanha(${c.id})" style="padding:4px 10px;font-size:12px">⏸️ Pausar</button> `:(c.status==='pausado'?`<button class="btn btn-success" onclick="ativarCampanha(${c.id})" style="padding:4px 10px;font-size:12px">▶️ Retomar</button> `:''))}<button class="btn btn-secondary" onclick="editarCampanha(${c.id})" style="padding:4px 10px;font-size:12px">✏️ Editar</button> <button class="btn btn-danger" onclick="finalizarCampanha(${c.id})" style="padding:4px 10px;font-size:12px">🏁 Finalizar</button></td></tr>`});html+='</tbody></table>';container.innerHTML=html}
+
+function abrirModalCampanha(){document.getElementById('campanhaId').value='';document.getElementById('tituloModalCampanha').textContent='➕ Nova Campanha';document.getElementById('campNome').value='';document.getElementById('campSlug').value='';document.getElementById('campSlug').dataset.auto='true';document.getElementById('campDescricao').value='';document.getElementById('campImagemUrl').value='';document.getElementById('campMeta').value='3.00';document.getElementById('campLanceInicial').value='0.01';document.getElementById('campDuracao').value='24';document.getElementById('campInfluencer').value='';document.getElementById('modalCampanha').classList.add('active');carregarSelectInfluencers()}
+function fecharModalCampanha(){document.getElementById('modalCampanha').classList.remove('active')}
+function editarCampanha(id){const c=campanhasCache.find(x=>x.id===id);if(!c)return;document.getElementById('campanhaId').value=c.id;document.getElementById('tituloModalCampanha').textContent='✏️ Editar Campanha';document.getElementById('campNome').value=c.nome;document.getElementById('campSlug').value=c.slug;document.getElementById('campSlug').dataset.auto='false';document.getElementById('campDescricao').value=c.descricao||'';document.getElementById('campImagemUrl').value=c.premio_imagem_url||'';document.getElementById('campMeta').value=c.meta_valor||3.00;document.getElementById('campLanceInicial').value=c.lance_inicial||0.01;document.getElementById('campDuracao').value=c.duracao_horas||24;document.getElementById('campInfluencer').value=c.influencer_id||'';document.getElementById('modalCampanha').classList.add('active');carregarSelectInfluencers()}
+function salvarCampanha(){const id=document.getElementById('campanhaId').value;const nome=document.getElementById('campNome').value.trim();const slug=document.getElementById('campSlug').value.trim();if(!nome||!slug){mostrarToast('Nome e slug são obrigatórios','error');return}const dados={nome,slug,descricao:document.getElementById('campDescricao').value.trim(),premio_imagem_url:document.getElementById('campImagemUrl').value.trim(),meta_valor:parseFloat(document.getElementById('campMeta').value)||3.00,lance_inicial:parseFloat(document.getElementById('campLanceInicial').value)||0.01,duracao_horas:parseInt(document.getElementById('campDuracao').value)||24,influencer_id:document.getElementById('campInfluencer').value||null};const url=id?`/api/admin/campanhas/${id}`:'/api/admin/campanhas';const method=id?'PUT':'POST';fetch(url,{method,headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify(dados)}).then(r=>r.json()).then(data=>{if(data.sucesso){mostrarToast(id?'Campanha atualizada!':'Campanha criada!','success');fecharModalCampanha();loadCampanhas()}else{mostrarToast(data.erro||'Erro ao salvar','error')}}).catch(()=>mostrarToast('Erro ao salvar','error'))}
+function ativarCampanha(id){fetch(`/api/admin/campanhas/${id}/ativar`,{method:'POST',headers:{'Authorization':'Bearer '+token}}).then(r=>r.json()).then(data=>{if(data.sucesso){mostrarToast('Campanha ativada!','success');loadCampanhas()}else{mostrarToast(data.erro||'Erro','error')}}).catch(()=>mostrarToast('Erro ao ativar','error'))}
+function pausarCampanha(id){fetch(`/api/admin/campanhas/${id}/pausar`,{method:'POST',headers:{'Authorization':'Bearer '+token}}).then(r=>r.json()).then(data=>{if(data.sucesso){mostrarToast('Campanha pausada!','success');loadCampanhas()}else{mostrarToast(data.erro||'Erro','error')}}).catch(()=>mostrarToast('Erro ao pausar','error'))}
+function finalizarCampanha(id){if(!confirm('Tem certeza que deseja finalizar esta campanha?'))return;fetch(`/api/admin/campanhas/${id}/finalizar`,{method:'POST',headers:{'Authorization':'Bearer '+token}}).then(r=>r.json()).then(data=>{if(data.sucesso){mostrarToast('Campanha finalizada!','success');loadCampanhas()}else{mostrarToast(data.erro||'Erro','error')}}).catch(()=>mostrarToast('Erro ao finalizar','error'))}
+
+function loadInfluencers(){fetch('/api/admin/influencers',{headers:{'Authorization':'Bearer '+token}}).then(r=>r.json()).then(data=>{if(data.sucesso){influencersCache=data.influencers||[];renderInfluencers();carregarSelectInfluencers()}}).catch(()=>mostrarToast('Erro ao carregar influencers','error'))}
+function renderInfluencers(){const container=document.getElementById('influencersList');if(influencersCache.length===0){container.innerHTML='<div class="empty-state"><div class="icon">👥</div><p>Nenhum influencer cadastrado</p></div>';return}let html='<table class="table"><thead><tr><th>Nome</th><th>E-mail</th><th>Código</th><th>Comissão</th><th>Ações</th></tr></thead><tbody>';influencersCache.forEach(i=>{html+=`<tr><td>${i.nome}</td><td>${i.email}</td><td>${i.codigo||'-'}</td><td>${i.comissao||0}%</td><td><button class="btn btn-secondary" onclick="editarInfluencer(${i.id})" style="padding:4px 10px;font-size:12px">✏️ Editar</button> <button class="btn btn-danger" onclick="deletarInfluencer(${i.id})" style="padding:4px 10px;font-size:12px">🗑️ Excluir</button></td></tr>`});html+='</tbody></table>';container.innerHTML=html}
+function carregarSelectInfluencers(){const sel=document.getElementById('campInfluencer');sel.innerHTML='<option value="">Nenhum</option>';influencersCache.forEach(i=>{sel.innerHTML+=`<option value="${i.id}">${i.nome}</option>`})}
+function abrirModalInfluencer(){document.getElementById('influencerId').value='';document.getElementById('tituloModalInfluencer').textContent='➕ Novo Influencer';document.getElementById('infNome').value='';document.getElementById('infEmail').value='';document.getElementById('infTelefone').value='';document.getElementById('infCodigo').value='';document.getElementById('infComissao').value='0';document.getElementById('modalInfluencer').classList.add('active')}
+function fecharModalInfluencer(){document.getElementById('modalInfluencer').classList.remove('active')}
+function editarInfluencer(id){const i=influencersCache.find(x=>x.id===id);if(!i)return;document.getElementById('influencerId').value=i.id;document.getElementById('tituloModalInfluencer').textContent='✏️ Editar Influencer';document.getElementById('infNome').value=i.nome;document.getElementById('infEmail').value=i.email;document.getElementById('infTelefone').value=i.telefone||'';document.getElementById('infCodigo').value=i.codigo||'';document.getElementById('infComissao').value=i.comissao||0;document.getElementById('modalInfluencer').classList.add('active')}
+function salvarInfluencer(){const id=document.getElementById('influencerId').value;const dados={nome:document.getElementById('infNome').value.trim(),email:document.getElementById('infEmail').value.trim(),telefone:document.getElementById('infTelefone').value.trim(),codigo:document.getElementById('infCodigo').value.trim(),comissao:parseFloat(document.getElementById('infComissao').value)||0};if(!dados.nome||!dados.email){mostrarToast('Nome e email são obrigatórios','error');return}const url=id?`/api/admin/influencers/${id}`:'/api/admin/influencers';const method=id?'PUT':'POST';fetch(url,{method,headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify(dados)}).then(r=>r.json()).then(data=>{if(data.sucesso){mostrarToast(id?'Influencer atualizado!':'Influencer criado!','success');fecharModalInfluencer();loadInfluencers()}else{mostrarToast(data.erro||'Erro ao salvar','error')}}).catch(()=>mostrarToast('Erro ao salvar','error'))}
+function deletarInfluencer(id){if(!confirm('Tem certeza?'))return;fetch(`/api/admin/influencers/${id}`,{method:'DELETE',headers:{'Authorization':'Bearer '+token}}).then(r=>r.json()).then(data=>{if(data.sucesso){mostrarToast('Influencer excluído','success');loadInfluencers()}else{mostrarToast(data.erro||'Erro','error')}}).catch(()=>mostrarToast('Erro ao excluir','error'))}
+
+function loadUsuarios(){fetch('/api/admin/usuarios',{headers:{'Authorization':'Bearer '+token}}).then(r=>r.json()).then(data=>{if(data.sucesso){const container=document.getElementById('usuariosList');const lista=data.usuarios||[];if(lista.length===0){container.innerHTML='<div class="empty-state"><div class="icon">👤</div><p>Nenhum usuário cadastrado</p></div>';return}let html='<table class="table"><thead><tr><th>Nome</th><th>E-mail</th><th>Data</th></tr></thead><tbody>';lista.forEach(u=>{html+=`<tr><td>${u.nome}</td><td>${u.email}</td><td>${new Date(u.created_at).toLocaleString()}</td></tr>`});html+='</tbody></table>';container.innerHTML=html}}).catch(()=>mostrarToast('Erro ao carregar usuários','error'))}
+
+function loadConfiguracoes(){fetch('/api/admin/configuracoes',{headers:{'Authorization':'Bearer '+token}}).then(r=>r.json()).then(data=>{if(data.sucesso&&data.configuracoes){document.getElementById('configLance').value=data.configuracoes.lance_padrao||0.01;document.getElementById('configDuracao').value=data.configuracoes.duracao_padrao||24}}).catch(()=>{})}
+function salvarConfiguracoes(){const dados={lance_padrao:parseFloat(document.getElementById('configLance').value)||0.01,duracao_padrao:parseInt(document.getElementById('configDuracao').value)||24};fetch('/api/admin/configuracoes',{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify(dados)}).then(r=>r.json()).then(data=>{if(data.sucesso){mostrarToast('Configurações salvas!','success')}else{mostrarToast(data.erro||'Erro','error')}}).catch(()=>mostrarToast('Erro ao salvar','error'))}
 </script>
 </body>
 </html>
