@@ -16,6 +16,7 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.socket.io", "https://cdnjs.cloudflare.com"],
+      scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       imgSrc: ["'self'", "data:", "blob:", "https:"],
       connectSrc: ["'self'", "ws:", "wss:", "https://api.mercadopago.com"],
@@ -55,12 +56,24 @@ function gerarTokenAdmin() {
 
 function verificarAdmin(req, res, next) {
   const auth = req.headers.authorization;
-  if (!auth || !auth.startsWith('Bearer ')) return res.status(401).json({ erro: 'Não autorizado' });
+  console.log('[DEBUG] Auth header:', auth ? auth.substring(0, 30) + '...' : 'MISSING');
+  if (!auth || !auth.startsWith('Bearer ')) {
+    console.log('[DEBUG] 401 - Sem Bearer token');
+    return res.status(401).json({ erro: 'Não autorizado - token ausente' });
+  }
   try {
-    const decoded = jwt.verify(auth.split(' ')[1], JWT_SECRET);
-    if (decoded.tipo !== 'admin') return res.status(403).json({ erro: 'Acesso negado' });
+    const token = auth.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET);
+    console.log('[DEBUG] Token decodificado:', decoded.tipo);
+    if (decoded.tipo !== 'admin') {
+      console.log('[DEBUG] 403 - Tipo não é admin:', decoded.tipo);
+      return res.status(403).json({ erro: 'Acesso negado' });
+    }
     next();
-  } catch { return res.status(401).json({ erro: 'Token inválido' }); }
+  } catch (err) {
+    console.log('[DEBUG] 401 - Token inválido:', err.message);
+    return res.status(401).json({ erro: 'Token inválido', detalhe: err.message });
+  }
 }
 
 // ========== ROTA LOGIN ADMIN ==========
