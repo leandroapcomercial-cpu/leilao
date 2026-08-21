@@ -4,231 +4,488 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Leilão Fácil - Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
-.login-overlay{position:fixed;inset:0;background:#0f172a;z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}
-.login-box{background:#1e293b;border-radius:16px;padding:40px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);text-align:center}
-.login-box h1{color:#3b82f6;font-size:28px;margin-bottom:8px}
-.login-box p{color:#94a3b8;margin-bottom:24px}
-.login-box input{width:100%;padding:14px 16px;border:2px solid #334155;border-radius:10px;background:#0f172a;color:#e2e8f0;font-size:15px;margin-bottom:16px;outline:none;transition:border 0.3s}
-.login-box input:focus{border-color:#3b82f6}
-.login-box button{width:100%;padding:14px;border:none;border-radius:10px;background:#3b82f6;color:#fff;font-size:16px;font-weight:600;cursor:pointer;transition:all 0.3s}
-.login-box button:hover{background:#2563eb}
-.sidebar{position:fixed;left:0;top:0;bottom:0;width:260px;background:#1e293b;border-right:1px solid #334155;padding:20px 0;overflow-y:auto;z-index:100}
-.sidebar .logo{padding:0 24px 24px;font-size:22px;font-weight:700;color:#3b82f6;border-bottom:1px solid #334155;margin-bottom:16px}
-.sidebar .logo span{color:#e2e8f0}
-.sidebar nav a{display:flex;align-items:center;gap:12px;padding:12px 24px;color:#94a3b8;text-decoration:none;font-size:14px;font-weight:500;transition:all 0.3s;border-left:3px solid transparent}
-.sidebar nav a:hover{background:#334155;color:#e2e8f0}
-.sidebar nav a.active{background:#334155;color:#3b82f6;border-left-color:#3b82f6}
-.main{margin-left:260px;padding:24px}
-.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid #334155}
-.header h2{font-size:24px;color:#e2e8f0}
-.btn{padding:8px 16px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.3s;display:inline-flex;align-items:center;gap:6px}
-.btn-primary{background:#3b82f6;color:#fff}
-.btn-primary:hover{background:#2563eb}
-.btn-success{background:#10b981;color:#fff}
-.btn-success:hover{background:#059669}
-.btn-warning{background:#f59e0b;color:#fff}
-.btn-warning:hover{background:#d97706}
-.btn-danger{background:#ef4444;color:#fff}
-.btn-danger:hover{background:#dc2626}
-.btn-secondary{background:#334155;color:#e2e8f0}
-.btn-secondary:hover{background:#475569}
-.card{background:#1e293b;border-radius:12px;padding:20px;border:1px solid #334155;margin-bottom:20px}
-.card h3{font-size:16px;color:#e2e8f0;margin-bottom:16px;display:flex;align-items:center;gap:8px}
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
-.stat-card{background:#1e293b;border-radius:12px;padding:20px;border:1px solid #334155;text-align:center}
-.stat-card .number{font-size:32px;font-weight:700;color:#3b82f6}
-.stat-card .label{font-size:13px;color:#94a3b8;margin-top:4px}
-.tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
-.tab-btn{padding:8px 16px;border:none;border-radius:8px;background:#334155;color:#94a3b8;cursor:pointer;font-weight:600;font-size:13px;transition:all 0.3s}
-.tab-btn.active{background:#3b82f6;color:#fff}
-.tab-btn:hover:not(.active){background:#475569}
-.table{width:100%;border-collapse:collapse}
-.table th{text-align:left;padding:12px 16px;font-size:12px;text-transform:uppercase;color:#94a3b8;font-weight:600;border-bottom:1px solid #334155}
-.table td{padding:12px 16px;font-size:14px;color:#e2e8f0;border-bottom:1px solid #334155}
-.table tr:hover{background:#334155}
-.badge{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;text-transform:uppercase}
-.badge-pendente{background:#f59e0b20;color:#f59e0b;border:1px solid #f59e0b40}
-.badge-ativo{background:#10b98120;color:#10b981;border:1px solid #10b98140}
-.badge-pausado{background:#f59e0b20;color:#f59e0b;border:1px solid #f59e0b40}
-.badge-finalizado{background:#ef444420;color:#ef4444;border:1px solid #ef444440}
-.badge-cancelada{background:#64748b20;color:#64748b;border:1px solid #64748b40}
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;justify-content:center;align-items:center;padding:16px;backdrop-filter:blur(4px)}
-.modal-overlay.active{display:flex}
-.modal{background:#1e293b;border-radius:16px;max-width:500px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;position:relative}
-.modal .close{position:absolute;top:12px;right:16px;font-size:24px;cursor:pointer;color:#94a3b8;background:none;border:none}
-.modal .close:hover{color:#e2e8f0}
-.modal h2{font-size:20px;color:#e2e8f0;margin-bottom:20px}
-.form-group{margin-bottom:16px}
-.form-group label{display:block;font-size:13px;color:#94a3b8;margin-bottom:6px;font-weight:500}
-.form-group input,.form-group select,.form-group textarea{width:100%;padding:10px 14px;border:1px solid #334155;border-radius:8px;background:#0f172a;color:#e2e8f0;font-size:14px;outline:none;transition:border 0.3s}
-.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#3b82f6}
-.form-group textarea{min-height:80px;resize:vertical}
-.toast{position:fixed;bottom:24px;right:24px;padding:14px 20px;border-radius:10px;color:#fff;font-weight:500;z-index:10000;transform:translateY(100px);opacity:0;transition:all 0.4s;box-shadow:0 10px 30px rgba(0,0,0,0.3)}
-.toast.show{transform:translateY(0);opacity:1}
-.toast.success{background:#10b981}
-.toast.error{background:#ef4444}
-.toast.info{background:#3b82f6}
-.empty-state{text-align:center;padding:40px;color:#94a3b8}
-.empty-state .icon{font-size:48px;margin-bottom:12px}
-@media (max-width:768px){.sidebar{transform:translateX(-100%);transition:transform 0.3s}.sidebar.open{transform:translateX(0)}.main{margin-left:0}}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter',sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
+  .layout{display:flex;min-height:100vh}
+  .sidebar{width:260px;background:#1e293b;border-right:1px solid #334155;padding:24px 16px;position:fixed;height:100vh;overflow-y:auto}
+  .sidebar h1{font-size:20px;font-weight:700;color:#60a5fa;margin-bottom:32px;display:flex;align-items:center;gap:10px}
+  .sidebar h1::before{content:"⚡";font-size:22px}
+  .nav-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:10px;cursor:pointer;transition:all .2s;color:#94a3b8;font-size:14px;font-weight:500;margin-bottom:4px}
+  .nav-item:hover{background:#334155;color:#e2e8f0}
+  .nav-item.active{background:#2563eb;color:#fff}
+  .nav-item svg{width:20px;height:20px;flex-shrink:0}
+  .main{flex:1;margin-left:260px;padding:32px;max-width:1400px}
+  .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:32px}
+  .header h2{font-size:24px;font-weight:700}
+  .btn{padding:10px 20px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:600;transition:all .2s;display:inline-flex;align-items:center;gap:8px}
+  .btn-primary{background:#2563eb;color:#fff}
+  .btn-primary:hover{background:#1d4ed8}
+  .btn-success{background:#16a34a;color:#fff}
+  .btn-success:hover{background:#15803d}
+  .btn-danger{background:#dc2626;color:#fff}
+  .btn-danger:hover{background:#b91c1c}
+  .btn-warning{background:#f59e0b;color:#fff}
+  .btn-warning:hover{background:#d97706}
+  .btn-sm{padding:6px 12px;font-size:12px}
+  .card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:24px;margin-bottom:24px}
+  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:32px}
+  .stat-card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px}
+  .stat-label{font-size:12px;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+  .stat-value{font-size:28px;font-weight:700;color:#e2e8f0}
+  .table{width:100%;border-collapse:collapse}
+  .table th{text-align:left;padding:12px 16px;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#94a3b8;border-bottom:1px solid #334155}
+  .table td{padding:14px 16px;border-bottom:1px solid #334155;font-size:14px}
+  .table tr:hover{background:#334155/30}
+  .badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;text-transform:uppercase}
+  .badge-pendente{background:#f59e0b20;color:#f59e0b}
+  .badge-ativa{background:#16a34a20;color:#16a34a}
+  .badge-pausada{background:#94a3b820;color:#94a3b8}
+  .badge-finalizada{background:#dc262620;color:#dc2626}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
+  .modal-overlay.active{display:flex}
+  .modal{background:#1e293b;border:1px solid #334155;border-radius:16px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto}
+  .modal-header{padding:20px 24px;border-bottom:1px solid #334155;display:flex;justify-content:space-between;align-items:center}
+  .modal-header h3{font-size:18px;font-weight:600}
+  .modal-close{background:none;border:none;color:#94a3b8;font-size:24px;cursor:pointer}
+  .modal-close:hover{color:#e2e8f0}
+  .modal-body{padding:24px}
+  .form-group{margin-bottom:18px}
+  .form-group label{display:block;font-size:13px;font-weight:500;color:#94a3b8;margin-bottom:6px}
+  .form-group input,.form-group textarea,.form-group select{width:100%;padding:10px 14px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:14px;font-family:inherit}
+  .form-group input:focus,.form-group textarea:focus,.form-group select:focus{outline:none;border-color:#2563eb}
+  .form-group textarea{resize:vertical;min-height:80px}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .modal-footer{padding:16px 24px;border-top:1px solid #334155;display:flex;justify-content:flex-end;gap:10px}
+  .slug-preview{font-size:11px;color:#64748b;margin-top:4px}
+  .actions{display:flex;gap:8px}
+  .login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0f172a}
+  .login-box{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:40px;width:100%;max-width:400px}
+  .login-box h2{text-align:center;margin-bottom:24px;font-size:22px}
+  .login-box .form-group{margin-bottom:16px}
+  .login-box input{width:100%}
+  .login-box .btn{width:100%;justify-content:center;margin-top:8px}
+  .hidden{display:none !important}
+  .toast{position:fixed;top:20px;right:20px;background:#16a34a;color:#fff;padding:14px 20px;border-radius:10px;font-size:14px;font-weight:500;z-index:2000;animation:slideIn .3s ease}
+  .toast.error{background:#dc2626}
+  @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+  .img-preview{width:100%;max-width:200px;height:120px;object-fit:cover;border-radius:8px;border:1px solid #334155;margin-top:8px;display:none}
+  .img-preview.active{display:block}
+  .upload-area{border:2px dashed #334155;border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;margin-top:6px}
+  .upload-area:hover{border-color:#2563eb;background:#2563eb10}
+  .upload-area input[type="file"]{display:none}
+  .upload-text{font-size:13px;color:#94a3b8}
+  .upload-text strong{color:#60a5fa}
+  .img-source-tabs{display:flex;gap:8px;margin-bottom:10px}
+  .img-source-tab{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;background:#0f172a;border:1px solid #334155;color:#94a3b8}
+  .img-source-tab.active{background:#2563eb;color:#fff;border-color:#2563eb}
+  .img-source-panel{display:none}
+  .img-source-panel.active{display:block}
 </style>
 </head>
 <body>
-<div class="login-overlay" id="loginOverlay">
-<div class="login-box">
-<h1>⚡ Leilão Fácil</h1>
-<p>Painel Administrativo</p>
-<input type="password" id="senhaAdmin" placeholder="Digite sua senha">
-<button onclick="fazerLogin()">🔐 Entrar no Painel</button>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-box">
+    <h2>⚡ Leilão Fácil</h2>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="loginEmail" placeholder="admin@leilao.com">
+    </div>
+    <div class="form-group">
+      <label>Senha</label>
+      <input type="password" id="loginSenha" placeholder="••••••••">
+    </div>
+    <button class="btn btn-primary" onclick="fazerLogin()">Entrar</button>
+  </div>
 </div>
+
+<!-- APP -->
+<div id="appScreen" class="layout hidden">
+  <aside class="sidebar">
+    <h1>Leilão Fácil</h1>
+    <div class="nav-item active" onclick="mostrarSecao('dashboard')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item" onclick="mostrarSecao('campanhas')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      Campanhas
+    </div>
+    <div class="nav-item" onclick="mostrarSecao('influencers')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      Influencers
+    </div>
+    <div class="nav-item" onclick="mostrarSecao('usuarios')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/></svg>
+      Usuários
+    </div>
+    <div class="nav-item" onclick="mostrarSecao('configuracoes')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      Configurações
+    </div>
+    <div class="nav-item" style="margin-top:auto;color:#dc2626" onclick="logout()">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+      Sair
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- DASHBOARD -->
+    <section id="sec-dashboard">
+      <div class="header"><h2>Dashboard</h2></div>
+      <div class="grid-4">
+        <div class="stat-card"><div class="stat-label">Campanhas</div><div class="stat-value" id="dashTotalCampanhas">0</div></div>
+        <div class="stat-card"><div class="stat-label">Ativas</div><div class="stat-value" id="dashAtivas">0</div></div>
+        <div class="stat-card"><div class="stat-label">Usuários</div><div class="stat-value" id="dashUsuarios">0</div></div>
+        <div class="stat-card"><div class="stat-label">Arrecadado</div><div class="stat-value" id="dashArrecadado">R$ 0,00</div></div>
+      </div>
+    </section>
+
+    <!-- CAMPANHAS -->
+    <section id="sec-campanhas" class="hidden">
+      <div class="header">
+        <h2>Campanhas</h2>
+        <button class="btn btn-primary" onclick="abrirModalCampanha()">+ Nova Campanha</button>
+      </div>
+      <div class="card">
+        <table class="table">
+          <thead><tr><th>Nome</th><th>Slug</th><th>Meta</th><th>Status</th><th>Influencer</th><th>Ações</th></tr></thead>
+          <tbody id="tabelaCampanhas"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- INFLUENCERS -->
+    <section id="sec-influencers" class="hidden">
+      <div class="header"><h2>Influencers</h2><button class="btn btn-primary" onclick="abrirModalInfluencer()">+ Novo</button></div>
+      <div class="card"><table class="table"><thead><tr><th>Nome</th><th>Código</th><th>Comissão</th><th>Ações</th></tr></thead><tbody id="tabelaInfluencers"></tbody></table></div>
+    </section>
+
+    <!-- USUÁRIOS -->
+    <section id="sec-usuarios" class="hidden">
+      <div class="header"><h2>Usuários</h2></div>
+      <div class="card"><table class="table"><thead><tr><th>Nome</th><th>Email</th><th>Data</th></tr></thead><tbody id="tabelaUsuarios"></tbody></table></div>
+    </section>
+
+    <!-- CONFIGURAÇÕES -->
+    <section id="sec-configuracoes" class="hidden">
+      <div class="header"><h2>Configurações</h2></div>
+      <div class="card">
+        <div class="form-row">
+          <div class="form-group"><label>Lance Padrão (R$)</label><input type="number" step="0.01" id="cfgLance"></div>
+          <div class="form-group"><label>Duração Padrão (horas)</label><input type="number" id="cfgDuracao"></div>
+        </div>
+        <div class="form-group"><label>Taxa PIX (%)</label><input type="number" step="0.01" id="cfgTaxa"></div>
+        <button class="btn btn-primary" onclick="salvarConfiguracoes()">Salvar Configurações</button>
+      </div>
+    </section>
+  </main>
 </div>
-<div class="sidebar" id="sidebar">
-<div class="logo">⚡ <span>Leilão</span> Fácil</div>
-<nav>
-<a href="#" class="active" data-section="dashboard" onclick="showSection('dashboard')">📊 Dashboard</a>
-<a href="#" data-section="campanhas" onclick="showSection('campanhas')">🎯 Campanhas</a>
-<a href="#" data-section="influencers" onclick="showSection('influencers')">👥 Influencers</a>
-<a href="#" data-section="usuarios" onclick="showSection('usuarios')">👤 Usuários</a>
-<a href="#" data-section="configuracoes" onclick="showSection('configuracoes')">⚙️ Configurações</a>
-</nav>
-</div>
-<div class="main" id="mainContent">
-<div class="header"><h2 id="pageTitle">📊 Dashboard</h2><button class="btn btn-secondary" onclick="logout()">🚪 Sair</button></div>
-<div id="sec-dashboard" class="section-content">
-<div class="stats-grid">
-<div class="stat-card"><div class="number" id="statUsuarios">0</div><div class="label">Usuários</div></div>
-<div class="stat-card"><div class="number" id="statCampanhas">0</div><div class="label">Campanhas</div></div>
-<div class="stat-card"><div class="number" id="statAtivas">0</div><div class="label">Ativas</div></div>
-<div class="stat-card"><div class="number" id="statLances">0</div><div class="label">Lances</div></div>
-<div class="stat-card"><div class="number" id="statArrecadado">R$ 0</div><div class="label">Arrecadado</div></div>
-<div class="stat-card"><div class="number" id="statPendentes">0</div><div class="label">Pagamentos Pendentes</div></div>
-</div>
-</div>
-<div id="sec-campanhas" class="section-content" style="display:none">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-<h3>🎯 Campanhas</h3>
-<button class="btn btn-primary" onclick="abrirModalCampanha()">➕ Nova Campanha</button>
-</div>
-<div class="tabs">
-<button class="tab-btn active" onclick="filtrarCampanhas('todas')">Todas</button>
-<button class="tab-btn" onclick="filtrarCampanhas('pendente')">Pendentes</button>
-<button class="tab-btn" onclick="filtrarCampanhas('ativo')">Ativas</button>
-<button class="tab-btn" onclick="filtrarCampanhas('pausado')">Pausadas</button>
-<button class="tab-btn" onclick="filtrarCampanhas('finalizado')">Finalizadas</button>
-</div>
-<div id="campanhasList"></div>
-</div>
-<div id="sec-influencers" class="section-content" style="display:none">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-<h3>👥 Influencers</h3>
-<button class="btn btn-primary" onclick="abrirModalInfluencer()">➕ Novo Influencer</button>
-</div>
-<div id="influencersList"></div>
-</div>
-<div id="sec-usuarios" class="section-content" style="display:none">
-<h3>👤 Usuários</h3>
-<div id="usuariosList"></div>
-</div>
-<div id="sec-configuracoes" class="section-content" style="display:none">
-<h3>⚙️ Configurações</h3>
-<div class="card">
-<div class="form-group"><label>Lance Padrão (R$)</label><input type="number" id="configLance" step="0.01" value="0.01"></div>
-<div class="form-group"><label>Duração Padrão (horas)</label><input type="number" id="configDuracao" value="24"></div>
-<button class="btn btn-primary" onclick="salvarConfiguracoes()">💾 Salvar</button>
-</div>
-</div>
-</div>
+
+<!-- MODAL CAMPANHA -->
 <div class="modal-overlay" id="modalCampanha">
-<div class="modal">
-<button class="close" onclick="fecharModalCampanha()">✕</button>
-<h2 id="tituloModalCampanha">➕ Nova Campanha</h2>
-<input type="hidden" id="campanhaId">
-<div class="form-group"><label>Nome do Leilão</label><input type="text" id="campNome" placeholder="Ex: Leilão de TESTE 4" oninput="gerarSlugAuto()"></div>
-<div class="form-group"><label>Slug (URL)</label><input type="text" id="campSlug" placeholder="leilao-de-teste-4"></div>
-<div class="form-group"><label>Descrição</label><textarea id="campDescricao" placeholder="Descrição do prêmio..."></textarea></div>
-<div class="form-group"><label>URL da Imagem do Prêmio</label><input type="text" id="campImagemUrl" placeholder="https://..."></div>
-<div class="form-group"><label>Meta/Valor do Prêmio (R$)</label><input type="number" id="campMeta" step="0.01" value="3.00"></div>
-<div class="form-group"><label>Lance Inicial (R$)</label><input type="number" id="campLanceInicial" step="0.01" value="0.01"></div>
-<div class="form-group"><label>Duração (horas)</label><input type="number" id="campDuracao" value="24"></div>
-<div class="form-group"><label>Influencer</label><select id="campInfluencer"><option value="">Nenhum</option></select></div>
-<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
-<button class="btn btn-secondary" onclick="fecharModalCampanha()">Cancelar</button>
-<button class="btn btn-primary" onclick="salvarCampanha()">💾 Salvar</button>
+  <div class="modal">
+    <div class="modal-header"><h3 id="tituloModalCampanha">Nova Campanha</h3><button class="modal-close" onclick="fecharModalCampanha()">&times;</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="campId">
+      <div class="form-group"><label>Nome do Leilão *</label><input type="text" id="campNome" oninput="gerarSlug()"><div class="slug-preview" id="slugPreview"></div></div>
+      <div class="form-group"><label>Slug (URL) *</label><input type="text" id="campSlug"></div>
+      <div class="form-group"><label>Descrição</label><textarea id="campDescricao" placeholder="Descrição do prêmio..."></textarea></div>
+
+      <div class="form-group">
+        <label>Imagem do Prêmio</label>
+        <div class="img-source-tabs">
+          <div class="img-source-tab active" onclick="trocarAbaImagem('url')">URL da Imagem</div>
+          <div class="img-source-tab" onclick="trocarAbaImagem('upload')">Fazer Upload</div>
+        </div>
+        <div class="img-source-panel active" id="panel-url">
+          <input type="text" id="campImagemUrl" placeholder="https://..." oninput="previewImagemUrl()">
+        </div>
+        <div class="img-source-panel" id="panel-upload">
+          <div class="upload-area" onclick="document.getElementById('campImagemFile').click()">
+            <input type="file" id="campImagemFile" accept="image/*" onchange="previewImagemUpload(event)">
+            <div class="upload-text">Clique para selecionar ou arraste uma imagem<br><strong>JPG, PNG, WEBP</strong> até 5MB</div>
+          </div>
+        </div>
+        <img id="imgPreview" class="img-preview" alt="Preview">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group"><label>Meta/Valor do Prêmio (R$) *</label><input type="number" step="0.01" id="campMeta"></div>
+        <div class="form-group"><label>Lance Inicial (R$) *</label><input type="number" step="0.01" id="campLance"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Duração (horas) *</label><input type="number" id="campDuracao" value="24"></div>
+        <div class="form-group"><label>Influencer</label><select id="campInfluencer"><option value="">Nenhum</option></select></div>
+      </div>
+      <div class="form-group" id="campStatusGroup" style="display:none">
+        <label>Status</label>
+        <select id="campStatus"><option value="pendente">Pendente</option><option value="ativa">Ativa</option><option value="pausada">Pausada</option><option value="finalizada">Finalizada</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" style="background:#334155;color:#e2e8f0" onclick="fecharModalCampanha()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarCampanha()">💾 Salvar</button>
+    </div>
+  </div>
 </div>
-</div>
-</div>
+
+<!-- MODAL INFLUENCER -->
 <div class="modal-overlay" id="modalInfluencer">
-<div class="modal">
-<button class="close" onclick="fecharModalInfluencer()">✕</button>
-<h2 id="tituloModalInfluencer">➕ Novo Influencer</h2>
-<input type="hidden" id="influencerId">
-<div class="form-group"><label>Nome</label><input type="text" id="infNome" placeholder="Nome do influencer"></div>
-<div class="form-group"><label>E-mail</label><input type="email" id="infEmail" placeholder="email@exemplo.com"></div>
-<div class="form-group"><label>Telefone</label><input type="text" id="infTelefone" placeholder="(11) 99999-9999"></div>
-<div class="form-group"><label>Código</label><input type="text" id="infCodigo" placeholder="Código único"></div>
-<div class="form-group"><label>Comissão (%)</label><input type="number" id="infComissao" step="0.01" value="0"></div>
-<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
-<button class="btn btn-secondary" onclick="fecharModalInfluencer()">Cancelar</button>
-<button class="btn btn-primary" onclick="salvarInfluencer()">💾 Salvar</button>
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header"><h3 id="tituloModalInfluencer">Novo Influencer</h3><button class="modal-close" onclick="fecharModalInfluencer()">&times;</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="infId">
+      <div class="form-group"><label>Nome</label><input type="text" id="infNome"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="infEmail"></div>
+      <div class="form-group"><label>Telefone</label><input type="text" id="infTelefone"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Código</label><input type="text" id="infCodigo"></div>
+        <div class="form-group"><label>Comissão (%)</label><input type="number" step="0.01" id="infComissao"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" style="background:#334155;color:#e2e8f0" onclick="fecharModalInfluencer()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarInfluencer()">Salvar</button>
+    </div>
+  </div>
 </div>
-</div>
-</div>
-<div class="toast" id="toast"></div>
+
 <script>
-let token=localStorage.getItem('adminToken');
-let campanhasCache=[];
-let influencersCache=[];
-let filtroAtivo='todas';
+const API = window.location.origin;
+let token = localStorage.getItem('admin_token');
+let influencers = [];
 
-console.log('[ADMIN] Token no localStorage:', token ? 'PRESENTE' : 'AUSENTE');
-
-if(token){
-  console.log('[ADMIN] Token encontrado, escondendo login...');
-  document.getElementById('loginOverlay').style.display='none';
-  loadDashboard();
-  loadCampanhas();
-  loadInfluencers();
-  loadUsuarios();
+function slugify(str){
+  return str.toString().normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase()
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').substring(0,60);
+}
+function formatMoney(v){return 'R$ '+(parseFloat(v)||0).toFixed(2).replace('.',',');}
+function mostrarToast(msg, erro){
+  const t = document.createElement('div'); t.className='toast'+(erro?' error':''); t.textContent=msg;
+  document.body.appendChild(t); setTimeout(()=>t.remove(),3500);
 }
 
-function fazerLogin(){const senha=document.getElementById('senhaAdmin').value;if(!senha){mostrarToast('Digite a senha','error');return}fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({senha})}).then(r=>r.json()).then(data=>{console.log('[ADMIN] Login resposta:',data);if(data.sucesso){token=data.token;localStorage.setItem('adminToken',token);console.log('[ADMIN] Token salvo:',token.substring(0,20)+'...');document.getElementById('loginOverlay').style.display='none';loadDashboard();loadCampanhas();loadInfluencers();loadUsuarios()}else{mostrarToast(data.erro||'Senha incorreta','error')}}).catch(err=>{console.error('[ADMIN] Erro login:',err);mostrarToast('Erro ao fazer login','error')})}
-function logout(){localStorage.removeItem('adminToken');token=null;location.reload()}
-function mostrarToast(msg,tipo='info'){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+tipo;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),4000)}
-function showSection(sec){document.querySelectorAll('.section-content').forEach(s=>s.style.display='none');document.querySelectorAll('.sidebar nav a').forEach(a=>a.classList.remove('active'));document.getElementById('sec-'+sec).style.display='block';document.querySelector(`[data-section="${sec}"]`).classList.add('active');document.getElementById('pageTitle').textContent=document.querySelector(`[data-section="${sec}"]`).textContent;if(sec==='dashboard')loadDashboard();if(sec==='campanhas')loadCampanhas();if(sec==='influencers')loadInfluencers();if(sec==='usuarios')loadUsuarios();if(sec==='configuracoes')loadConfiguracoes()}
+async function api(path, opts={}){
+  const res = await fetch(API+path, {headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},...opts});
+  if(res.status===401){logout(); throw new Error('Sessão expirada');}
+  if(!res.ok){const e=await res.json().catch(()=>({})); throw new Error(e.erro||'Erro '+res.status);}
+  return res.status===204?null:res.json();
+}
 
-function gerarSlugAuto(){const nome=document.getElementById('campNome').value;const slugInput=document.getElementById('campSlug');if(!slugInput.value||slugInput.dataset.auto==='true'){slugInput.value=gerarSlug(nome);slugInput.dataset.auto='true'}}
-function gerarSlug(nome){return nome.toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')}
+// LOGIN
+if(token){
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('appScreen').classList.remove('hidden');
+  carregarTudo();
+}
+async function fazerLogin(){
+  try{
+    const data = await api('/api/admin/login',{method:'POST',body:JSON.stringify({email:document.getElementById('loginEmail').value,senha:document.getElementById('loginSenha').value})});
+    token=data.token; localStorage.setItem('admin_token',token);
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('appScreen').classList.remove('hidden');
+    carregarTudo();
+  }catch(e){mostrarToast(e.message,true);}
+}
+function logout(){localStorage.removeItem('admin_token');location.reload();}
 
-function loadDashboard(){console.log('[ADMIN] Carregando dashboard...');fetch('/api/admin/dashboard',{headers:{'Authorization':'Bearer '+token}}).then(r=>{console.log('[ADMIN] Dashboard status:',r.status);if(r.status===401){console.error('[ADMIN] 401 no dashboard - token inválido ou expirado');mostrarToast('Sessão expirada. Faça login novamente.','error');logout();return}return r.json()}).then(data=>{if(!data)return;console.log('[ADMIN] Dashboard dados:',data);if(data.sucesso){document.getElementById('statUsuarios').textContent=data.total_usuarios||0;document.getElementById('statCampanhas').textContent=data.total_campanhas||0;document.getElementById('statAtivas').textContent=data.campanhas_ativas||0;document.getElementById('statLances').textContent=data.total_lances||0;document.getElementById('statArrecadado').textContent='R$ '+(data.total_arrecadado||0).toFixed(2);document.getElementById('statPendentes').textContent=data.total_pagamentos_pendentes||0}else{console.error('[ADMIN] Dashboard erro:',data.erro)}}).catch(err=>{console.error('[ADMIN] Erro dashboard:',err);mostrarToast('Erro ao carregar dashboard','error')})}
+// NAVEGAÇÃO
+function mostrarSecao(sec){
+  document.querySelectorAll('section').forEach(s=>s.classList.add('hidden'));
+  document.getElementById('sec-'+sec).classList.remove('hidden');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  if(sec==='campanhas') carregarCampanhas();
+  if(sec==='influencers') carregarInfluencers();
+  if(sec==='usuarios') carregarUsuarios();
+  if(sec==='configuracoes') carregarConfiguracoes();
+}
 
-function loadCampanhas(){console.log('[ADMIN] Carregando campanhas...');fetch('/api/admin/campanhas',{headers:{'Authorization':'Bearer '+token}}).then(r=>{console.log('[ADMIN] Campanhas status:',r.status);if(r.status===401){console.error('[ADMIN] 401 em campanhas');logout();return}return r.json()}).then(data=>{if(!data)return;console.log('[ADMIN] Campanhas dados:',data);if(data.sucesso){campanhasCache=data.campanhas||[];renderCampanhas()}else{console.error('[ADMIN] Campanhas erro:',data.erro)}}).catch(err=>{console.error('[ADMIN] Erro campanhas:',err);mostrarToast('Erro ao carregar campanhas','error')})}
-function filtrarCampanhas(status){filtroAtivo=status;document.querySelectorAll('.tabs .tab-btn').forEach(b=>b.classList.remove('active'));event.target.classList.add('active');renderCampanhas()}
-function renderCampanhas(){const container=document.getElementById('campanhasList');let lista=campanhasCache;if(filtroAtivo!=='todas')lista=lista.filter(c=>c.status===filtroAtivo);if(lista.length===0){container.innerHTML='<div class="empty-state"><div class="icon">📭</div><p>Nenhuma campanha encontrada</p></div>';return}let html='<table class="table"><thead><tr><th>Nome</th><th>Slug</th><th>Status</th><th>Lance Atual</th><th>Ações</th></tr></thead><tbody>';lista.forEach(c=>{const statusLabel={pendente:'Pendente',ativo:'Ativa',pausado:'Pausada',finalizado:'Finalizada',cancelada:'Cancelada'}[c.status]||c.status;const urlLeilao=window.location.origin+'/'+c.slug;html+=`<tr><td><strong>${c.nome}</strong><br><small style="color:#94a3b8">${c.descricao||''}</small></td><td><a href="${urlLeilao}" target="_blank" style="color:#3b82f6;text-decoration:none">/${c.slug}</a></td><td><span class="badge badge-${c.status}">${statusLabel}</span></td><td>R$ ${parseFloat(c.lance_inicial||0).toFixed(2)}</td><td style="white-space:nowrap">${c.status==='pendente'?`<button class="btn btn-success" onclick="ativarCampanha(${c.id})" style="padding:4px 10px;font-size:12px">🚀 Ativar</button> `:(c.status==='ativo'?`<button class="btn btn-warning" onclick="pausarCampanha(${c.id})" style="padding:4px 10px;font-size:12px">⏸️ Pausar</button> `:(c.status==='pausado'?`<button class="btn btn-success" onclick="ativarCampanha(${c.id})" style="padding:4px 10px;font-size:12px">▶️ Retomar</button> `:''))}<button class="btn btn-secondary" onclick="editarCampanha(${c.id})" style="padding:4px 10px;font-size:12px">✏️ Editar</button> <button class="btn btn-danger" onclick="finalizarCampanha(${c.id})" style="padding:4px 10px;font-size:12px">🏁 Finalizar</button></td></tr>`});html+='</tbody></table>';container.innerHTML=html}
+async function carregarTudo(){carregarDashboard();carregarCampanhas();carregarInfluencers();}
 
-function abrirModalCampanha(){document.getElementById('campanhaId').value='';document.getElementById('tituloModalCampanha').textContent='➕ Nova Campanha';document.getElementById('campNome').value='';document.getElementById('campSlug').value='';document.getElementById('campSlug').dataset.auto='true';document.getElementById('campDescricao').value='';document.getElementById('campImagemUrl').value='';document.getElementById('campMeta').value='3.00';document.getElementById('campLanceInicial').value='0.01';document.getElementById('campDuracao').value='24';document.getElementById('campInfluencer').value='';document.getElementById('modalCampanha').classList.add('active');carregarSelectInfluencers()}
-function fecharModalCampanha(){document.getElementById('modalCampanha').classList.remove('active')}
-function editarCampanha(id){const c=campanhasCache.find(x=>x.id===id);if(!c)return;document.getElementById('campanhaId').value=c.id;document.getElementById('tituloModalCampanha').textContent='✏️ Editar Campanha';document.getElementById('campNome').value=c.nome;document.getElementById('campSlug').value=c.slug;document.getElementById('campSlug').dataset.auto='false';document.getElementById('campDescricao').value=c.descricao||'';document.getElementById('campImagemUrl').value=c.premio_imagem_url||'';document.getElementById('campMeta').value=c.meta_valor||3.00;document.getElementById('campLanceInicial').value=c.lance_inicial||0.01;document.getElementById('campDuracao').value=c.duracao_horas||24;document.getElementById('campInfluencer').value=c.influencer_id||'';document.getElementById('modalCampanha').classList.add('active');carregarSelectInfluencers()}
-function salvarCampanha(){const id=document.getElementById('campanhaId').value;const nome=document.getElementById('campNome').value.trim();const slug=document.getElementById('campSlug').value.trim();if(!nome||!slug){mostrarToast('Nome e slug são obrigatórios','error');return}const dados={nome,slug,descricao:document.getElementById('campDescricao').value.trim(),premio_imagem_url:document.getElementById('campImagemUrl').value.trim(),meta_valor:parseFloat(document.getElementById('campMeta').value)||3.00,lance_inicial:parseFloat(document.getElementById('campLanceInicial').value)||0.01,duracao_horas:parseInt(document.getElementById('campDuracao').value)||24,influencer_id:document.getElementById('campInfluencer').value||null};const url=id?`/api/admin/campanhas/${id}`:'/api/admin/campanhas';const method=id?'PUT':'POST';fetch(url,{method,headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify(dados)}).then(r=>r.json()).then(data=>{if(data.sucesso){mostrarToast(id?'Campanha atualizada!':'Campanha criada!','success');fecharModalCampanha();loadCampanhas()}else{mostrarToast(data.erro||'Erro ao salvar','error')}}).catch(()=>mostrarToast('Erro ao salvar','error'))}
-function ativarCampanha(id){fetch(`/api/admin/campanhas/${id}/ativar`,{method:'POST',headers:{'Authorization':'Bearer '+token}}).then(r=>r.json()).then(data=>{if(data.sucesso){mostrarToast('Campanha ativada!','success');loadCampanhas()}else{mostrarToast(data.erro||'Erro','error')}}).catch(()=>mostrarToast('Erro ao ativar','error'))}
-function pausarCampanha(id){fetch(`/api/admin/campanhas/${id}/pausar`,{method:'POST',headers:{'Authorization':'Bearer '+token}}).then(r=>r.json()).then(data=>{if(data.sucesso){mostrarToast('Campanha pausada!','success');loadCampanhas()}else{mostrarToast(data.erro||'Erro','error')}}).catch(()=>mostrarToast('Erro ao pausar','error'))}
-function finalizarCampanha(id){if(!confirm('Tem certeza que deseja finalizar esta campanha?'))return;fetch(`/api/admin/campanhas/${id}/finalizar`,{method:'POST',headers:{'Authorization':'Bearer '+token}}).then(r=>r.json()).then(data=>{if(data.sucesso){mostrarToast('Campanha finalizada!','success');loadCampanhas()}else{mostrarToast(data.erro||'Erro','error')}}).catch(()=>mostrarToast('Erro ao finalizar','error'))}
+// DASHBOARD
+async function carregarDashboard(){
+  try{
+    const d=await api('/api/admin/dashboard');
+    document.getElementById('dashTotalCampanhas').textContent=d.totalCampanhas;
+    document.getElementById('dashAtivas').textContent=d.campanhasAtivas;
+    document.getElementById('dashUsuarios').textContent=d.totalUsuarios;
+    document.getElementById('dashArrecadado').textContent=formatMoney(d.totalArrecadado);
+  }catch(e){console.error(e);}
+}
 
-function loadInfluencers(){console.log('[ADMIN] Carregando influencers...');fetch('/api/admin/influencers',{headers:{'Authorization':'Bearer '+token}}).then(r=>{console.log('[ADMIN] Influencers status:',r.status);if(r.status===401){console.error('[ADMIN] 401 em influencers');logout();return}return r.json()}).then(data=>{if(!data)return;if(data.sucesso){influencersCache=data.influencers||[];renderInfluencers();carregarSelectInfluencers()}else{console.error('[ADMIN] Influencers erro:',data.erro)}}).catch(err=>{console.error('[ADMIN] Erro influencers:',err);mostrarToast('Erro ao carregar influencers','error')})}
-function renderInfluencers(){const container=document.getElementById('influencersList');if(influencersCache.length===0){container.innerHTML='<div class="empty-state"><div class="icon">👥</div><p>Nenhum influencer cadastrado</p></div>';return}let html='<table class="table"><thead><tr><th>Nome</th><th>E-mail</th><th>Código</th><th>Comissão</th><th>Ações</th></tr></thead><tbody>';influencersCache.forEach(i=>{html+=`<tr><td>${i.nome}</td><td>${i.email}</td><td>${i.codigo||'-'}</td><td>${i.comissao||0}%</td><td><button class="btn btn-secondary" onclick="editarInfluencer(${i.id})" style="padding:4px 10px;font-size:12px">✏️ Editar</button> <button class="btn btn-danger" onclick="deletarInfluencer(${i.id})" style="padding:4px 10px;font-size:12px">🗑️ Excluir</button></td></tr>`});html+='</tbody></table>';container.innerHTML=html}
-function carregarSelectInfluencers(){const sel=document.getElementById('campInfluencer');sel.innerHTML='<option value="">Nenhum</option>';influencersCache.forEach(i=>{sel.innerHTML+=`<option value="${i.id}">${i.nome}</option>`})}
-function abrirModalInfluencer(){document.getElementById('influencerId').value='';document.getElementById('tituloModalInfluencer').textContent='➕ Novo Influencer';document.getElementById('infNome').value='';document.getElementById('infEmail').value='';document.getElementById('infTelefone').value='';document.getElementById('infCodigo').value='';document.getElementById('infComissao').value='0';document.getElementById('modalInfluencer').classList.add('active')}
-function fecharModalInfluencer(){document.getElementById('modalInfluencer').classList.remove('active')}
-function editarInfluencer(id){const i=influencersCache.find(x=>x.id===id);if(!i)return;document.getElementById('influencerId').value=i.id;document.getElementById('tituloModalInfluencer').textContent='✏️ Editar Influencer';document.getElementById('infNome').value=i.nome;document.getElementById('infEmail').value=i.email;document.getElementById('infTelefone').value=i.telefone||'';document.getElementById('infCodigo').value=i.codigo||'';document.getElementById('infComissao').value=i.comissao||0;document.getElementById('modalInfluencer').classList.add('active')}
-function salvarInfluencer(){const id=document.getElementById('influencerId').value;const dados={nome:document.getElementById('infNome').value.trim(),email:document.getElementById('infEmail').value.trim(),telefone:document.getElementById('infTelefone').value.trim(),codigo:document.getElementById('infCodigo').value.trim(),comissao:parseFloat(document.getElementById('infComissao').value)||0};if(!dados.nome||!dados.email){mostrarToast('Nome e email são obrigatórios','error');return}const url=id?`/api/admin/influencers/${id}`:'/api/admin/influencers';const method=id?'PUT':'POST';fetch(url,{method,headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify(dados)}).then(r=>r.json()).then(data=>{if(data.sucesso){mostrarToast(id?'Influencer atualizado!':'Influencer criado!','success');fecharModalInfluencer();loadInfluencers()}else{mostrarToast(data.erro||'Erro ao salvar','error')}}).catch(()=>mostrarToast('Erro ao salvar','error'))}
-function deletarInfluencer(id){if(!confirm('Tem certeza?'))return;fetch(`/api/admin/influencers/${id}`,{method:'DELETE',headers:{'Authorization':'Bearer '+token}}).then(r=>r.json()).then(data=>{if(data.sucesso){mostrarToast('Influencer excluído','success');loadInfluencers()}else{mostrarToast(data.erro||'Erro','error')}}).catch(()=>mostrarToast('Erro ao excluir','error'))}
+// CAMPANHAS
+async function carregarCampanhas(){
+  try{
+    const lista=await api('/api/admin/campanhas');
+    const tbody=document.getElementById('tabelaCampanhas');
+    tbody.innerHTML=lista.map(c=>{
+      const statusClass={'pendente':'badge-pendente','ativa':'badge-ativa','pausada':'badge-pausada','finalizada':'badge-finalizada'}[c.status]||'badge-pendente';
+      const slugLink = c.status==='ativa' ? `<a href="/${c.slug}" target="_blank" style="color:#60a5fa;text-decoration:none">/${c.slug}</a>` : `/${c.slug}`;
+      return `<tr>
+        <td><strong>${c.nome}</strong></td>
+        <td>${slugLink}</td>
+        <td>${formatMoney(c.meta_valor)}</td>
+        <td><span class="badge ${statusClass}">${c.status}</span></td>
+        <td>${c.influencer_nome||'—'}</td>
+        <td class="actions">
+          <button class="btn btn-sm btn-primary" onclick='editarCampanha(${JSON.stringify(c).replace(/'/g,"&#39;")})'>Editar</button>
+          ${c.status!=='ativa'?`<button class="btn btn-sm btn-success" onclick="ativarCampanha(${c.id})">Ativar</button>`:`<button class="btn btn-sm btn-warning" onclick="pausarCampanha(${c.id})">Pausar</button>`}
+          <button class="btn btn-sm btn-danger" onclick="excluirCampanha(${c.id})">Excluir</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }catch(e){mostrarToast(e.message,true);}
+}
 
-function loadUsuarios(){console.log('[ADMIN] Carregando usuários...');fetch('/api/admin/usuarios',{headers:{'Authorization':'Bearer '+token}}).then(r=>{console.log('[ADMIN] Usuarios status:',r.status);if(r.status===401){console.error('[ADMIN] 401 em usuarios');logout();return}return r.json()}).then(data=>{if(!data)return;if(data.sucesso){const container=document.getElementById('usuariosList');const lista=data.usuarios||[];if(lista.length===0){container.innerHTML='<div class="empty-state"><div class="icon">👤</div><p>Nenhum usuário cadastrado</p></div>';return}let html='<table class="table"><thead><tr><th>Nome</th><th>E-mail</th><th>Data</th></tr></thead><tbody>';lista.forEach(u=>{html+=`<tr><td>${u.nome}</td><td>${u.email}</td><td>${new Date(u.created_at).toLocaleString()}</td></tr>`});html+='</tbody></table>';container.innerHTML=html}else{console.error('[ADMIN] Usuarios erro:',data.erro)}}).catch(err=>{console.error('[ADMIN] Erro usuarios:',err);mostrarToast('Erro ao carregar usuários','error')})}
+function gerarSlug(){
+  const nome=document.getElementById('campNome').value;
+  const slug=slugify(nome);
+  document.getElementById('campSlug').value=slug;
+  document.getElementById('slugPreview').textContent=slug?'URL: /'+slug:'';
+}
 
-function loadConfiguracoes(){fetch('/api/admin/configuracoes',{headers:{'Authorization':'Bearer '+token}}).then(r=>r.json()).then(data=>{if(data.sucesso&&data.configuracoes){document.getElementById('configLance').value=data.configuracoes.lance_padrao||0.01;document.getElementById('configDuracao').value=data.configuracoes.duracao_padrao||24}}).catch(()=>{})}
-function salvarConfiguracoes(){const dados={lance_padrao:parseFloat(document.getElementById('configLance').value)||0.01,duracao_padrao:parseInt(document.getElementById('configDuracao').value)||24};fetch('/api/admin/configuracoes',{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify(dados)}).then(r=>r.json()).then(data=>{if(data.sucesso){mostrarToast('Configurações salvas!','success')}else{mostrarToast(data.erro||'Erro','error')}}).catch(()=>mostrarToast('Erro ao salvar','error'))}
+function trocarAbaImagem(aba){
+  document.querySelectorAll('.img-source-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.img-source-panel').forEach(p=>p.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.getElementById('panel-'+aba).classList.add('active');
+}
+
+function previewImagemUrl(){
+  const url=document.getElementById('campImagemUrl').value;
+  const img=document.getElementById('imgPreview');
+  if(url){img.src=url;img.classList.add('active');}
+  else img.classList.remove('active');
+}
+
+function previewImagemUpload(ev){
+  const file=ev.target.files[0];
+  if(!file)return;
+  const img=document.getElementById('imgPreview');
+  img.src=URL.createObjectURL(file);
+  img.classList.add('active');
+}
+
+function abrirModalCampanha(){
+  document.getElementById('campId').value='';
+  document.getElementById('campNome').value='';
+  document.getElementById('campSlug').value='';
+  document.getElementById('slugPreview').textContent='';
+  document.getElementById('campDescricao').value='';
+  document.getElementById('campImagemUrl').value='';
+  document.getElementById('campImagemFile').value='';
+  document.getElementById('imgPreview').classList.remove('active');
+  document.getElementById('campMeta').value='';
+  document.getElementById('campLance').value='';
+  document.getElementById('campDuracao').value='24';
+  document.getElementById('campStatusGroup').style.display='none';
+  document.getElementById('tituloModalCampanha').textContent='Nova Campanha';
+  carregarSelectInfluencers();
+  document.getElementById('modalCampanha').classList.add('active');
+}
+
+function editarCampanha(c){
+  document.getElementById('campId').value=c.id;
+  document.getElementById('campNome').value=c.nome;
+  document.getElementById('campSlug').value=c.slug;
+  document.getElementById('slugPreview').textContent='URL: /'+c.slug;
+  document.getElementById('campDescricao').value=c.descricao||'';
+  document.getElementById('campImagemUrl').value=c.premio_imagem||'';
+  document.getElementById('campImagemFile').value='';
+  const img=document.getElementById('imgPreview');
+  if(c.premio_imagem){img.src=c.premio_imagem;img.classList.add('active');}
+  else img.classList.remove('active');
+  document.getElementById('campMeta').value=c.meta_valor;
+  document.getElementById('campLance').value=c.lance_inicial;
+  document.getElementById('campDuracao').value=c.duracao_horas;
+  document.getElementById('campStatus').value=c.status;
+  document.getElementById('campStatusGroup').style.display='block';
+  document.getElementById('tituloModalCampanha').textContent='Editar Campanha';
+  carregarSelectInfluencers(c.influencer_id);
+  document.getElementById('modalCampanha').classList.add('active');
+}
+
+function fecharModalCampanha(){document.getElementById('modalCampanha').classList.remove('active');}
+
+async function salvarCampanha(){
+  try{
+    const id=document.getElementById('campId').value;
+    const nome=document.getElementById('campNome').value.trim();
+    const slug=document.getElementById('campSlug').value.trim();
+    if(!nome||!slug){mostrarToast('Nome e slug são obrigatórios',true);return;}
+
+    let premio_imagem = document.getElementById('campImagemUrl').value.trim();
+    const fileInput = document.getElementById('campImagemFile');
+
+    // Se tiver arquivo selecionado, faz upload primeiro
+    if(fileInput.files && fileInput.files[0]){
+      const formData = new FormData();
+      formData.append('imagem', fileInput.files[0]);
+      const res = await fetch(API+'/api/upload-imagem', {
+        method:'POST',
+        headers:{'Authorization':'Bearer '+token},
+        body:formData
+      });
+      if(!res.ok){const e=await res.json(); throw new Error(e.erro||'Erro no upload');}
+      const data = await res.json();
+      premio_imagem = data.url;
+    }
+
+    const payload = {
+      nome, slug, descricao: document.getElementById('campDescricao').value.trim(),
+      premio_imagem: premio_imagem || null,
+      meta_valor: parseFloat(document.getElementById('campMeta').value)||0,
+      lance_inicial: parseFloat(document.getElementById('campLance').value)||0,
+      duracao_horas: parseInt(document.getElementById('campDuracao').value)||24,
+      influencer_id: document.getElementById('campInfluencer').value||null
+    };
+    if(id){
+      payload.status = document.getElementById('campStatus').value;
+      await api('/api/admin/campanhas/'+id,{method:'PUT',body:JSON.stringify(payload)});
+      mostrarToast('Campanha atualizada!');
+    }else{
+      await api('/api/admin/campanhas',{method:'POST',body:JSON.stringify(payload)});
+      mostrarToast('Campanha criada!');
+    }
+    fecharModalCampanha();
+    carregarCampanhas();
+    carregarDashboard();
+  }catch(e){mostrarToast(e.message,true);}
+}
+
+async function ativarCampanha(id){try{await api('/api/admin/campanhas/'+id,{method:'PUT',body:JSON.stringify({status:'ativa'})});mostrarToast('Campanha ativada!');carregarCampanhas();}catch(e){mostrarToast(e.message,true);}}
+async function pausarCampanha(id){try{await api('/api/admin/campanhas/'+id,{method:'PUT',body:JSON.stringify({status:'pausada'})});mostrarToast('Campanha pausada!');carregarCampanhas();}catch(e){mostrarToast(e.message,true);}}
+async function excluirCampanha(id){if(!confirm('Tem certeza?'))return;try{await api('/api/admin/campanhas/'+id,{method:'DELETE'});mostrarToast('Campanha excluída!');carregarCampanhas();carregarDashboard();}catch(e){mostrarToast(e.message,true);}}
+
+// INFLUENCERS
+async function carregarInfluencers(){
+  try{
+    influencers=await api('/api/admin/influencers');
+    const tbody=document.getElementById('tabelaInfluencers');
+    tbody.innerHTML=influencers.map(i=>`<tr><td>${i.nome}</td><td>${i.codigo}</td><td>${i.comissao}%</td><td class="actions"><button class="btn btn-sm btn-primary" onclick='editarInfluencer(${JSON.stringify(i).replace(/'/g,"&#39;")})'>Editar</button><button class="btn btn-sm btn-danger" onclick="excluirInfluencer(${i.id})">Excluir</button></td></tr>`).join('');
+  }catch(e){mostrarToast(e.message,true);}
+}
+function carregarSelectInfluencers(selectedId){
+  const sel=document.getElementById('campInfluencer');
+  sel.innerHTML='<option value="">Nenhum</option>'+influencers.map(i=>`<option value="${i.id}" ${i.id==selectedId?'selected':''}>${i.nome}</option>`).join('');
+}
+function abrirModalInfluencer(){document.getElementById('infId').value='';document.getElementById('infNome').value='';document.getElementById('infEmail').value='';document.getElementById('infTelefone').value='';document.getElementById('infCodigo').value='';document.getElementById('infComissao').value='';document.getElementById('tituloModalInfluencer').textContent='Novo Influencer';document.getElementById('modalInfluencer').classList.add('active');}
+function editarInfluencer(i){document.getElementById('infId').value=i.id;document.getElementById('infNome').value=i.nome;document.getElementById('infEmail').value=i.email;document.getElementById('infTelefone').value=i.telefone||'';document.getElementById('infCodigo').value=i.codigo;document.getElementById('infComissao').value=i.comissao;document.getElementById('tituloModalInfluencer').textContent='Editar Influencer';document.getElementById('modalInfluencer').classList.add('active');}
+function fecharModalInfluencer(){document.getElementById('modalInfluencer').classList.remove('active');}
+async function salvarInfluencer(){try{const id=document.getElementById('infId').value;const payload={nome:document.getElementById('infNome').value,email:document.getElementById('infEmail').value,telefone:document.getElementById('infTelefone').value,codigo:document.getElementById('infCodigo').value,comissao:parseFloat(document.getElementById('infComissao').value)||0};if(id){await api('/api/admin/influencers/'+id,{method:'PUT',body:JSON.stringify(payload)});mostrarToast('Influencer atualizado!');}else{await api('/api/admin/influencers',{method:'POST',body:JSON.stringify(payload)});mostrarToast('Influencer criado!');}fecharModalInfluencer();carregarInfluencers();}catch(e){mostrarToast(e.message,true);}}
+async function excluirInfluencer(id){if(!confirm('Tem certeza?'))return;try{await api('/api/admin/influencers/'+id,{method:'DELETE'});mostrarToast('Influencer excluído!');carregarInfluencers();}catch(e){mostrarToast(e.message,true);}}
+
+// USUÁRIOS
+async function carregarUsuarios(){try{const lista=await api('/api/admin/usuarios');document.getElementById('tabelaUsuarios').innerHTML=lista.map(u=>`<tr><td>${u.nome}</td><td>${u.email}</td><td>${new Date(u.created_at).toLocaleString('pt-BR')}</td></tr>`).join('');}catch(e){mostrarToast(e.message,true);}}
+
+// CONFIGURAÇÕES
+async function carregarConfiguracoes(){try{const c=await api('/api/admin/configuracoes');if(c){document.getElementById('cfgLance').value=c.lance_padrao||'';document.getElementById('cfgDuracao').value=c.duracao_padrao||'';document.getElementById('cfgTaxa').value=c.taxa_pix||'';}}catch(e){}}
+async function salvarConfiguracoes(){try{await api('/api/admin/configuracoes',{method:'PUT',body:JSON.stringify({lance_padrao:parseFloat(document.getElementById('cfgLance').value)||0,duracao_padrao:parseInt(document.getElementById('cfgDuracao').value)||24,taxa_pix:parseFloat(document.getElementById('cfgTaxa').value)||0})});mostrarToast('Configurações salvas!');}catch(e){mostrarToast(e.message,true);}}
 </script>
 </body>
 </html>

@@ -3,507 +3,390 @@ const cors = require('cors');
 const helmet = require('helmet');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const { Pool } = require('pg');
+const { createClient } = require('@supabase/supabase-js');
+const multer = require('multer');
 const path = require('path');
+const http = require('http');
+const { Server } = require('socket.io');
 require('dotenv').config();
 
-const db = require('./database-pg');
 const app = express();
-const PORT = process.env.PORT || 10000;
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: '*' } });
 
-// ========== MIDDLEWARES ==========
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.socket.io", "https://cdnjs.cloudflare.com"],
-      scriptSrcAttr: ["'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      imgSrc: ["'self'", "data:", "blob:", "https:"],
-      connectSrc: ["'self'", "ws:", "wss:", "https://api.mercadopago.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-    }
-  }
-}));
+// Supabase client (para Storage)
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
+// PostgreSQL pool
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
+
+// Multer config (memória)
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
+
+// Middlewares
 app.use(cors());
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false
+}));
 app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static('public'));
 
-// ========== SOCKET.IO ==========
-const http = require('http').createServer(app);
-const io = require('socket.io')(http, {
-  cors: { origin: "*", methods: ["GET", "POST"] },
-  transports: ['websocket', 'polling']
-});
-
-function safeEmit(evento, dados) {
-  try { io.emit(evento, dados); } catch (e) { console.error('Socket emit erro:', e.message); }
-}
-
-io.on('connection', (socket) => {
-  console.log('Cliente conectado:', socket.id);
-  socket.on('disconnect', () => console.log('Cliente desconectado:', socket.id));
-});
-
-// ========== AUTH ADMIN ==========
-const JWT_SECRET = process.env.JWT_SECRET || 'leilao-facil-secret-jwt-2026';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD_PLAIN || 'admin123';
-
-function gerarTokenAdmin() {
-  return jwt.sign({ tipo: 'admin', timestamp: Date.now() }, JWT_SECRET, { expiresIn: '8h' });
-}
-
-function verificarAdmin(req, res, next) {
-  const auth = req.headers.authorization;
-  console.log('[DEBUG] Auth header:', auth ? auth.substring(0, 30) + '...' : 'MISSING');
-  if (!auth || !auth.startsWith('Bearer ')) {
-    console.log('[DEBUG] 401 - Sem Bearer token');
-    return res.status(401).json({ erro: 'Não autorizado - token ausente' });
-  }
+// Auth middleware admin
+const authAdmin = (req, res, next) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ erro: 'Token ausente' });
   try {
-    const token = auth.split(' ')[1];
-    const decoded = jwt.verify(token, JWT_SECRET);
-    console.log('[DEBUG] Token decodificado:', decoded.tipo);
-    if (decoded.tipo !== 'admin') {
-      console.log('[DEBUG] 403 - Tipo não é admin:', decoded.tipo);
-      return res.status(403).json({ erro: 'Acesso negado' });
-    }
+    req.admin = jwt.verify(token, process.env.JWT_SECRET || 'segredo-leilao');
     next();
-  } catch (err) {
-    console.log('[DEBUG] 401 - Token inválido:', err.message);
-    return res.status(401).json({ erro: 'Token inválido', detalhe: err.message });
+  } catch (e) {
+    return res.status(401).json({ erro: 'Token inválido' });
   }
-}
+};
 
-// ========== ROTA LOGIN ADMIN ==========
+// ============================================================
+// ROTAS ADMIN
+// ============================================================
+
+// Login admin
 app.post('/api/admin/login', async (req, res) => {
-  const { senha } = req.body;
-  if (!senha) return res.status(400).json({ erro: 'Senha obrigatória' });
-  if (senha !== ADMIN_PASSWORD) return res.status(401).json({ erro: 'Senha incorreta' });
-  res.json({ sucesso: true, token: gerarTokenAdmin() });
-});
-
-// ========== ROTAS ADMIN - DASHBOARD ==========
-app.get('/api/admin/dashboard', verificarAdmin, async (req, res) => {
+  const { email, senha } = req.body;
   try {
-    const stats = await db.getDashboardStats();
-    res.json({ sucesso: true, ...stats });
+    const { rows } = await pool.query('SELECT * FROM administradores WHERE email = $1', [email]);
+    if (rows.length === 0) return res.status(401).json({ erro: 'Credenciais inválidas' });
+    const admin = rows[0];
+    const ok = await bcrypt.compare(senha, admin.senha);
+    if (!ok) return res.status(401).json({ erro: 'Credenciais inválidas' });
+    const token = jwt.sign({ id: admin.id, email: admin.email }, process.env.JWT_SECRET || 'segredo-leilao', { expiresIn: '8h' });
+    res.json({ token, admin: { id: admin.id, nome: admin.nome, email: admin.email } });
   } catch (err) {
-    console.error('[DEBUG] Erro dashboard:', err.message);
-    res.status(500).json({ erro: 'Erro ao carregar dashboard', detalhe: err.message });
+    console.error('[LOGIN]', err);
+    res.status(500).json({ erro: 'Erro no servidor' });
   }
 });
 
-// ========== ROTAS ADMIN - CAMPANHAS ==========
-app.get('/api/admin/campanhas', verificarAdmin, async (req, res) => {
+// Dashboard
+app.get('/api/admin/dashboard', authAdmin, async (req, res) => {
   try {
-    const campanhas = await db.listarCampanhas();
-    res.json({ sucesso: true, campanhas });
+    const campanhas = await pool.query('SELECT COUNT(*) as total FROM campanhas');
+    const ativas = await pool.query("SELECT COUNT(*) as total FROM campanhas WHERE status = 'ativa'");
+    const usuarios = await pool.query('SELECT COUNT(*) as total FROM usuarios');
+    const arrecadado = await pool.query("SELECT COALESCE(SUM(valor),0) as total FROM pagamentos WHERE status = 'aprovado'");
+    res.json({
+      totalCampanhas: parseInt(campanhas.rows[0].total),
+      campanhasAtivas: parseInt(ativas.rows[0].total),
+      totalUsuarios: parseInt(usuarios.rows[0].total),
+      totalArrecadado: parseFloat(arrecadado.rows[0].total)
+    });
   } catch (err) {
+    console.error('[DASHBOARD]', err);
     res.status(500).json({ erro: err.message });
   }
 });
 
-app.post('/api/admin/campanhas', verificarAdmin, async (req, res) => {
+// Listar campanhas
+app.get('/api/admin/campanhas', authAdmin, async (req, res) => {
   try {
-    const dados = req.body;
-    if (!dados.nome) return res.status(400).json({ erro: 'Nome obrigatório' });
+    const { rows } = await pool.query(`
+      SELECT c.*, i.nome as influencer_nome 
+      FROM campanhas c 
+      LEFT JOIN influencers i ON c.influencer_id = i.id 
+      ORDER BY c.created_at DESC
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error('[CAMPANHAS LIST]', err);
+    res.status(500).json({ erro: err.message });
+  }
+});
 
-    // Gerar slug limpo
-    let slug = dados.slug || gerarSlug(dados.nome);
-    let slugOriginal = slug;
-    let contador = 2;
-    while (await db.slugExiste(slug)) {
-      slug = `${slugOriginal}-${contador}`;
-      contador++;
+// Criar campanha
+app.post('/api/admin/campanhas', authAdmin, async (req, res) => {
+  const { nome, slug, descricao, premio_imagem, meta_valor, lance_inicial, duracao_horas, influencer_id } = req.body;
+  try {
+    const { rows } = await pool.query(`
+      INSERT INTO campanhas (nome, slug, descricao, premio_imagem, meta_valor, lance_inicial, duracao_horas, status, influencer_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, 'pendente', $8)
+      RETURNING *
+    `, [nome, slug, descricao, premio_imagem || null, meta_valor, lance_inicial, duracao_horas, influencer_id || null]);
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error('[CAMPANHA CREATE]', err);
+    res.status(500).json({ erro: err.message });
+  }
+});
+
+// Atualizar campanha
+app.put('/api/admin/campanhas/:id', authAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { nome, slug, descricao, premio_imagem, meta_valor, lance_inicial, duracao_horas, status, influencer_id } = req.body;
+  try {
+    const { rows } = await pool.query(`
+      UPDATE campanhas 
+      SET nome = $1, slug = $2, descricao = $3, premio_imagem = $4, meta_valor = $5, 
+          lance_inicial = $6, duracao_horas = $7, status = $8, influencer_id = $9, updated_at = NOW()
+      WHERE id = $10
+      RETURNING *
+    `, [nome, slug, descricao, premio_imagem || null, meta_valor, lance_inicial, duracao_horas, status, influencer_id || null, id]);
+    if (rows.length === 0) return res.status(404).json({ erro: 'Campanha não encontrada' });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('[CAMPANHA UPDATE]', err);
+    res.status(500).json({ erro: err.message });
+  }
+});
+
+// Excluir campanha
+app.delete('/api/admin/campanhas/:id', authAdmin, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM campanhas WHERE id = $1', [req.params.id]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[CAMPANHA DELETE]', err);
+    res.status(500).json({ erro: err.message });
+  }
+});
+
+// Upload de imagem para Supabase Storage
+app.post('/api/upload-imagem', authAdmin, upload.single('imagem'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ erro: 'Nenhuma imagem enviada' });
+
+    const ext = path.extname(req.file.originalname) || '.jpg';
+    const fileName = `campanhas/${Date.now()}-${Math.random().toString(36).substring(2)}${ext}`;
+
+    const { data, error } = await supabase.storage
+      .from('leilao-facil')
+      .upload(fileName, req.file.buffer, { contentType: req.file.mimetype });
+
+    if (error) {
+      console.error('[UPLOAD ERROR]', error);
+      return res.status(500).json({ erro: 'Erro ao fazer upload: ' + error.message });
     }
 
-    const camp = await db.criarCampanha({ ...dados, slug, status: 'pendente' });
-    res.status(201).json({ sucesso: true, campanha: camp });
+    const { data: urlData } = supabase.storage.from('leilao-facil').getPublicUrl(fileName);
+    res.json({ url: urlData.publicUrl });
   } catch (err) {
-    console.error('[DEBUG] Erro criar campanha:', err.message);
+    console.error('[UPLOAD]', err);
     res.status(500).json({ erro: err.message });
   }
 });
 
-app.put('/api/admin/campanhas/:id', verificarAdmin, async (req, res) => {
+// Influencers
+app.get('/api/admin/influencers', authAdmin, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
-    const dados = req.body;
-
-    // Se mudou nome e não definiu slug, regenerar
-    if (dados.nome && !dados.slug) {
-      let slug = gerarSlug(dados.nome);
-      let slugOriginal = slug;
-      let contador = 2;
-      const existente = await db.buscarCampanhaPorId(id);
-      while (await db.slugExiste(slug) && existente?.slug !== slug) {
-        slug = `${slugOriginal}-${contador}`;
-        contador++;
-      }
-      dados.slug = slug;
-    }
-
-    const camp = await db.atualizarCampanha(id, dados);
-    res.json({ sucesso: true, campanha: camp });
+    const { rows } = await pool.query('SELECT * FROM influencers ORDER BY nome');
+    res.json(rows);
   } catch (err) {
     res.status(500).json({ erro: err.message });
   }
 });
 
-app.delete('/api/admin/campanhas/:id', verificarAdmin, async (req, res) => {
+app.post('/api/admin/influencers', authAdmin, async (req, res) => {
+  const { nome, email, telefone, codigo, comissao } = req.body;
   try {
-    await db.deletarCampanha(parseInt(req.params.id));
-    res.json({ sucesso: true });
+    const { rows } = await pool.query(
+      'INSERT INTO influencers (nome, email, telefone, codigo, comissao) VALUES ($1,$2,$3,$4,$5) RETURNING *',
+      [nome, email, telefone, codigo, comissao]
+    );
+    res.status(201).json(rows[0]);
   } catch (err) {
     res.status(500).json({ erro: err.message });
   }
 });
 
-app.post('/api/admin/campanhas/:id/ativar', verificarAdmin, async (req, res) => {
+app.put('/api/admin/influencers/:id', authAdmin, async (req, res) => {
+  const { nome, email, telefone, codigo, comissao } = req.body;
   try {
-    const camp = await db.ativarCampanha(parseInt(req.params.id));
-    if (!camp) return res.status(404).json({ erro: 'Campanha não encontrada' });
-    safeEmit('campanha_ativada', { id: camp.id, slug: camp.slug, nome: camp.nome });
-    res.json({ sucesso: true, campanha: camp });
+    const { rows } = await pool.query(
+      'UPDATE influencers SET nome=$1, email=$2, telefone=$3, codigo=$4, comissao=$5 WHERE id=$6 RETURNING *',
+      [nome, email, telefone, codigo, comissao, req.params.id]
+    );
+    res.json(rows[0]);
   } catch (err) {
-    console.error('[DEBUG] Erro ativar:', err.message);
     res.status(500).json({ erro: err.message });
   }
 });
 
-app.post('/api/admin/campanhas/:id/pausar', verificarAdmin, async (req, res) => {
+app.delete('/api/admin/influencers/:id', authAdmin, async (req, res) => {
   try {
-    const camp = await db.pausarCampanha(parseInt(req.params.id));
-    if (!camp) return res.status(404).json({ erro: 'Campanha não encontrada' });
-    safeEmit('campanha_pausada', { id: camp.id, slug: camp.slug });
-    res.json({ sucesso: true, campanha: camp });
+    await pool.query('DELETE FROM influencers WHERE id = $1', [req.params.id]);
+    res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ erro: err.message });
   }
 });
 
-app.post('/api/admin/campanhas/:id/finalizar', verificarAdmin, async (req, res) => {
+// Usuários
+app.get('/api/admin/usuarios', authAdmin, async (req, res) => {
   try {
-    const camp = await db.finalizarCampanha(parseInt(req.params.id));
-    if (!camp) return res.status(404).json({ erro: 'Campanha não encontrada' });
-    safeEmit('campanha_finalizada', { id: camp.id, slug: camp.slug });
-    res.json({ sucesso: true, campanha: camp });
+    const { rows } = await pool.query('SELECT * FROM usuarios ORDER BY created_at DESC');
+    res.json(rows);
   } catch (err) {
     res.status(500).json({ erro: err.message });
   }
 });
 
-// ========== ROTAS ADMIN - INFLUENCERS ==========
-app.get('/api/admin/influencers', verificarAdmin, async (req, res) => {
+// Configurações
+app.get('/api/admin/configuracoes', authAdmin, async (req, res) => {
   try {
-    const influencers = await db.listarInfluencers();
-    res.json({ sucesso: true, influencers });
+    const { rows } = await pool.query('SELECT * FROM configuracoes LIMIT 1');
+    res.json(rows[0] || {});
   } catch (err) {
     res.status(500).json({ erro: err.message });
   }
 });
 
-app.post('/api/admin/influencers', verificarAdmin, async (req, res) => {
+app.put('/api/admin/configuracoes', authAdmin, async (req, res) => {
+  const { lance_padrao, duracao_padrao, taxa_pix } = req.body;
   try {
-    const inf = await db.criarInfluencer(req.body);
-    res.status(201).json({ sucesso: true, influencer: inf });
+    const { rows } = await pool.query(
+      `INSERT INTO configuracoes (lance_padrao, duracao_padrao, taxa_pix) 
+       VALUES ($1,$2,$3) 
+       ON CONFLICT (id) DO UPDATE SET lance_padrao=$1, duracao_padrao=$2, taxa_pix=$3 
+       RETURNING *`,
+      [lance_padrao, duracao_padrao, taxa_pix]
+    );
+    res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ erro: err.message });
   }
 });
 
-app.put('/api/admin/influencers/:id', verificarAdmin, async (req, res) => {
-  try {
-    const inf = await db.atualizarInfluencer(parseInt(req.params.id), req.body);
-    res.json({ sucesso: true, influencer: inf });
-  } catch (err) {
-    res.status(500).json({ erro: err.message });
-  }
-});
+// ============================================================
+// ROTAS PÚBLICAS (LEILÃO)
+// ============================================================
 
-app.delete('/api/admin/influencers/:id', verificarAdmin, async (req, res) => {
-  try {
-    await db.deletarInfluencer(parseInt(req.params.id));
-    res.json({ sucesso: true });
-  } catch (err) {
-    res.status(500).json({ erro: err.message });
-  }
-});
-
-// ========== ROTAS ADMIN - USUÁRIOS ==========
-app.get('/api/admin/usuarios', verificarAdmin, async (req, res) => {
-  try {
-    const usuarios = await db.listarUsuarios();
-    res.json({ sucesso: true, usuarios });
-  } catch (err) {
-    res.status(500).json({ erro: err.message });
-  }
-});
-
-// ========== ROTAS ADMIN - CONFIGURAÇÕES ==========
-app.get('/api/admin/configuracoes', verificarAdmin, async (req, res) => {
-  try {
-    const config = await db.buscarConfiguracoes();
-    res.json({ sucesso: true, configuracoes: config });
-  } catch (err) {
-    res.status(500).json({ erro: err.message });
-  }
-});
-
-app.put('/api/admin/configuracoes', verificarAdmin, async (req, res) => {
-  try {
-    const config = await db.atualizarConfiguracoes(req.body);
-    res.json({ sucesso: true, configuracoes: config });
-  } catch (err) {
-    res.status(500).json({ erro: err.message });
-  }
-});
-
-// ========== ROTAS PÚBLICAS - LEILÃO ==========
+// Buscar campanha por slug
 app.get('/api/campanha/:slug', async (req, res) => {
   try {
-    const camp = await db.buscarCampanhaPorSlug(req.params.slug);
-    if (!camp) return res.json({ item: null, campanha: null });
-
-    const lances = await db.buscarLancesPorCampanha(camp.id, 10);
-    const ultimoLance = await db.buscarUltimoLance(camp.id);
-    const totalLances = await db.contarLancesPorCampanha(camp.id);
-    const agora = new Date();
-    const encerrado = camp.status === 'finalizado' || (camp.data_fim && new Date(camp.data_fim) < agora);
-    const temLanceInicial = totalLances > 0;
-
-    const lanceAtual = ultimoLance ? parseFloat(ultimoLance.valor) : 0;
-
-    res.json({
-      item: {
-        id: camp.id,
-        nome: camp.nome,
-        descricao: camp.descricao || 'Participe e concorra!',
-        premio_imagem: camp.premio_imagem || '🏆',
-        premio_imagem_url: camp.premio_imagem_url || '',
-        lance_atual: lanceAtual,
-        total_lances: totalLances,
-        ultimos_lances: lances.map(l => ({
-          nome: l.usuario_nome,
-          valor: parseFloat(l.valor),
-          data: l.data_hora
-        })),
-        ultimo_lance: ultimoLance ? {
-          usuario: ultimoLance.usuario_nome,
-          valor: parseFloat(ultimoLance.valor),
-          data: ultimoLance.data_hora
-        } : null,
-        data_fim: camp.data_fim,
-        status: camp.status,
-        encerrado: encerrado,
-        tem_lance_inicial: temLanceInicial,
-        started_at: camp.data_inicio
-      },
-      campanha: {
-        nome: camp.nome,
-        meta_valor: parseFloat(camp.meta_valor) || 3.00
-      }
-    });
+    const { rows } = await pool.query(`
+      SELECT c.*, i.nome as influencer_nome, i.codigo as influencer_codigo
+      FROM campanhas c
+      LEFT JOIN influencers i ON c.influencer_id = i.id
+      WHERE c.slug = $1 AND c.status = 'ativa'
+    `, [req.params.slug]);
+    if (rows.length === 0) return res.status(404).json({ erro: 'Leilão não encontrado' });
+    res.json(rows[0]);
   } catch (err) {
-    console.error('[DEBUG] Erro campanha publica:', err.message);
     res.status(500).json({ erro: err.message });
   }
 });
 
-// ========== ROTAS PÚBLICAS - USUÁRIO ==========
+// Criar ou buscar usuário
 app.post('/api/usuario', async (req, res) => {
+  const { nome, email } = req.body;
   try {
-    const { nome, email } = req.body;
-    if (!nome || !email) return res.status(400).json({ erro: 'Nome e email obrigatórios' });
-    if (!email.includes('@')) return res.status(400).json({ erro: 'Email inválido' });
-
-    const usuario = await db.buscarOuCriarUsuario(nome.trim(), email.trim().toLowerCase());
-    res.json({ sucesso: true, usuario: { id: usuario.id, nome: usuario.nome, email: usuario.email } });
+    let { rows } = await pool.query('SELECT * FROM usuarios WHERE email = $1', [email]);
+    if (rows.length === 0) {
+      const result = await pool.query(
+        'INSERT INTO usuarios (nome, email) VALUES ($1, $2) RETURNING *',
+        [nome, email]
+      );
+      rows = result.rows;
+    }
+    res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ erro: err.message });
   }
 });
 
-// ========== ROTAS PÚBLICAS - PAGAMENTO / PIX ==========
+// Ranking de lances
+app.get('/api/ranking/:campanhaId', async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT usuario_nome, SUM(valor) as total, COUNT(*) as lances
+      FROM lances WHERE campanha_id = $1
+      GROUP BY usuario_nome ORDER BY total DESC LIMIT 10
+    `, [req.params.campanhaId]);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ erro: err.message });
+  }
+});
+
+// Criar pagamento (PIX simulado)
 app.post('/api/criar-pagamento', async (req, res) => {
+  const { campanha_id, usuario_id, valor } = req.body;
   try {
-    const { item_id, campanha_id, usuario_id, nome, email, valor } = req.body;
-    if (!item_id || !usuario_id || !valor) {
-      return res.status(400).json({ erro: 'Dados incompletos' });
-    }
-
-    const camp = await db.buscarCampanhaPorId(item_id);
-    if (!camp) return res.status(404).json({ erro: 'Campanha não encontrada' });
-    if (camp.status !== 'ativo') return res.status(400).json({ erro: 'Leilão não está ativo' });
-
-    const totalLances = await db.contarLancesPorCampanha(item_id);
-    const isPrimeiroLance = totalLances === 0;
-
-    // Simulação de pagamento (integrar Mercado Pago aqui se desejar)
-    const transacaoId = `pix_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const pagamento = await db.criarPagamento({
-      campanha_id: item_id,
-      usuario_id,
-      valor,
-      status: 'pendente',
-      mp_id: transacaoId,
-      transacao_id: transacaoId,
-      pix_qr_code: `00020126580014BR.GOV.BCB.PIX0136${email}5204000053039865404${(valor*100).toFixed(0)}5802BR5925${nome}6009SAO PAULO62070503***6304`,
-      pix_qr_code_base64: '',
-      pix_link: `https://pix.example.com/${transacaoId}`
-    });
+    const txid = 'TX' + Date.now() + Math.random().toString(36).substr(2, 5).toUpperCase();
+    const { rows } = await pool.query(`
+      INSERT INTO pagamentos (campanha_id, usuario_id, valor, status, transacao_id, pix_qr_code, pix_link)
+      VALUES ($1, $2, $3, 'pendente', $4, $5, $6)
+      RETURNING *
+    `, [campanha_id, usuario_id, valor, txid, `00020126580014BR.GOV.BCB.PIX0136${txid}520400005303986540${valor.toFixed(2)}5802BR5913Leilao Facil6009SAO PAULO62070503***6304`, `https://leilao-facil.onrender.com/pix/${txid}`]);
 
     res.json({
-      sucesso: true,
-      pagamento: {
-        id: pagamento.id,
-        valor: parseFloat(pagamento.valor),
-        mp_id: pagamento.mp_id,
-        transacao_id: pagamento.transacao_id,
-        pix_qr_code: pagamento.pix_qr_code,
-        pix_qr_code_base64: pagamento.pix_qr_code_base64,
-        pix_link: pagamento.pix_link
-      },
-      is_primeiro_lance: isPrimeiroLance
-    });
-  } catch (err) {
-    console.error('[DEBUG] Erro criar pagamento:', err.message);
-    res.status(500).json({ erro: err.message });
-  }
-});
-
-app.get('/api/consultar-pagamento/:id', async (req, res) => {
-  try {
-    const pag = await db.buscarPagamentoPorTransacao(req.params.id);
-    if (!pag) return res.status(404).json({ erro: 'Pagamento não encontrado' });
-    res.json({
-      status: pag.status,
-      confirmado: pag.status === 'confirmado'
+      id: rows[0].id,
+      transacao_id: txid,
+      pix_qr_code: rows[0].pix_qr_code,
+      pix_link: rows[0].pix_link,
+      valor: valor
     });
   } catch (err) {
     res.status(500).json({ erro: err.message });
   }
 });
 
+// Confirmar pagamento manual (simulação)
 app.post('/api/confirmar-pagamento', async (req, res) => {
+  const { pagamento_id, usuario_id, usuario_nome, campanha_id, valor } = req.body;
   try {
-    const { transacao_id } = req.body;
-    if (!transacao_id) return res.status(400).json({ erro: 'transacao_id obrigatório' });
+    await pool.query("UPDATE pagamentos SET status = 'aprovado' WHERE id = $1", [pagamento_id]);
 
-    const pag = await db.buscarPagamentoPorTransacao(transacao_id);
-    if (!pag) return res.status(404).json({ erro: 'Pagamento não encontrado' });
+    const { rows } = await pool.query(`
+      INSERT INTO lances (campanha_id, usuario_id, usuario_nome, valor, data_hora)
+      VALUES ($1, $2, $3, $4, NOW()) RETURNING *
+    `, [campanha_id, usuario_id, usuario_nome, valor]);
 
-    if (pag.status === 'confirmado') {
-      return res.json({ sucesso: true, mensagem: 'Pagamento já confirmado' });
-    }
+    // Atualizar data_fim se for o primeiro lance
+    await pool.query(`
+      UPDATE campanhas 
+      SET data_fim = COALESCE(data_fim, NOW() + INTERVAL '1 hour' * duracao_horas), data_inicio = COALESCE(data_inicio, NOW())
+      WHERE id = $1 AND data_inicio IS NULL
+    `, [campanha_id]);
 
-    await db.atualizarPagamentoStatus(pag.id, 'confirmado');
+    // Buscar campanha atualizada
+    const camp = await pool.query('SELECT * FROM campanhas WHERE id = $1', [campanha_id]);
 
-    // Registrar lance
-    const usuario = await db.buscarUsuarioPorId(pag.usuario_id);
-    const camp = await db.buscarCampanhaPorId(pag.campanha_id);
-
-    await db.registrarLance(pag.campanha_id, pag.usuario_id, usuario?.nome || 'Anônimo', pag.valor);
-
-    // Se primeiro lance, ativar timer (se ainda não tiver data_fim)
-    if (camp && !camp.data_inicio) {
-      await db.ativarCampanha(camp.id);
-    }
-
-    safeEmit('novo_lance', {
-      campanha_id: pag.campanha_id,
-      usuario: usuario?.nome || 'Anônimo',
-      valor: parseFloat(pag.valor)
+    io.emit('novo-lance', {
+      lance: rows[0],
+      campanha: camp.rows[0]
     });
 
-    safeEmit('pagamento_confirmado', {
-      transacao_id: pag.transacao_id,
-      mp_id: pag.mp_id,
-      campanha_id: pag.campanha_id
-    });
-
-    res.json({ sucesso: true, mensagem: 'Pagamento confirmado e lance registrado' });
-  } catch (err) {
-    console.error('[DEBUG] Erro confirmar pagamento:', err.message);
-    res.status(500).json({ erro: err.message });
-  }
-});
-
-app.post('/api/gerar-qr', async (req, res) => {
-  try {
-    const { texto } = req.body;
-    if (!texto) return res.status(400).json({ erro: 'Texto obrigatório' });
-
-    // Gerar QR code simples em base64 (usando uma lib ou serviço externo seria ideal)
-    // Aqui retornamos um placeholder; em produção, use qrcode lib
-    const qrCode = Buffer.from(texto).toString('base64');
-    res.json({ qr_code: qrCode });
+    res.json({ sucesso: true, lance: rows[0] });
   } catch (err) {
     res.status(500).json({ erro: err.message });
   }
 });
 
-// ========== ROTAS PÚBLICAS - RANKING ==========
-app.get('/api/ranking/:item_id', async (req, res) => {
-  try {
-    const id = parseInt(req.params.item_id);
-    const [maior, mais, menos, lances] = await Promise.all([
-      db.buscarRankingMaiorLance(id),
-      db.buscarRankingMaisLances(id),
-      db.buscarRankingMenosLances(id),
-      db.buscarLancesPorCampanha(id, 100)
-    ]);
+// ============================================================
+// SOCKET.IO
+// ============================================================
 
-    res.json({
-      ranking_maior_lance: maior.map(r => ({ ...r, valor: parseFloat(r.valor), lances: parseInt(r.lances), total_investido: parseFloat(r.total_investido) })),
-      ranking_mais_lances: mais.map(r => ({ ...r, valor: parseFloat(r.valor), lances: parseInt(r.lances), total_investido: parseFloat(r.total_investido) })),
-      ranking_menos_lances: menos.map(r => ({ ...r, valor: parseFloat(r.valor), lances: parseInt(r.lances), total_investido: parseFloat(r.total_investido) })),
-      lances: lances.map(l => ({ ...l, valor: parseFloat(l.valor), data_hora: l.data_hora }))
-    });
-  } catch (err) {
-    res.status(500).json({ erro: err.message });
-  }
+io.on('connection', (socket) => {
+  console.log('[SOCKET] Cliente conectado:', socket.id);
+  socket.on('join-campanha', (campanhaId) => {
+    socket.join(`campanha-${campanhaId}`);
+  });
+  socket.on('disconnect', () => {
+    console.log('[SOCKET] Cliente desconectado:', socket.id);
+  });
 });
 
-// ========== ROTA CATCH-ALL PARA SLUGS ==========
-// Serve o index.html para qualquer rota que não seja API ou arquivo estático
-app.get('/:slug', (req, res) => {
-  const slug = req.params.slug;
-  // Ignorar rotas conhecidas
-  if (slug.startsWith('api') || slug.startsWith('admin') || slug.includes('.')) {
-    return res.status(404).send('Not found');
-  }
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// ========== UTILITÁRIOS ==========
-function gerarSlug(nome) {
-  return nome.toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-}
-
-// ========== INICIALIZAÇÃO ==========
-http.listen(PORT, () => {
-  console.log(`LEILAO FACIL v2.2.0 - Servidor iniciado`);
-  console.log(`Porta: ${PORT}`);
-  console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`Banco: PostgreSQL (Supabase)`);
-  console.log(`PIX: Simulado (substituir por Mercado Pago em producao)`);
-});
-
-// Verificar campanhas ativas periodicamente
+// Timer automático: finaliza campanhas expiradas
 setInterval(async () => {
   try {
-    const campanhas = await db.listarCampanhas();
-    const agora = new Date();
-    for (const camp of campanhas) {
-      if (camp.status === 'ativo' && camp.data_fim && new Date(camp.data_fim) < agora) {
-        await db.finalizarCampanha(camp.id);
-        safeEmit('campanha_finalizada', { id: camp.id, slug: camp.slug });
-        console.log(`Campanha ${camp.id} auto-finalizada`);
-      }
-    }
-  } catch (e) { console.error('Erro verificacao campanhas:', e.message); }
-}, 60000);
+    await pool.query(`
+      UPDATE campanhas SET status = 'finalizada'
+      WHERE status = 'ativa' AND data_fim IS NOT NULL AND data_fim < NOW()
+    `);
+  } catch (e) { console.error('[TIMER]', e); }
+}, 30000);
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`[SERVER] Rodando na porta ${PORT}`));
