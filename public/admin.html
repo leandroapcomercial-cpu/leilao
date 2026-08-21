@@ -92,11 +92,11 @@
     <h2>⚡ Leilão Fácil</h2>
     <div class="form-group">
       <label>Email</label>
-      <input type="email" id="loginEmail" placeholder="admin@leilao.com">
+      <input type="email" id="loginEmail" placeholder="admin@leilao.com" value="admin@leilao.com">
     </div>
     <div class="form-group">
       <label>Senha</label>
-      <input type="password" id="loginSenha" placeholder="••••••••">
+      <input type="password" id="loginSenha" placeholder="••••••••" value="admin123">
     </div>
     <button class="btn btn-primary" onclick="fazerLogin()">Entrar</button>
   </div>
@@ -270,27 +270,60 @@ function mostrarToast(msg, erro){
 }
 
 async function api(path, opts={}){
-  const res = await fetch(API+path, {headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},...opts});
+  const headers = {'Content-Type':'application/json'};
+  if(token) headers['Authorization'] = 'Bearer '+token;
+  const res = await fetch(API+path, {headers, ...opts});
   if(res.status===401){logout(); throw new Error('Sessão expirada');}
   if(!res.ok){const e=await res.json().catch(()=>({})); throw new Error(e.erro||'Erro '+res.status);}
   return res.status===204?null:res.json();
 }
 
-// LOGIN
-if(token){
-  document.getElementById('loginScreen').classList.add('hidden');
-  document.getElementById('appScreen').classList.remove('hidden');
-  carregarTudo();
-}
+// LOGIN COM DEBUG
 async function fazerLogin(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const senha = document.getElementById('loginSenha').value.trim();
+
+  console.log('[LOGIN FRONT] Email:', email);
+  console.log('[LOGIN FRONT] Senha length:', senha.length);
+
+  if(!email || !senha){
+    mostrarToast('Preencha email e senha', true);
+    return;
+  }
+
   try{
-    const data = await api('/api/admin/login',{method:'POST',body:JSON.stringify({email:document.getElementById('loginEmail').value,senha:document.getElementById('loginSenha').value})});
-    token=data.token; localStorage.setItem('admin_token',token);
+    const body = JSON.stringify({email, senha});
+    console.log('[LOGIN FRONT] Body:', body);
+
+    const res = await fetch(API+'/api/admin/login', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: body
+    });
+
+    console.log('[LOGIN FRONT] Status:', res.status);
+
+    if(!res.ok){
+      const e = await res.json().catch(()=>({}));
+      console.log('[LOGIN FRONT] Erro:', e);
+      throw new Error(e.erro||'Erro '+res.status);
+    }
+
+    const data = await res.json();
+    console.log('[LOGIN FRONT] Sucesso:', data);
+
+    token = data.token;
+    localStorage.setItem('admin_token', token);
     document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('appScreen').classList.remove('hidden');
     carregarTudo();
-  }catch(e){mostrarToast(e.message,true);}
+    mostrarToast('Bem-vindo, '+data.admin.nome+'!');
+  }catch(e){
+    console.error('[LOGIN FRONT] Catch:', e);
+    mostrarToast(e.message, true);
+  }
 }
+
 function logout(){localStorage.removeItem('admin_token');location.reload();}
 
 // NAVEGAÇÃO
@@ -422,7 +455,6 @@ async function salvarCampanha(){
     let premio_imagem = document.getElementById('campImagemUrl').value.trim();
     const fileInput = document.getElementById('campImagemFile');
 
-    // Se tiver arquivo selecionado, faz upload primeiro
     if(fileInput.files && fileInput.files[0]){
       const formData = new FormData();
       formData.append('imagem', fileInput.files[0]);
@@ -486,6 +518,13 @@ async function carregarUsuarios(){try{const lista=await api('/api/admin/usuarios
 // CONFIGURAÇÕES
 async function carregarConfiguracoes(){try{const c=await api('/api/admin/configuracoes');if(c){document.getElementById('cfgLance').value=c.lance_padrao||'';document.getElementById('cfgDuracao').value=c.duracao_padrao||'';document.getElementById('cfgTaxa').value=c.taxa_pix||'';}}catch(e){}}
 async function salvarConfiguracoes(){try{await api('/api/admin/configuracoes',{method:'PUT',body:JSON.stringify({lance_padrao:parseFloat(document.getElementById('cfgLance').value)||0,duracao_padrao:parseInt(document.getElementById('cfgDuracao').value)||24,taxa_pix:parseFloat(document.getElementById('cfgTaxa').value)||0})});mostrarToast('Configurações salvas!');}catch(e){mostrarToast(e.message,true);}}
+
+// Inicializar
+if(token){
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('appScreen').classList.remove('hidden');
+  carregarTudo();
+}
 </script>
 </body>
 </html>
