@@ -4,7 +4,6 @@ const helmet = require('helmet');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { Pool } = require('pg');
-const { createClient } = require('@supabase/supabase-js');
 const multer = require('multer');
 const path = require('path');
 const http = require('http');
@@ -15,8 +14,17 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 
-// Supabase client (para Storage)
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+// Supabase client (lazy — aceita SUPABASE_SERVICE_KEY ou SUPABASE_KEY)
+let supabase = null;
+function getSupabase() {
+  if (supabase) return supabase;
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY;
+  if (!url || !key) return null;
+  const { createClient } = require('@supabase/supabase-js');
+  supabase = createClient(url, key);
+  return supabase;
+}
 
 // PostgreSQL pool
 const pool = new Pool({
@@ -156,10 +164,17 @@ app.post('/api/upload-imagem', authAdmin, upload.single('imagem'), async (req, r
   try {
     if (!req.file) return res.status(400).json({ erro: 'Nenhuma imagem enviada' });
 
+    const sb = getSupabase();
+    if (!sb) {
+      return res.status(503).json({ 
+        erro: 'Serviço de upload não configurado. Adicione SUPABASE_URL e SUPABASE_SERVICE_KEY (ou SUPABASE_KEY) nas variáveis de ambiente do Render, ou use URL de imagem externa.' 
+      });
+    }
+
     const ext = path.extname(req.file.originalname) || '.jpg';
     const fileName = `campanhas/${Date.now()}-${Math.random().toString(36).substring(2)}${ext}`;
 
-    const { data, error } = await supabase.storage
+    const { data, error } = await sb.storage
       .from('leilao-facil')
       .upload(fileName, req.file.buffer, { contentType: req.file.mimetype });
 
@@ -168,7 +183,7 @@ app.post('/api/upload-imagem', authAdmin, upload.single('imagem'), async (req, r
       return res.status(500).json({ erro: 'Erro ao fazer upload: ' + error.message });
     }
 
-    const { data: urlData } = supabase.storage.from('leilao-facil').getPublicUrl(fileName);
+    const { data: urlData } = sb.storage.from('leilao-facil').getPublicUrl(fileName);
     res.json({ url: urlData.publicUrl });
   } catch (err) {
     console.error('[UPLOAD]', err);
