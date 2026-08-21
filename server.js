@@ -44,6 +44,122 @@ app.use(helmet({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
 
+// ============================================================
+// AUTO-MIGRATION: Cria tabelas se não existirem
+// ============================================================
+async function runMigrations() {
+  try {
+    console.log('[MIGRATION] Verificando tabelas...');
+
+    // Tabela administradores
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS administradores (
+        id SERIAL PRIMARY KEY,
+        nome VARCHAR(255) NOT NULL DEFAULT 'Admin',
+        email VARCHAR(255) UNIQUE NOT NULL,
+        senha VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // Verifica se tem admin, senão cria um padrão
+    const { rows: admins } = await pool.query('SELECT COUNT(*) as total FROM administradores');
+    if (parseInt(admins[0].total) === 0) {
+      const senhaHash = await bcrypt.hash('admin123', 10);
+      await pool.query(
+        'INSERT INTO administradores (nome, email, senha) VALUES ($1, $2, $3)',
+        ['Administrador', 'admin@leilao.com', senhaHash]
+      );
+      console.log('[MIGRATION] Admin padrão criado: admin@leilao.com / admin123');
+    }
+
+    // Tabela campanhas (garante que premio_imagem existe, não premio_imagem_url)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS campanhas (
+        id SERIAL PRIMARY KEY,
+        nome VARCHAR(255) NOT NULL,
+        slug VARCHAR(255) UNIQUE NOT NULL,
+        descricao TEXT,
+        premio_imagem TEXT,
+        meta_valor DECIMAL(12,2) DEFAULT 0,
+        lance_inicial DECIMAL(12,2) DEFAULT 0.01,
+        duracao_horas INTEGER DEFAULT 24,
+        status VARCHAR(20) DEFAULT 'pendente',
+        data_inicio TIMESTAMP,
+        data_fim TIMESTAMP,
+        influencer_id INTEGER,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // Tabela usuarios
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS usuarios (
+        id SERIAL PRIMARY KEY,
+        nome VARCHAR(255) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // Tabela lances
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS lances (
+        id SERIAL PRIMARY KEY,
+        campanha_id INTEGER NOT NULL,
+        usuario_id INTEGER NOT NULL,
+        usuario_nome VARCHAR(255),
+        valor DECIMAL(12,2) NOT NULL,
+        data_hora TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // Tabela pagamentos
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS pagamentos (
+        id SERIAL PRIMARY KEY,
+        campanha_id INTEGER NOT NULL,
+        usuario_id INTEGER NOT NULL,
+        valor DECIMAL(12,2) NOT NULL,
+        status VARCHAR(20) DEFAULT 'pendente',
+        transacao_id VARCHAR(255),
+        pix_qr_code TEXT,
+        pix_link TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // Tabela influencers
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS influencers (
+        id SERIAL PRIMARY KEY,
+        nome VARCHAR(255) NOT NULL,
+        email VARCHAR(255),
+        telefone VARCHAR(50),
+        codigo VARCHAR(50) UNIQUE,
+        comissao DECIMAL(5,2) DEFAULT 0,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // Tabela configuracoes
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS configuracoes (
+        id INTEGER PRIMARY KEY DEFAULT 1,
+        lance_padrao DECIMAL(12,2) DEFAULT 0.01,
+        duracao_padrao INTEGER DEFAULT 24,
+        taxa_pix DECIMAL(5,2) DEFAULT 0,
+        CONSTRAINT single_row CHECK (id = 1)
+      )
+    `);
+
+    console.log('[MIGRATION] OK - Todas as tabelas verificadas/criadas');
+  } catch (err) {
+    console.error('[MIGRATION ERROR]', err.message);
+  }
+}
+
 // Auth middleware admin
 const authAdmin = (req, res, next) => {
   const token = req.headers.authorization?.replace('Bearer ', '');
@@ -73,7 +189,7 @@ app.post('/api/admin/login', async (req, res) => {
     res.json({ token, admin: { id: admin.id, nome: admin.nome, email: admin.email } });
   } catch (err) {
     console.error('[LOGIN]', err);
-    res.status(500).json({ erro: 'Erro no servidor' });
+    res.status(500).json({ erro: 'Erro no servidor: ' + err.message });
   }
 });
 
@@ -260,8 +376,8 @@ app.put('/api/admin/configuracoes', authAdmin, async (req, res) => {
   const { lance_padrao, duracao_padrao, taxa_pix } = req.body;
   try {
     const { rows } = await pool.query(
-      `INSERT INTO configuracoes (lance_padrao, duracao_padrao, taxa_pix) 
-       VALUES ($1,$2,$3) 
+      `INSERT INTO configuracoes (id, lance_padrao, duracao_padrao, taxa_pix) 
+       VALUES (1, $1, $2, $3) 
        ON CONFLICT (id) DO UPDATE SET lance_padrao=$1, duracao_padrao=$2, taxa_pix=$3 
        RETURNING *`,
       [lance_padrao, duracao_padrao, taxa_pix]
@@ -403,5 +519,10 @@ setInterval(async () => {
   } catch (e) { console.error('[TIMER]', e); }
 }, 30000);
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`[SERVER] Rodando na porta ${PORT}`));
+// Iniciar servidor após migrations
+async function start() {
+  await runMigrations();
+  const PORT = process.env.PORT || 3000;
+  server.listen(PORT, () => console.log(`[SERVER] Rodando na porta ${PORT}`));
+}
+start();
