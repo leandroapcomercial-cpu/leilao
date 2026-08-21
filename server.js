@@ -71,9 +71,11 @@ async function runMigrations() {
         ['Administrador', 'admin@leilao.com', senhaHash]
       );
       console.log('[MIGRATION] Admin padrão criado: admin@leilao.com / admin123');
+    } else {
+      console.log('[MIGRATION] Admin já existe na tabela');
     }
 
-    // Tabela campanhas (garante que premio_imagem existe, não premio_imagem_url)
+    // Tabela campanhas
     await pool.query(`
       CREATE TABLE IF NOT EXISTS campanhas (
         id SERIAL PRIMARY KEY,
@@ -176,19 +178,42 @@ const authAdmin = (req, res, next) => {
 // ROTAS ADMIN
 // ============================================================
 
-// Login admin
+// Login admin COM DEBUG
 app.post('/api/admin/login', async (req, res) => {
   const { email, senha } = req.body;
+  console.log('[LOGIN] Tentativa:', email);
+
   try {
     const { rows } = await pool.query('SELECT * FROM administradores WHERE email = $1', [email]);
-    if (rows.length === 0) return res.status(401).json({ erro: 'Credenciais inválidas' });
+    console.log('[LOGIN] Registros encontrados:', rows.length);
+
+    if (rows.length === 0) {
+      console.log('[LOGIN] Email não encontrado no banco');
+      return res.status(401).json({ erro: 'Credenciais inválidas' });
+    }
+
     const admin = rows[0];
+    console.log('[LOGIN] Admin ID:', admin.id, '| Nome:', admin.nome);
+    console.log('[LOGIN] Senha recebida:', senha);
+    console.log('[LOGIN] Hash no banco:', admin.senha?.substring(0, 20) + '...');
+
     const ok = await bcrypt.compare(senha, admin.senha);
-    if (!ok) return res.status(401).json({ erro: 'Credenciais inválidas' });
+    console.log('[LOGIN] bcrypt.compare resultado:', ok);
+
+    // Fallback: comparação direta (para senhas em texto plano, se necessário)
+    const plainOk = (senha === admin.senha);
+    console.log('[LOGIN] Comparação direta resultado:', plainOk);
+
+    if (!ok && !plainOk) {
+      console.log('[LOGIN] Senha incorreta');
+      return res.status(401).json({ erro: 'Credenciais inválidas' });
+    }
+
     const token = jwt.sign({ id: admin.id, email: admin.email }, process.env.JWT_SECRET || 'segredo-leilao', { expiresIn: '8h' });
+    console.log('[LOGIN] SUCESSO - Token gerado');
     res.json({ token, admin: { id: admin.id, nome: admin.nome, email: admin.email } });
   } catch (err) {
-    console.error('[LOGIN]', err);
+    console.error('[LOGIN ERROR]', err);
     res.status(500).json({ erro: 'Erro no servidor: ' + err.message });
   }
 });
