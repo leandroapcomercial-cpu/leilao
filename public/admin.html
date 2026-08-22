@@ -4,560 +4,477 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Leilão Fácil - Admin</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:'Inter',sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
-  .layout{display:flex;min-height:100vh}
-  .sidebar{width:260px;background:#1e293b;border-right:1px solid #334155;padding:24px 16px;position:fixed;height:100vh;overflow-y:auto}
-  .sidebar h1{font-size:20px;font-weight:700;color:#60a5fa;margin-bottom:32px;display:flex;align-items:center;gap:10px}
-  .sidebar h1::before{content:"⚡";font-size:22px}
-  .nav-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:10px;cursor:pointer;transition:all .2s;color:#94a3b8;font-size:14px;font-weight:500;margin-bottom:4px}
-  .nav-item:hover{background:#334155;color:#e2e8f0}
-  .nav-item.active{background:#2563eb;color:#fff}
-  .nav-item svg{width:20px;height:20px;flex-shrink:0}
-  .main{flex:1;margin-left:260px;padding:32px;max-width:1400px}
-  .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:32px}
-  .header h2{font-size:24px;font-weight:700}
-  .btn{padding:10px 20px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:600;transition:all .2s;display:inline-flex;align-items:center;gap:8px}
-  .btn-primary{background:#2563eb;color:#fff}
-  .btn-primary:hover{background:#1d4ed8}
-  .btn-success{background:#16a34a;color:#fff}
-  .btn-success:hover{background:#15803d}
-  .btn-danger{background:#dc2626;color:#fff}
-  .btn-danger:hover{background:#b91c1c}
-  .btn-warning{background:#f59e0b;color:#fff}
-  .btn-warning:hover{background:#d97706}
-  .btn-sm{padding:6px 12px;font-size:12px}
-  .card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:24px;margin-bottom:24px}
-  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:32px}
-  .stat-card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px}
-  .stat-label{font-size:12px;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
-  .stat-value{font-size:28px;font-weight:700;color:#e2e8f0}
-  .table{width:100%;border-collapse:collapse}
-  .table th{text-align:left;padding:12px 16px;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#94a3b8;border-bottom:1px solid #334155}
-  .table td{padding:14px 16px;border-bottom:1px solid #334155;font-size:14px}
-  .table tr:hover{background:#334155/30}
-  .badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;text-transform:uppercase}
-  .badge-pendente{background:#f59e0b20;color:#f59e0b}
-  .badge-ativa{background:#16a34a20;color:#16a34a}
-  .badge-pausada{background:#94a3b820;color:#94a3b8}
-  .badge-finalizada{background:#dc262620;color:#dc2626}
-  .log-info{background:#2563eb20;color:#60a5fa}
-  .log-warn{background:#f59e0b20;color:#f59e0b}
-  .log-error{background:#dc262620;color:#dc2626}
-  .log-debug{background:#94a3b820;color:#94a3b8}
-  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
-  .modal-overlay.active{display:flex}
-  .modal{background:#1e293b;border:1px solid #334155;border-radius:16px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto}
-  .modal-header{padding:20px 24px;border-bottom:1px solid #334155;display:flex;justify-content:space-between;align-items:center}
-  .modal-header h3{font-size:18px;font-weight:600}
-  .modal-close{background:none;border:none;color:#94a3b8;font-size:24px;cursor:pointer}
-  .modal-close:hover{color:#e2e8f0}
-  .modal-body{padding:24px}
-  .form-group{margin-bottom:18px}
-  .form-group label{display:block;font-size:13px;font-weight:500;color:#94a3b8;margin-bottom:6px}
-  .form-group input,.form-group textarea,.form-group select{width:100%;padding:10px 14px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:14px;font-family:inherit}
-  .form-group input:focus,.form-group textarea:focus,.form-group select:focus{outline:none;border-color:#2563eb}
-  .form-group textarea{resize:vertical;min-height:80px}
-  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-  .modal-footer{padding:16px 24px;border-top:1px solid #334155;display:flex;justify-content:flex-end;gap:10px}
-  .slug-preview{font-size:11px;color:#64748b;margin-top:4px}
-  .actions{display:flex;gap:8px}
-  .login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0f172a}
-  .login-box{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:40px;width:100%;max-width:400px}
-  .login-box h2{text-align:center;margin-bottom:24px;font-size:22px}
-  .login-box .form-group{margin-bottom:16px}
-  .login-box input{width:100%}
-  .login-box .btn{width:100%;justify-content:center;margin-top:8px}
-  .hidden{display:none !important}
-  .toast{position:fixed;top:20px;right:20px;background:#16a34a;color:#fff;padding:14px 20px;border-radius:10px;font-size:14px;font-weight:500;z-index:2000;animation:slideIn .3s ease}
-  .toast.error{background:#dc2626}
-  @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
-  .img-preview{width:100%;max-width:200px;height:120px;object-fit:cover;border-radius:8px;border:1px solid #334155;margin-top:8px;display:none}
-  .img-preview.active{display:block}
-  .upload-area{border:2px dashed #334155;border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;margin-top:6px}
-  .upload-area:hover{border-color:#2563eb;background:#2563eb10}
-  .upload-area input[type="file"]{display:none}
-  .upload-text{font-size:13px;color:#94a3b8}
-  .upload-text strong{color:#60a5fa}
-  .img-source-tabs{display:flex;gap:8px;margin-bottom:10px}
-  .img-source-tab{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;background:#0f172a;border:1px solid #334155;color:#94a3b8}
-  .img-source-tab.active{background:#2563eb;color:#fff;border-color:#2563eb}
-  .img-source-panel{display:none}
-  .img-source-panel.active{display:block}
-  .log-filters{display:flex;gap:10px;margin-bottom:20px}
-  .log-filters select{padding:8px 14px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:14px}
-  .log-filters button{padding:8px 16px}
-  .log-payload{background:#0f172a;border:1px solid #334155;border-radius:6px;padding:10px;font-size:12px;font-family:monospace;color:#94a3b8;max-height:120px;overflow:auto;white-space:pre-wrap;word-break:break-all;margin-top:8px}
-  .log-payload:empty{display:none}
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f3f4f6; color: #1f2937; }
+  .login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); }
+  .login-box { background: #fff; padding: 40px; border-radius: 16px; width: 100%; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+  .login-box h1 { color: #1e40af; margin-bottom: 8px; font-size: 24px; }
+  .login-box p { color: #6b7280; margin-bottom: 24px; font-size: 14px; }
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: #374151; }
+  .form-group input { width: 100%; padding: 12px 14px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; transition: border .2s; }
+  .form-group input:focus { outline: none; border-color: #3b82f6; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; padding: 12px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s; }
+  .btn-primary { background: #2563eb; color: #fff; width: 100%; }
+  .btn-primary:hover { background: #1d4ed8; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn-success { background: #10b981; color: #fff; }
+  .btn-warning { background: #f59e0b; color: #fff; }
+  .btn-danger { background: #ef4444; color: #fff; }
+  .btn-secondary { background: #6b7280; color: #fff; }
+  .btn-info { background: #3b82f6; color: #fff; }
+  .app { display: none; }
+  .sidebar { position: fixed; left: 0; top: 0; width: 240px; height: 100vh; background: #1e3a8a; color: #fff; padding: 24px 16px; overflow-y: auto; }
+  .sidebar h2 { font-size: 18px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.2); }
+  .nav-item { display: block; padding: 12px 16px; border-radius: 8px; cursor: pointer; margin-bottom: 4px; font-size: 14px; transition: background .2s; }
+  .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.15); }
+  .main { margin-left: 240px; padding: 32px; min-height: 100vh; }
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+  .header h1 { font-size: 22px; color: #111827; }
+  .card { background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 24px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border-left: 4px solid #3b82f6; }
+  .stat-card h3 { font-size: 12px; text-transform: uppercase; color: #6b7280; margin-bottom: 8px; }
+  .stat-card .value { font-size: 28px; font-weight: 700; color: #1f2937; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+  th { background: #f9fafb; font-weight: 600; color: #374151; font-size: 12px; text-transform: uppercase; }
+  .badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .badge-pendente { background: #fef3c7; color: #92400e; }
+  .badge-ativa { background: #d1fae5; color: #065f46; }
+  .badge-pausada { background: #fee2e2; color: #991b1b; }
+  .badge-finalizada { background: #e5e7eb; color: #374151; }
+  .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+  .modal-overlay.active { display: flex; }
+  .modal { background: #fff; border-radius: 16px; width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px rgba(0,0,0,0.25); }
+  .modal-header { padding: 20px 24px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; }
+  .modal-body { padding: 24px; }
+  .modal-footer { padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 8px; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid #e5e7eb; }
+  .tab { padding: 10px 16px; cursor: pointer; font-size: 13px; font-weight: 600; color: #6b7280; border-bottom: 2px solid transparent; }
+  .tab.active { color: #2563eb; border-bottom-color: #2563eb; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .img-preview { max-width: 100%; max-height: 200px; border-radius: 8px; margin-top: 12px; border: 1px solid #e5e7eb; }
+  .empty-state { text-align: center; padding: 48px 20px; color: #6b7280; }
+  .empty-state svg { width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.4; }
+  .toast { position: fixed; top: 20px; right: 20px; padding: 14px 20px; border-radius: 10px; color: #fff; font-weight: 600; font-size: 13px; z-index: 2000; transform: translateX(150%); transition: transform .3s; }
+  .toast.show { transform: translateX(0); }
+  .toast-success { background: #10b981; }
+  .toast-error { background: #ef4444; }
+  .pagination { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+  .pagination button { padding: 6px 14px; }
+  .pagination span { font-size: 13px; color: #4b5563; }
+  .filters { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .filters select, .filters input { padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; }
+  .log-row { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+  .log-ERROR { color: #dc2626; }
+  .log-WARN { color: #d97706; }
+  .log-INFO { color: #2563eb; }
+  .log-DEBUG { color: #6b7280; }
+  .truncate { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  @media (max-width: 768px) {
+    .sidebar { width: 100%; position: relative; height: auto; }
+    .main { margin-left: 0; }
+  }
 </style>
 </head>
 <body>
 
 <!-- LOGIN -->
-<div id="loginScreen" class="login-screen">
+<div class="login-screen" id="loginScreen">
   <div class="login-box">
-    <h2>⚡ Leilão Fácil</h2>
+    <h1>🔨 Leilão Fácil</h1>
+    <p>Painel Administrativo v2.4</p>
     <div class="form-group">
       <label>Email</label>
-      <input type="email" id="loginEmail" placeholder="admin@leilao.com" value="admin@leilao.com">
+      <input type="email" id="loginEmail" value="admin@leilao.com" placeholder="admin@leilao.com">
     </div>
     <div class="form-group">
       <label>Senha</label>
-      <input type="password" id="loginSenha" placeholder="••••••••" value="admin123">
+      <input type="password" id="loginSenha" value="admin123" placeholder="••••••••">
     </div>
     <button class="btn btn-primary" onclick="fazerLogin()">Entrar</button>
   </div>
 </div>
 
 <!-- APP -->
-<div id="appScreen" class="layout hidden">
-  <aside class="sidebar">
-    <h1>Leilão Fácil</h1>
-    <div class="nav-item active" onclick="mostrarSecao('dashboard')">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
-      Dashboard
-    </div>
-    <div class="nav-item" onclick="mostrarSecao('campanhas')">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-      Campanhas
-    </div>
-    <div class="nav-item" onclick="mostrarSecao('influencers')">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-      Influencers
-    </div>
-    <div class="nav-item" onclick="mostrarSecao('usuarios')">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/></svg>
-      Usuários
-    </div>
-    <div class="nav-item" onclick="mostrarSecao('logs')">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-      Logs do Sistema
-    </div>
-    <div class="nav-item" onclick="mostrarSecao('configuracoes')">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-      Configurações
-    </div>
-    <div class="nav-item" style="margin-top:auto;color:#dc2626" onclick="logout()">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-      Sair
-    </div>
-  </aside>
+<div class="app" id="app">
+  <div class="sidebar">
+    <h2>⚙️ Admin</h2>
+    <div class="nav-item active" onclick="showSection('dashboard')">📊 Dashboard</div>
+    <div class="nav-item" onclick="showSection('campanhas')">🎯 Campanhas</div>
+    <div class="nav-item" onclick="showSection('logs')">📋 Logs do Sistema</div>
+    <div class="nav-item" onclick="showSection('config')">🔧 Configurações</div>
+    <div class="nav-item" style="margin-top: 40px; color: #fca5a5;" onclick="logout()">🚪 Sair</div>
+  </div>
 
-  <main class="main">
+  <div class="main">
     <!-- DASHBOARD -->
-    <section id="sec-dashboard">
-      <div class="header"><h2>Dashboard</h2></div>
-      <div class="grid-4">
-        <div class="stat-card"><div class="stat-label">Campanhas</div><div class="stat-value" id="dashTotalCampanhas">0</div></div>
-        <div class="stat-card"><div class="stat-label">Ativas</div><div class="stat-value" id="dashAtivas">0</div></div>
-        <div class="stat-card"><div class="stat-label">Usuários</div><div class="stat-value" id="dashUsuarios">0</div></div>
-        <div class="stat-card"><div class="stat-label">Arrecadado</div><div class="stat-value" id="dashArrecadado">R$ 0,00</div></div>
+    <div id="section-dashboard">
+      <div class="header"><h1>Dashboard</h1><span id="adminName"></span></div>
+      <div class="grid">
+        <div class="stat-card"><h3>Campanhas</h3><div class="value" id="dashTotal">0</div></div>
+        <div class="stat-card" style="border-left-color: #10b981;"><h3>Ativas</h3><div class="value" id="dashAtivas">0</div></div>
+        <div class="stat-card" style="border-left-color: #f59e0b;"><h3>Arrecadado</h3><div class="value" id="dashArrecadado">R$ 0,00</div></div>
+        <div class="stat-card" style="border-left-color: #8b5cf6;"><h3>Total Lances</h3><div class="value" id="dashLances">0</div></div>
       </div>
-    </section>
+    </div>
 
     <!-- CAMPANHAS -->
-    <section id="sec-campanhas" class="hidden">
-      <div class="header">
-        <h2>Campanhas</h2>
-        <button class="btn btn-primary" onclick="abrirModalCampanha()">+ Nova Campanha</button>
-      </div>
+    <div id="section-campanhas" style="display:none;">
+      <div class="header"><h1>Campanhas</h1><button class="btn btn-success btn-sm" onclick="openModal()">+ Nova Campanha</button></div>
+      <div class="card"><div id="campanhasList"></div></div>
+    </div>
+
+    <!-- LOGS -->
+    <div id="section-logs" style="display:none;">
+      <div class="header"><h1>Logs do Sistema</h1><button class="btn btn-secondary btn-sm" onclick="loadLogs()">🔄 Atualizar</button></div>
       <div class="card">
-        <table class="table">
-          <thead><tr><th>Nome</th><th>Slug</th><th>Meta</th><th>Status</th><th>Influencer</th><th>Ações</th></tr></thead>
-          <tbody id="tabelaCampanhas"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- INFLUENCERS -->
-    <section id="sec-influencers" class="hidden">
-      <div class="header"><h2>Influencers</h2><button class="btn btn-primary" onclick="abrirModalInfluencer()">+ Novo</button></div>
-      <div class="card"><table class="table"><thead><tr><th>Nome</th><th>Código</th><th>Comissão</th><th>Ações</th></tr></thead><tbody id="tabelaInfluencers"></tbody></table></div>
-    </section>
-
-    <!-- USUÁRIOS -->
-    <section id="sec-usuarios" class="hidden">
-      <div class="header"><h2>Usuários</h2></div>
-      <div class="card"><table class="table"><thead><tr><th>Nome</th><th>Email</th><th>Data</th></tr></thead><tbody id="tabelaUsuarios"></tbody></table></div>
-    </section>
-
-    <!-- LOGS DO SISTEMA -->
-    <section id="sec-logs" class="hidden">
-      <div class="header"><h2>📋 Logs do Sistema</h2></div>
-      <div class="log-filters">
-        <select id="logFiltroNivel" onchange="carregarLogs()">
-          <option value="todos">Todos os níveis</option>
-          <option value="ERROR">❌ ERROR</option>
-          <option value="WARN">⚠️ WARN</option>
-          <option value="INFO">ℹ️ INFO</option>
-          <option value="DEBUG">🔧 DEBUG</option>
-        </select>
-        <select id="logFiltroLimite" onchange="carregarLogs()">
-          <option value="50">Últimos 50</option>
-          <option value="100">Últimos 100</option>
-          <option value="200">Últimos 200</option>
-          <option value="500">Últimos 500</option>
-        </select>
-        <button class="btn btn-primary" onclick="carregarLogs()">🔄 Atualizar</button>
-        <button class="btn" style="background:#334155;color:#e2e8f0" onclick="limparLogs()">🗑️ Limpar visão</button>
-      </div>
-      <div class="card" style="padding:0;overflow:hidden">
-        <table class="table">
-          <thead><tr><th style="width:80px">Nível</th><th style="width:140px">Data</th><th style="width:100px">Método</th><th>Rota</th><th>Mensagem</th></tr></thead>
-          <tbody id="tabelaLogs"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- CONFIGURAÇÕES -->
-    <section id="sec-configuracoes" class="hidden">
-      <div class="header"><h2>Configurações</h2></div>
-      <div class="card">
-        <div class="form-row">
-          <div class="form-group"><label>Lance Padrão (R$)</label><input type="number" step="0.01" id="cfgLance"></div>
-          <div class="form-group"><label>Duração Padrão (horas)</label><input type="number" id="cfgDuracao"></div>
+        <div class="filters">
+          <select id="logLevel" onchange="loadLogs(1)">
+            <option value="">Todos os níveis</option>
+            <option value="ERROR">ERROR</option>
+            <option value="WARN">WARN</option>
+            <option value="INFO">INFO</option>
+            <option value="DEBUG">DEBUG</option>
+          </select>
+          <select id="logLimit" onchange="loadLogs(1)">
+            <option value="20">20 por página</option>
+            <option value="50">50 por página</option>
+            <option value="100">100 por página</option>
+          </select>
         </div>
-        <div class="form-group"><label>Taxa PIX (%)</label><input type="number" step="0.01" id="cfgTaxa"></div>
-        <button class="btn btn-primary" onclick="salvarConfiguracoes()">Salvar Configurações</button>
+        <div id="logsList"></div>
+        <div class="pagination" id="logsPagination"></div>
       </div>
-    </section>
-  </main>
+    </div>
+
+    <!-- CONFIG -->
+    <div id="section-config" style="display:none;">
+      <div class="header"><h1>Configurações</h1></div>
+      <div class="card">
+        <p style="margin-bottom: 12px;">Use esta seção para ajustar parâmetros globais do sistema.</p>
+        <div class="form-group"><label>Chave JWT (apenas leitura)</label><input type="text" value="Configurada no servidor" disabled></div>
+        <div class="form-group"><label>URL do Servidor</label><input type="text" id="serverUrl" value=""></div>
+        <button class="btn btn-primary btn-sm" onclick="salvarConfig()">Salvar</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- MODAL CAMPANHA -->
-<div class="modal-overlay" id="modalCampanha">
+<div class="modal-overlay" id="modalOverlay">
   <div class="modal">
-    <div class="modal-header"><h3 id="tituloModalCampanha">Nova Campanha</h3><button class="modal-close" onclick="fecharModalCampanha()">&times;</button></div>
+    <div class="modal-header"><h3 id="modalTitle">Nova Campanha</h3><button class="btn btn-sm btn-secondary" onclick="closeModal()">✕</button></div>
     <div class="modal-body">
-      <input type="hidden" id="campId">
-      <div class="form-group"><label>Nome do Leilão *</label><input type="text" id="campNome" oninput="gerarSlug()"><div class="slug-preview" id="slugPreview"></div></div>
-      <div class="form-group"><label>Slug (URL) *</label><input type="text" id="campSlug"></div>
-      <div class="form-group"><label>Descrição</label><textarea id="campDescricao" placeholder="Descrição do prêmio..."></textarea></div>
-
-      <div class="form-group">
-        <label>Imagem do Prêmio</label>
-        <div class="img-source-tabs">
-          <div class="img-source-tab active" onclick="trocarAbaImagem('url')">URL da Imagem</div>
-          <div class="img-source-tab" onclick="trocarAbaImagem('upload')">Fazer Upload</div>
-        </div>
-        <div class="img-source-panel active" id="panel-url">
-          <input type="text" id="campImagemUrl" placeholder="https://..." oninput="previewImagemUrl()">
-        </div>
-        <div class="img-source-panel" id="panel-upload">
-          <div class="upload-area" onclick="document.getElementById('campImagemFile').click()">
-            <input type="file" id="campImagemFile" accept="image/*" onchange="previewImagemUpload(event)">
-            <div class="upload-text">Clique para selecionar ou arraste uma imagem<br><strong>JPG, PNG, WEBP</strong> até 5MB</div>
-          </div>
-        </div>
-        <img id="imgPreview" class="img-preview" alt="Preview">
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('tab-dados')">📋 Dados</div>
+        <div class="tab" onclick="switchTab('tab-premio')">🎁 Prêmio</div>
+        <div class="tab" onclick="switchTab('tab-config')">⚙️ Config</div>
       </div>
-
-      <div class="form-row">
-        <div class="form-group"><label>Meta/Valor do Prêmio (R$) *</label><input type="number" step="0.01" id="campMeta"></div>
-        <div class="form-group"><label>Lance Inicial (R$) *</label><input type="number" step="0.01" id="campLance"></div>
+      <div class="tab-content active" id="tab-dados">
+        <input type="hidden" id="campId">
+        <div class="form-group"><label>Nome da Campanha *</label><input type="text" id="campNome" placeholder="Ex: Leilão Solidário"></div>
+        <div class="form-group"><label>Descrição</label><input type="text" id="campDesc" placeholder="Descrição curta"></div>
+        <div class="form-group"><label>Meta de Arrecadação (R$)</label><input type="number" step="0.01" id="campMeta" placeholder="1000.00"></div>
       </div>
-      <div class="form-row">
-        <div class="form-group"><label>Duração (horas) *</label><input type="number" id="campDuracao" value="24"></div>
-        <div class="form-group"><label>Influencer</label><select id="campInfluencer"><option value="">Nenhum</option></select></div>
+      <div class="tab-content" id="tab-premio">
+        <div class="form-group"><label>Nome do Prêmio</label><input type="text" id="campPremioNome" placeholder="Ex: iPhone 15"></div>
+        <div class="form-group"><label>Descrição do Prêmio</label><input type="text" id="campPremioDesc" placeholder="Detalhes do prêmio"></div>
+        <div class="tabs" style="margin-top: 16px;">
+          <div class="tab active" onclick="switchSubTab('sub-url')">🔗 URL da Imagem</div>
+          <div class="tab" onclick="switchSubTab('sub-upload')">📤 Fazer Upload</div>
+        </div>
+        <div class="tab-content active" id="sub-url">
+          <div class="form-group"><label>URL da imagem</label><input type="text" id="campImagemUrl" placeholder="https://..." oninput="previewImage(this.value)"></div>
+        </div>
+        <div class="tab-content" id="sub-upload">
+          <div class="form-group"><label>Selecionar arquivo</label><input type="file" id="campImagemFile" accept="image/*" onchange="handleFileSelect(this)"></div>
+        </div>
+        <img id="imgPreview" class="img-preview" style="display:none;">
       </div>
-      <div class="form-group" id="campStatusGroup" style="display:none">
-        <label>Status</label>
-        <select id="campStatus"><option value="pendente">Pendente</option><option value="ativa">Ativa</option><option value="pausada">Pausada</option><option value="finalizada">Finalizada</option></select>
+      <div class="tab-content" id="tab-config">
+        <div class="form-group"><label>Valor do Lance (R$)</label><input type="number" step="0.01" id="campValorLance" value="0.50"></div>
+        <div class="form-group"><label>Duração (horas)</label><input type="number" id="campDuracao" value="24"></div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn" style="background:#334155;color:#e2e8f0" onclick="fecharModalCampanha()">Cancelar</button>
-      <button class="btn btn-primary" onclick="salvarCampanha()">💾 Salvar</button>
+      <button class="btn btn-secondary btn-sm" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="salvarCampanha()">Salvar Campanha</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL INFLUENCER -->
-<div class="modal-overlay" id="modalInfluencer">
-  <div class="modal" style="max-width:420px">
-    <div class="modal-header"><h3 id="tituloModalInfluencer">Novo Influencer</h3><button class="modal-close" onclick="fecharModalInfluencer()">&times;</button></div>
-    <div class="modal-body">
-      <input type="hidden" id="infId">
-      <div class="form-group"><label>Nome</label><input type="text" id="infNome"></div>
-      <div class="form-group"><label>Email</label><input type="email" id="infEmail"></div>
-      <div class="form-group"><label>Telefone</label><input type="text" id="infTelefone"></div>
-      <div class="form-row">
-        <div class="form-group"><label>Código</label><input type="text" id="infCodigo"></div>
-        <div class="form-group"><label>Comissão (%)</label><input type="number" step="0.01" id="infComissao"></div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn" style="background:#334155;color:#e2e8f0" onclick="fecharModalInfluencer()">Cancelar</button>
-      <button class="btn btn-primary" onclick="salvarInfluencer()">Salvar</button>
-    </div>
-  </div>
-</div>
+<div class="toast" id="toast"></div>
 
 <script>
-const API = window.location.origin;
-let token = localStorage.getItem('admin_token');
-let influencers = [];
+const API = '';
+let token = localStorage.getItem('lf_token');
+let campanhas = [];
+let logsPage = 1;
+let logsData = { logs: [], pagination: {} };
 
-function slugify(str){
-  return str.toString().normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase()
-    .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').substring(0,60);
-}
-function formatMoney(v){return 'R$ '+(parseFloat(v)||0).toFixed(2).replace('.',',');}
-function mostrarToast(msg, erro){
-  const t = document.createElement('div'); t.className='toast'+(erro?' error':''); t.textContent=msg;
-  document.body.appendChild(t); setTimeout(()=>t.remove(),3500);
-}
+if (token) { try { const p = JSON.parse(atob(token.split('.')[1])); if (p.exp * 1000 > Date.now()) initApp(); } catch(e){} }
 
-async function api(path, opts={}){
-  const headers = {'Content-Type':'application/json'};
-  if(token) headers['Authorization'] = 'Bearer '+token;
-  const res = await fetch(API+path, {headers, ...opts});
-  if(res.status===401){logout(); throw new Error('Sessão expirada');}
-  if(!res.ok){const e=await res.json().catch(()=>({})); throw new Error(e.erro||'Erro '+res.status);}
-  return res.status===204?null:res.json();
-}
-
-// LOGIN
-async function fazerLogin(){
+async function fazerLogin() {
   const email = document.getElementById('loginEmail').value.trim();
-  const senha = document.getElementById('loginSenha').value.trim();
-  if(!email || !senha){mostrarToast('Preencha email e senha', true); return;}
-  try{
-    const res = await fetch(API+'/api/admin/login', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({email, senha})
+  const senha = document.getElementById('loginSenha').value;
+  try {
+    const res = await fetch(`${API}/api/login`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, senha })
     });
-    if(!res.ok){const e=await res.json(); throw new Error(e.erro||'Erro '+res.status);}
     const data = await res.json();
-    token = data.token; localStorage.setItem('admin_token', token);
-    document.getElementById('loginScreen').classList.add('hidden');
-    document.getElementById('appScreen').classList.remove('hidden');
-    carregarTudo();
-    mostrarToast('Bem-vindo, '+data.admin.nome+'!');
-  }catch(e){mostrarToast(e.message, true);}
-}
-function logout(){localStorage.removeItem('admin_token'); location.reload();}
-
-// NAVEGAÇÃO
-function mostrarSecao(sec){
-  document.querySelectorAll('section').forEach(s=>s.classList.add('hidden'));
-  document.getElementById('sec-'+sec).classList.remove('hidden');
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  event.currentTarget.classList.add('active');
-  if(sec==='campanhas') carregarCampanhas();
-  if(sec==='influencers') carregarInfluencers();
-  if(sec==='usuarios') carregarUsuarios();
-  if(sec==='logs') carregarLogs();
-  if(sec==='configuracoes') carregarConfiguracoes();
+    if (!res.ok) throw new Error(data.erro || 'Erro no login');
+    token = data.token;
+    localStorage.setItem('lf_token', token);
+    initApp();
+  } catch (err) { showToast(err.message, 'error'); }
 }
 
-async function carregarTudo(){carregarDashboard(); carregarCampanhas(); carregarInfluencers();}
-
-// DASHBOARD
-async function carregarDashboard(){
-  try{
-    const d=await api('/api/admin/dashboard');
-    document.getElementById('dashTotalCampanhas').textContent=d.totalCampanhas;
-    document.getElementById('dashAtivas').textContent=d.campanhasAtivas;
-    document.getElementById('dashUsuarios').textContent=d.totalUsuarios;
-    document.getElementById('dashArrecadado').textContent=formatMoney(d.totalArrecadado);
-  }catch(e){console.error(e);}
+function initApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  const p = JSON.parse(atob(token.split('.')[1]));
+  document.getElementById('adminName').textContent = p.email;
+  loadCampanhas();
+  showSection('dashboard');
 }
 
-// CAMPANHAS
-async function carregarCampanhas(){
-  try{
-    const lista=await api('/api/admin/campanhas');
-    const tbody=document.getElementById('tabelaCampanhas');
-    tbody.innerHTML=lista.map(c=>{
-      const statusClass={'pendente':'badge-pendente','ativa':'badge-ativa','pausada':'badge-pausada','finalizada':'badge-finalizada'}[c.status]||'badge-pendente';
-      const slugLink = c.status==='ativa' ? `<a href="/${c.slug}" target="_blank" style="color:#60a5fa;text-decoration:none">/${c.slug}</a>` : `/${c.slug}`;
-      return `<tr>
-        <td><strong>${c.nome}</strong></td>
-        <td>${slugLink}</td>
-        <td>${formatMoney(c.meta_valor)}</td>
-        <td><span class="badge ${statusClass}">${c.status}</span></td>
-        <td>${c.influencer_nome||'—'}</td>
-        <td class="actions">
-          <button class="btn btn-sm btn-primary" onclick='editarCampanha(${JSON.stringify(c).replace(/'/g,"&#39;")})'>Editar</button>
-          ${c.status!=='ativa'?`<button class="btn btn-sm btn-success" onclick="ativarCampanha(${c.id})">Ativar</button>`:`<button class="btn btn-sm btn-warning" onclick="pausarCampanha(${c.id})">Pausar</button>`}
-          <button class="btn btn-sm btn-danger" onclick="excluirCampanha(${c.id})">Excluir</button>
-        </td>
-      </tr>`;
-    }).join('');
-  }catch(e){mostrarToast(e.message,true);}
+function logout() {
+  localStorage.removeItem('lf_token');
+  location.reload();
 }
 
-function gerarSlug(){
-  const nome=document.getElementById('campNome').value;
-  const slug=slugify(nome);
-  document.getElementById('campSlug').value=slug;
-  document.getElementById('slugPreview').textContent=slug?'URL: /'+slug:'';
-}
-function trocarAbaImagem(aba){
-  document.querySelectorAll('.img-source-tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.img-source-panel').forEach(p=>p.classList.remove('active'));
-  event.currentTarget.classList.add('active');
-  document.getElementById('panel-'+aba).classList.add('active');
-}
-function previewImagemUrl(){
-  const url=document.getElementById('campImagemUrl').value;
-  const img=document.getElementById('imgPreview');
-  if(url){img.src=url;img.classList.add('active');}
-  else img.classList.remove('active');
-}
-function previewImagemUpload(ev){
-  const file=ev.target.files[0]; if(!file)return;
-  const img=document.getElementById('imgPreview');
-  img.src=URL.createObjectURL(file); img.classList.add('active');
-}
-function abrirModalCampanha(){
-  document.getElementById('campId').value='';
-  document.getElementById('campNome').value='';
-  document.getElementById('campSlug').value='';
-  document.getElementById('slugPreview').textContent='';
-  document.getElementById('campDescricao').value='';
-  document.getElementById('campImagemUrl').value='';
-  document.getElementById('campImagemFile').value='';
-  document.getElementById('imgPreview').classList.remove('active');
-  document.getElementById('campMeta').value='';
-  document.getElementById('campLance').value='';
-  document.getElementById('campDuracao').value='24';
-  document.getElementById('campStatusGroup').style.display='none';
-  document.getElementById('tituloModalCampanha').textContent='Nova Campanha';
-  carregarSelectInfluencers();
-  document.getElementById('modalCampanha').classList.add('active');
-}
-function editarCampanha(c){
-  document.getElementById('campId').value=c.id;
-  document.getElementById('campNome').value=c.nome;
-  document.getElementById('campSlug').value=c.slug;
-  document.getElementById('slugPreview').textContent='URL: /'+c.slug;
-  document.getElementById('campDescricao').value=c.descricao||'';
-  document.getElementById('campImagemUrl').value=c.premio_imagem||'';
-  document.getElementById('campImagemFile').value='';
-  const img=document.getElementById('imgPreview');
-  if(c.premio_imagem){img.src=c.premio_imagem;img.classList.add('active');}
-  else img.classList.remove('active');
-  document.getElementById('campMeta').value=c.meta_valor;
-  document.getElementById('campLance').value=c.lance_inicial;
-  document.getElementById('campDuracao').value=c.duracao_horas;
-  document.getElementById('campStatus').value=c.status;
-  document.getElementById('campStatusGroup').style.display='block';
-  document.getElementById('tituloModalCampanha').textContent='Editar Campanha';
-  carregarSelectInfluencers(c.influencer_id);
-  document.getElementById('modalCampanha').classList.add('active');
-}
-function fecharModalCampanha(){document.getElementById('modalCampanha').classList.remove('active');}
-
-async function salvarCampanha(){
-  try{
-    const id=document.getElementById('campId').value;
-    const nome=document.getElementById('campNome').value.trim();
-    const slug=document.getElementById('campSlug').value.trim();
-    if(!nome||!slug){mostrarToast('Nome e slug são obrigatórios',true);return;}
-
-    let premio_imagem = document.getElementById('campImagemUrl').value.trim();
-    const fileInput = document.getElementById('campImagemFile');
-
-    if(fileInput.files && fileInput.files[0]){
-      const formData = new FormData();
-      formData.append('imagem', fileInput.files[0]);
-      const res = await fetch(API+'/api/upload-imagem', {
-        method:'POST', headers:{'Authorization':'Bearer '+token}, body:formData
-      });
-      if(!res.ok){const e=await res.json(); throw new Error(e.erro||'Erro no upload');}
-      const data = await res.json(); premio_imagem = data.url;
-    }
-
-    const payload = {
-      nome, slug, descricao: document.getElementById('campDescricao').value.trim(),
-      premio_imagem: premio_imagem || null,
-      meta_valor: parseFloat(document.getElementById('campMeta').value)||0,
-      lance_inicial: parseFloat(document.getElementById('campLance').value)||0,
-      duracao_horas: parseInt(document.getElementById('campDuracao').value)||24,
-      influencer_id: document.getElementById('campInfluencer').value||null
-    };
-    if(id){
-      payload.status = document.getElementById('campStatus').value;
-      await api('/api/admin/campanhas/'+id,{method:'PUT',body:JSON.stringify(payload)});
-      mostrarToast('Campanha atualizada!');
-    }else{
-      await api('/api/admin/campanhas',{method:'POST',body:JSON.stringify(payload)});
-      mostrarToast('Campanha criada!');
-    }
-    fecharModalCampanha(); carregarCampanhas(); carregarDashboard();
-  }catch(e){mostrarToast(e.message,true);}
+function showSection(id) {
+  ['dashboard','campanhas','logs','config'].forEach(s => document.getElementById('section-'+s).style.display = 'none');
+  document.getElementById('section-'+id).style.display = 'block';
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  event.target.classList.add('active');
+  if (id === 'logs') loadLogs(1);
+  if (id === 'dashboard') updateDashboard();
 }
 
-async function ativarCampanha(id){try{await api('/api/admin/campanhas/'+id,{method:'PUT',body:JSON.stringify({status:'ativa'})});mostrarToast('Campanha ativada!');carregarCampanhas();}catch(e){mostrarToast(e.message,true);}}
-async function pausarCampanha(id){try{await api('/api/admin/campanhas/'+id,{method:'PUT',body:JSON.stringify({status:'pausada'})});mostrarToast('Campanha pausada!');carregarCampanhas();}catch(e){mostrarToast(e.message,true);}}
-async function excluirCampanha(id){if(!confirm('Tem certeza?'))return;try{await api('/api/admin/campanhas/'+id,{method:'DELETE'});mostrarToast('Campanha excluída!');carregarCampanhas();carregarDashboard();}catch(e){mostrarToast(e.message,true);}}
-
-// INFLUENCERS
-async function carregarInfluencers(){
-  try{
-    influencers=await api('/api/admin/influencers');
-    const tbody=document.getElementById('tabelaInfluencers');
-    tbody.innerHTML=influencers.map(i=>`<tr><td>${i.nome}</td><td>${i.codigo}</td><td>${i.comissao}%</td><td class="actions"><button class="btn btn-sm btn-primary" onclick='editarInfluencer(${JSON.stringify(i).replace(/'/g,"&#39;")})'>Editar</button><button class="btn btn-sm btn-danger" onclick="excluirInfluencer(${i.id})">Excluir</button></td></tr>`).join('');
-  }catch(e){mostrarToast(e.message,true);}
+// ---------- CAMPANHAS ----------
+async function loadCampanhas() {
+  try {
+    const res = await fetch(`${API}/api/campanhas`, { headers: { 'Authorization': 'Bearer '+token } });
+    campanhas = await res.json();
+    renderCampanhas();
+    updateDashboard();
+  } catch (err) { showToast('Erro ao carregar campanhas', 'error'); }
 }
-function carregarSelectInfluencers(selectedId){
-  const sel=document.getElementById('campInfluencer');
-  sel.innerHTML='<option value="">Nenhum</option>'+influencers.map(i=>`<option value="${i.id}" ${i.id==selectedId?'selected':''}>${i.nome}</option>`).join('');
+
+function updateDashboard() {
+  const total = campanhas.length;
+  const ativas = campanhas.filter(c => c.status === 'ativa').length;
+  const arrecadado = campanhas.reduce((a, c) => a + (parseFloat(c.arrecadado)||0), 0);
+  const lances = campanhas.reduce((a, c) => a + (parseInt(c.total_lances)||0), 0);
+  document.getElementById('dashTotal').textContent = total;
+  document.getElementById('dashAtivas').textContent = ativas;
+  document.getElementById('dashArrecadado').textContent = 'R$ ' + arrecadado.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+  document.getElementById('dashLances').textContent = lances;
 }
-function abrirModalInfluencer(){document.getElementById('infId').value='';document.getElementById('infNome').value='';document.getElementById('infEmail').value='';document.getElementById('infTelefone').value='';document.getElementById('infCodigo').value='';document.getElementById('infComissao').value='';document.getElementById('tituloModalInfluencer').textContent='Novo Influencer';document.getElementById('modalInfluencer').classList.add('active');}
-function editarInfluencer(i){document.getElementById('infId').value=i.id;document.getElementById('infNome').value=i.nome;document.getElementById('infEmail').value=i.email;document.getElementById('infTelefone').value=i.telefone||'';document.getElementById('infCodigo').value=i.codigo;document.getElementById('infComissao').value=i.comissao;document.getElementById('tituloModalInfluencer').textContent='Editar Influencer';document.getElementById('modalInfluencer').classList.add('active');}
-function fecharModalInfluencer(){document.getElementById('modalInfluencer').classList.remove('active');}
-async function salvarInfluencer(){try{const id=document.getElementById('infId').value;const payload={nome:document.getElementById('infNome').value,email:document.getElementById('infEmail').value,telefone:document.getElementById('infTelefone').value,codigo:document.getElementById('infCodigo').value,comissao:parseFloat(document.getElementById('infComissao').value)||0};if(id){await api('/api/admin/influencers/'+id,{method:'PUT',body:JSON.stringify(payload)});mostrarToast('Influencer atualizado!');}else{await api('/api/admin/influencers',{method:'POST',body:JSON.stringify(payload)});mostrarToast('Influencer criado!');}fecharModalInfluencer();carregarInfluencers();}catch(e){mostrarToast(e.message,true);}}
-async function excluirInfluencer(id){if(!confirm('Tem certeza?'))return;try{await api('/api/admin/influencers/'+id,{method:'DELETE'});mostrarToast('Influencer excluído!');carregarInfluencers();}catch(e){mostrarToast(e.message,true);}}
 
-// USUÁRIOS
-async function carregarUsuarios(){try{const lista=await api('/api/admin/usuarios');document.getElementById('tabelaUsuarios').innerHTML=lista.map(u=>`<tr><td>${u.nome}</td><td>${u.email}</td><td>${new Date(u.created_at).toLocaleString('pt-BR')}</td></tr>`).join('');}catch(e){mostrarToast(e.message,true);}}
-
-// LOGS DO SISTEMA
-async function carregarLogs(){
-  try{
-    const nivel = document.getElementById('logFiltroNivel').value;
-    const limite = document.getElementById('logFiltroLimite').value;
-    let url = '/api/admin/logs?limite='+limite;
-    if(nivel !== 'todos') url += '&nivel='+nivel;
-    const lista = await api(url);
-    const tbody = document.getElementById('tabelaLogs');
-    if(lista.length === 0){tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:#64748b;padding:30px">Nenhum log encontrado</td></tr>';return;}
-    tbody.innerHTML = lista.map(l=>{
-      const badgeClass = {'INFO':'log-info','WARN':'log-warn','ERROR':'log-error','DEBUG':'log-debug'}[l.nivel]||'log-debug';
-      const data = new Date(l.created_at).toLocaleString('pt-BR');
-      const payload = l.payload ? JSON.stringify(l.payload, null, 2) : '';
-      const erro = l.erro || '';
-      return `<tr>
-        <td><span class="badge ${badgeClass}">${l.nivel}</span></td>
-        <td style="font-size:12px;color:#94a3b8;white-space:nowrap">${data}</td>
-        <td style="font-size:12px;color:#94a3b8">${l.metodo||'—'}</td>
-        <td style="font-size:12px;color:#60a5fa">${l.rota||'—'}</td>
-        <td>
-          <div style="font-size:13px">${l.mensagem}</div>
-          ${payload ? `<div class="log-payload">Payload:
-${payload}</div>` : ''}
-          ${erro ? `<div class="log-payload" style="color:#f87171;border-color:#dc2626">Erro: ${erro}</div>` : ''}
-        </td>
-      </tr>`;
-    }).join('');
-  }catch(e){mostrarToast(e.message,true);}
+function renderCampanhas() {
+  const el = document.getElementById('campanhasList');
+  if (!campanhas.length) { el.innerHTML = '<div class="empty-state">Nenhuma campanha criada ainda.</div>'; return; }
+  let html = `<table><thead><tr><th>Nome</th><th>Slug</th><th>Status</th><th>Meta</th><th>Arrecadado</th><th>Ações</th></tr></thead><tbody>`;
+  campanhas.forEach(c => {
+    const statusClass = 'badge-' + c.status;
+    const arrec = parseFloat(c.arrecadado||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+    const meta = parseFloat(c.meta_valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+    html += `<tr>
+      <td><strong>${c.nome}</strong><br><small style="color:#6b7280">${c.premio_nome||''}</small></td>
+      <td><a href="/${c.slug}" target="_blank" style="color:#2563eb">/${c.slug}</a></td>
+      <td><span class="badge ${statusClass}">${c.status}</span></td>
+      <td>R$ ${meta}</td>
+      <td>R$ ${arrec}</td>
+      <td class="actions">
+        <button class="btn btn-sm btn-info" onclick="editarCampanha(${c.id})">Editar</button>
+        ${c.status !== 'ativa' ? `<button class="btn btn-sm btn-success" onclick="acaoCampanha(${c.id},'ativar')">Ativar</button>` : ''}
+        ${c.status === 'ativa' ? `<button class="btn btn-sm btn-warning" onclick="acaoCampanha(${c.id},'pausar')">Pausar</button>` : ''}
+        <button class="btn btn-sm btn-danger" onclick="excluirCampanha(${c.id})">Excluir</button>
+      </td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
 }
-function limparLogs(){document.getElementById('tabelaLogs').innerHTML='<tr><td colspan="5" style="text-align:center;color:#64748b;padding:30px">Clique em Atualizar para carregar os logs</td></tr>';}
 
-// CONFIGURAÇÕES
-async function carregarConfiguracoes(){try{const c=await api('/api/admin/configuracoes');if(c){document.getElementById('cfgLance').value=c.lance_padrao||'';document.getElementById('cfgDuracao').value=c.duracao_padrao||'';document.getElementById('cfgTaxa').value=c.taxa_pix||'';}}catch(e){}}
-async function salvarConfiguracoes(){try{await api('/api/admin/configuracoes',{method:'PUT',body:JSON.stringify({lance_padrao:parseFloat(document.getElementById('cfgLance').value)||0,duracao_padrao:parseInt(document.getElementById('cfgDuracao').value)||24,taxa_pix:parseFloat(document.getElementById('cfgTaxa').value)||0})});mostrarToast('Configurações salvas!');}catch(e){mostrarToast(e.message,true);}}
+function openModal() {
+  document.getElementById('modalTitle').textContent = 'Nova Campanha';
+  document.getElementById('campId').value = '';
+  ['campNome','campDesc','campMeta','campPremioNome','campPremioDesc','campImagemUrl','campValorLance','campDuracao'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('campValorLance').value = '0.50';
+  document.getElementById('campDuracao').value = '24';
+  document.getElementById('imgPreview').style.display = 'none';
+  switchTab('tab-dados');
+  document.getElementById('modalOverlay').classList.add('active');
+}
 
-// Inicializar
-if(token){
-  document.getElementById('loginScreen').classList.add('hidden');
-  document.getElementById('appScreen').classList.remove('hidden');
-  carregarTudo();
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('active');
+}
+
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+
+function switchSubTab(id) {
+  document.querySelectorAll('#tab-premio .tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#tab-premio .tab-content').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+
+function previewImage(url) {
+  const img = document.getElementById('imgPreview');
+  if (!url) { img.style.display = 'none'; return; }
+  img.src = url;
+  img.style.display = 'block';
+}
+
+async function handleFileSelect(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { showToast('Arquivo muito grande (máx 5MB)', 'error'); return; }
+  const formData = new FormData();
+  formData.append('imagem', file);
+  try {
+    const res = await fetch(`${API}/api/upload`, { method: 'POST', headers: { 'Authorization': 'Bearer '+token }, body: formData });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.erro || 'Erro no upload');
+    document.getElementById('campImagemUrl').value = data.url;
+    previewImage(data.url);
+    showToast('Upload concluído!');
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+async function salvarCampanha() {
+  const id = document.getElementById('campId').value;
+  const payload = {
+    nome: document.getElementById('campNome').value,
+    descricao: document.getElementById('campDesc').value,
+    meta_valor: parseFloat(document.getElementById('campMeta').value) || 0,
+    premio_nome: document.getElementById('campPremioNome').value,
+    premio_descricao: document.getElementById('campPremioDesc').value,
+    premio_imagem: document.getElementById('campImagemUrl').value,
+    valor_lance: parseFloat(document.getElementById('campValorLance').value) || 0.50,
+    duracao_horas: parseInt(document.getElementById('campDuracao').value) || 24
+  };
+  if (!payload.nome) { showToast('Nome da campanha é obrigatório', 'error'); return; }
+  try {
+    const url = id ? `${API}/api/campanhas/${id}` : `${API}/api/campanhas`;
+    const res = await fetch(url, {
+      method: id ? 'PUT' : 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer '+token },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.erro || 'Erro ao salvar');
+    showToast(id ? 'Campanha atualizada!' : 'Campanha criada!');
+    closeModal();
+    loadCampanhas();
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+async function editarCampanha(id) {
+  const c = campanhas.find(x => x.id == id);
+  if (!c) return;
+  document.getElementById('modalTitle').textContent = 'Editar Campanha';
+  document.getElementById('campId').value = c.id;
+  document.getElementById('campNome').value = c.nome || '';
+  document.getElementById('campDesc').value = c.descricao || '';
+  document.getElementById('campMeta').value = c.meta_valor || '';
+  document.getElementById('campPremioNome').value = c.premio_nome || '';
+  document.getElementById('campPremioDesc').value = c.premio_descricao || '';
+  document.getElementById('campImagemUrl').value = c.premio_imagem || '';
+  document.getElementById('campValorLance').value = c.valor_lance || 0.50;
+  document.getElementById('campDuracao').value = c.duracao_horas || 24;
+  previewImage(c.premio_imagem);
+  switchTab('tab-dados');
+  document.getElementById('modalOverlay').classList.add('active');
+}
+
+async function acaoCampanha(id, acao) {
+  try {
+    const res = await fetch(`${API}/api/campanhas/${id}/${acao}`, { method: 'POST', headers: { 'Authorization': 'Bearer '+token } });
+    if (!res.ok) throw new Error('Erro');
+    showToast(`Campanha ${acao} com sucesso!`);
+    loadCampanhas();
+  } catch (err) { showToast('Erro na ação', 'error'); }
+}
+
+async function excluirCampanha(id) {
+  if (!confirm('Tem certeza que deseja excluir esta campanha?')) return;
+  try {
+    const res = await fetch(`${API}/api/campanhas/${id}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer '+token } });
+    if (!res.ok) throw new Error('Erro');
+    showToast('Campanha excluída');
+    loadCampanhas();
+  } catch (err) { showToast('Erro ao excluir', 'error'); }
+}
+
+// ---------- LOGS ----------
+async function loadLogs(page = 1) {
+  logsPage = page;
+  const level = document.getElementById('logLevel').value;
+  const limit = document.getElementById('logLimit').value;
+  try {
+    const res = await fetch(`${API}/api/logs?page=${page}&limit=${limit}&level=${level}`, { headers: { 'Authorization': 'Bearer '+token } });
+    logsData = await res.json();
+    renderLogs();
+  } catch (err) { document.getElementById('logsList').innerHTML = '<div class="empty-state">Erro ao carregar logs</div>'; }
+}
+
+function renderLogs() {
+  const el = document.getElementById('logsList');
+  const { logs, pagination } = logsData;
+  if (!logs || !logs.length) { el.innerHTML = '<div class="empty-state">Nenhum log encontrado.</div>'; document.getElementById('logsPagination').innerHTML = ''; return; }
+
+  let html = `<table><thead><tr><th>Data</th><th>Nível</th><th>Método</th><th>Rota</th><th>Status</th><th>Mensagem</th></tr></thead><tbody>`;
+  logs.forEach(l => {
+    const data = new Date(l.created_at).toLocaleString('pt-BR');
+    html += `<tr class="log-row">
+      <td>${data}</td>
+      <td class="log-${l.level}"><strong>${l.level}</strong></td>
+      <td>${l.method||'-'}</td>
+      <td class="truncate" title="${l.route||''}">${l.route||'-'}</td>
+      <td>${l.status||'-'}</td>
+      <td class="truncate" title="${(l.message||'').replace(/"/g,'&quot;')}">${l.message||'-'}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+
+  // Paginação
+  let pag = '';
+  if (pagination.totalPages > 1) {
+    pag += `<button class="btn btn-sm btn-secondary" ${pagination.page <= 1 ? 'disabled' : ''} onclick="loadLogs(${pagination.page - 1})">← Anterior</button>`;
+    pag += `<span>Página <strong>${pagination.page}</strong> de <strong>${pagination.totalPages}</strong> (${pagination.total} registros)</span>`;
+    pag += `<button class="btn btn-sm btn-secondary" ${pagination.page >= pagination.totalPages ? 'disabled' : ''} onclick="loadLogs(${pagination.page + 1})">Próxima →</button>`;
+  } else {
+    pag = `<span>${pagination.total} registros no total</span>`;
+  }
+  document.getElementById('logsPagination').innerHTML = pag;
+}
+
+function salvarConfig() {
+  showToast('Configurações salvas!');
+}
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast toast-' + type + ' show';
+  setTimeout(() => t.classList.remove('show'), 3000);
 }
 </script>
 </body>
