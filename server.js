@@ -490,16 +490,30 @@ app.get('/api/lances/:campanha_id', async (req, res) => {
 app.post('/api/lances', async (req, res) => {
   try {
     const { campanha_id, usuario_id, valor } = req.body;
-    if (!campanha_id || !usuario_id || !valor) return res.status(400).json({ erro: 'Dados incompletos' });
+    console.log('[LANCE] Payload:', { campanha_id, usuario_id, valor });
+
+    if (!campanha_id || !usuario_id || valor === undefined || valor === null) {
+      return res.status(400).json({ erro: 'Dados incompletos' });
+    }
+
+    // Verifica se usuário existe (pode ter sido perdido no reset do banco)
+    const userCheck = await pool.query('SELECT * FROM usuarios WHERE id = $1', [usuario_id]);
+    if (userCheck.rows.length === 0) {
+      console.log('[LANCE] Usuário não encontrado no banco. ID:', usuario_id);
+      return res.status(401).json({ erro: 'Sessão expirada. Faça login novamente.' });
+    }
+
     const camp = await pool.query('SELECT * FROM campanhas WHERE id = $1', [campanha_id]);
     if (camp.rows.length === 0) return res.status(404).json({ erro: 'Campanha não encontrada' });
+
     const c = camp.rows[0];
     if (c.status !== 'ativa') return res.status(400).json({ erro: 'Campanha não está ativa' });
     if (c.data_fim && new Date(c.data_fim) < new Date()) return res.status(400).json({ erro: 'Leilão finalizado' });
 
+    const valorNum = parseFloat(valor);
     const result = await pool.query(
       'INSERT INTO lances (campanha_id, usuario_id, valor) VALUES ($1,$2,$3) RETURNING *',
-      [campanha_id, usuario_id, valor]
+      [campanha_id, usuario_id, valorNum]
     );
 
     if (!c.data_fim) {
@@ -507,13 +521,16 @@ app.post('/api/lances', async (req, res) => {
       await pool.query('UPDATE campanhas SET data_fim = $1 WHERE id = $2', [dataFim, campanha_id]);
     }
 
-    await pool.query('UPDATE campanhas SET total_lances = total_lances + 1, arrecadado = arrecadado + $1 WHERE id = $2', [valor, campanha_id]);
+    await pool.query('UPDATE campanhas SET total_lances = total_lances + 1, arrecadado = arrecadado + $1 WHERE id = $2', [valorNum, campanha_id]);
 
-    const userRes = await pool.query('SELECT nome FROM usuarios WHERE id = $1', [usuario_id]);
-    const lanceData = { ...result.rows[0], nome_usuario: userRes.rows[0]?.nome || 'Anônimo' };
+    const lanceData = { ...result.rows[0], nome_usuario: userCheck.rows[0].nome };
     io.emit('novo_lance', { campanha_id, lance: lanceData });
+    console.log('[LANCE] Sucesso:', lanceData);
     res.json(lanceData);
-  } catch (err) { console.error('[LANCE]', err); res.status(500).json({ erro: err.message }); }
+  } catch (err) { 
+    console.error('[LANCE ERROR]', err.message); 
+    res.status(500).json({ erro: err.message }); 
+  }
 });
 
 // SPA fallback para slugs

@@ -220,6 +220,12 @@ async function confirmarPagamento(){
   if(!usuario||!campanha)return;
   try{
     const res=await fetch(`${API}/api/lances`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({campanha_id:campanha.id,usuario_id:usuario.id,valor:campanha.valor_lance})});
+    if(res.status===401){
+      localStorage.removeItem('lf_user');usuario=null;
+      closePix();showToast('Sessão expirada. Faça login novamente.','error');
+      setTimeout(()=>document.getElementById('modalLogin').classList.add('active'),500);
+      return;
+    }
     if(!res.ok)throw new Error('Erro ao registrar lance');
     closePix();showToast('✅ Lance confirmado com sucesso!');loadLances();
   }catch(e){showToast(e.message,'error')}
