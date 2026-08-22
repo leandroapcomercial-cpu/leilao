@@ -6,113 +6,116 @@
 <title>Leilão Fácil</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:#f0f2f5;color:#1a1a2e;min-height:100vh}
-  .container{max-width:480px;margin:0 auto;background:#f0f2f5;min-height:100vh}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:#e8ecf1;color:#1a1a2e;min-height:100vh}
+
+  /* ===== MOBILE FIRST (base) ===== */
+  .container{max-width:100%;margin:0 auto;padding:0 12px}
 
   /* Header */
-  .topbar{background:#fff;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e2e8f0;position:sticky;top:0;z-index:100}
+  .topbar{background:#fff;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e2e8f0;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.05)}
   .brand{display:flex;align-items:center;gap:6px;font-weight:800;font-size:16px;color:#1a1a2e}
   .brand .bolt{color:#fbbf24;font-size:18px}
   .topbar-right{display:flex;align-items:center;gap:8px}
   .badge-live{background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:999px;display:flex;align-items:center;gap:4px}
   .badge-live::before{content:'';width:6px;height:6px;background:#fff;border-radius:50%;animation:pulse 1.5s infinite}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-  .user-name{font-size:13px;color:#475569;font-weight:600}
+  .user-name{font-size:13px;color:#475569;font-weight:600;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .btn-sair{background:#fff;border:1px solid #ef4444;color:#ef4444;padding:4px 10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer}
   .btn-sair:hover{background:#fef2f2}
 
   /* Cards */
-  .card{background:#fff;border-radius:16px;margin:12px 16px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
-  .card-title{text-align:center;font-size:22px;font-weight:800;color:#1e3a8a;margin-bottom:6px}
-  .card-subtitle{text-align:center;font-size:14px;color:#64748b;margin-bottom:16px;line-height:1.4}
-  .prize-badge{display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;font-weight:700;color:#dc2626;margin-bottom:12px}
-  .prize-img-wrap{position:relative;text-align:center;margin-bottom:16px}
-  .prize-img{width:100%;max-width:280px;height:220px;object-fit:cover;border-radius:16px;display:inline-block;border:1px solid #e2e8f0}
-  .zoom-btn{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.6);color:#fff;padding:6px 14px;border-radius:999px;font-size:12px;font-weight:600;border:none;cursor:pointer;backdrop-filter:blur(4px)}
-  .meta-text{text-align:center;font-size:16px;color:#64748b;margin-bottom:16px}
-  .meta-text strong{color:#2563eb;font-size:20px}
+  .card{background:#fff;border-radius:16px;margin:12px 0;padding:18px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+  .card-title{text-align:center;font-size:20px;font-weight:800;color:#1e3a8a;margin-bottom:6px}
+  .card-subtitle{text-align:center;font-size:13px;color:#64748b;margin-bottom:14px;line-height:1.4}
+  .prize-badge{display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;font-weight:700;color:#dc2626;margin-bottom:12px}
+  .prize-img-wrap{position:relative;text-align:center;margin-bottom:14px}
+  .prize-img{width:100%;max-width:260px;height:200px;object-fit:cover;border-radius:16px;display:inline-block;border:1px solid #e2e8f0}
+  .zoom-btn{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.6);color:#fff;padding:5px 12px;border-radius:999px;font-size:11px;font-weight:600;border:none;cursor:pointer;backdrop-filter:blur(4px)}
+  .meta-text{text-align:center;font-size:15px;color:#64748b;margin-bottom:14px}
+  .meta-text strong{color:#2563eb;font-size:18px}
 
   /* Vencedor */
-  .winner-box{text-align:center;padding:16px;background:linear-gradient(135deg,#fef3c7,#fde68a);border-radius:12px;margin-bottom:16px}
-  .winner-box .trophy{font-size:24px;margin-bottom:4px}
-  .winner-box .label{font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:1px}
-  .winner-box .name{font-size:18px;font-weight:800;color:#78350f;margin:4px 0}
-  .winner-box .value{font-size:20px;font-weight:800;color:#dc2626}
-  .winner-box .date{font-size:12px;color:#a16207;margin-top:4px}
+  .winner-box{text-align:center;padding:14px;background:linear-gradient(135deg,#fef3c7,#fde68a);border-radius:12px;margin-bottom:14px}
+  .winner-box .trophy{font-size:22px;margin-bottom:4px}
+  .winner-box .label{font-size:10px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:1px}
+  .winner-box .name{font-size:16px;font-weight:800;color:#78350f;margin:4px 0}
+  .winner-box .value{font-size:18px;font-weight:800;color:#dc2626}
+  .winner-box .date{font-size:11px;color:#a16207;margin-top:4px}
 
   /* Timer */
-  .timer-box{background:linear-gradient(135deg,#1e40af,#3b82f6);border-radius:16px;padding:20px;text-align:center;color:#fff;margin-bottom:16px}
-  .timer-box .label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;opacity:.9;margin-bottom:8px}
-  .timer-box .time{font-size:36px;font-weight:800;font-variant-numeric:tabular-nums;text-shadow:0 2px 8px rgba(0,0,0,.2)}
-  .timer-box .lance-atual{font-size:16px;font-weight:700;margin-top:10px}
-  .timer-box .lance-atual span{color:#fbbf24;font-size:22px}
+  .timer-box{background:linear-gradient(135deg,#1e40af,#3b82f6);border-radius:16px;padding:18px;text-align:center;color:#fff;margin-bottom:14px}
+  .timer-box .label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;opacity:.9;margin-bottom:8px}
+  .timer-box .time{font-size:32px;font-weight:800;font-variant-numeric:tabular-nums;text-shadow:0 2px 8px rgba(0,0,0,.2)}
+  .timer-box .lance-atual{font-size:14px;font-weight:700;margin-top:8px}
+  .timer-box .lance-atual span{color:#fbbf24;font-size:20px}
 
   /* Stats */
-  .participants{text-align:center;font-size:14px;color:#64748b;margin-bottom:12px}
+  .participants{text-align:center;font-size:13px;color:#64748b;margin-bottom:10px}
   .participants strong{color:#1e3a8a}
 
   /* Próximo lance */
-  .proximo-lance{text-align:center;margin-bottom:16px}
-  .proximo-lance .label{font-size:13px;color:#64748b;display:flex;align-items:center;justify-content:center;gap:6px}
-  .proximo-lance .valor{font-size:28px;font-weight:800;color:#1e3a8a}
+  .proximo-lance{text-align:center;margin-bottom:14px}
+  .proximo-lance .label{font-size:12px;color:#64748b;display:flex;align-items:center;justify-content:center;gap:6px}
+  .proximo-lance .valor{font-size:24px;font-weight:800;color:#1e3a8a}
 
   /* Botão */
-  .btn-lance{display:block;width:100%;padding:16px;font-size:16px;font-weight:800;color:#fff;background:linear-gradient(135deg,#10b981,#059669);border:none;border-radius:14px;cursor:pointer;transition:all .2s;box-shadow:0 4px 15px rgba(16,185,129,.3);margin-bottom:10px}
+  .btn-lance{display:block;width:100%;padding:16px;font-size:16px;font-weight:800;color:#fff;background:linear-gradient(135deg,#10b981,#059669);border:none;border-radius:14px;cursor:pointer;transition:all .2s;box-shadow:0 4px 15px rgba(16,185,129,.3);margin-bottom:8px}
   .btn-lance:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(16,185,129,.4)}
+  .btn-lance:active{transform:translateY(0)}
   .btn-lance:disabled{background:#94a3b8;cursor:not-allowed;transform:none;box-shadow:none}
-  .info-text{text-align:center;font-size:12px;color:#94a3b8;margin-bottom:16px}
+  .info-text{text-align:center;font-size:11px;color:#94a3b8;margin-bottom:14px}
 
   /* Últimos lances */
-  .section-title{font-size:16px;font-weight:800;color:#1e3a8a;margin-bottom:12px;display:flex;align-items:center;gap:6px}
-  .lance-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f1f5f9}
+  .section-title{font-size:15px;font-weight:800;color:#1e3a8a;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+  .lance-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f1f5f9}
   .lance-item:last-child{border-bottom:none}
   .lance-user{display:flex;align-items:center;gap:10px}
   .lance-avatar{width:32px;height:32px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700}
-  .lance-name{font-size:14px;font-weight:600;color:#1e293b}
+  .lance-name{font-size:13px;font-weight:600;color:#1e293b}
   .lance-time{font-size:11px;color:#94a3b8}
-  .lance-valor{font-size:16px;font-weight:800;color:#2563eb}
+  .lance-valor{font-size:15px;font-weight:800;color:#2563eb}
 
   /* Ver ranking */
-  .btn-ranking{display:block;width:100%;padding:12px;text-align:center;background:#fff;border:2px solid #3b82f6;color:#3b82f6;font-size:14px;font-weight:700;border-radius:12px;cursor:pointer;margin-top:8px}
+  .btn-ranking{display:block;width:100%;padding:12px;text-align:center;background:#fff;border:2px solid #3b82f6;color:#3b82f6;font-size:13px;font-weight:700;border-radius:12px;cursor:pointer;margin-top:8px}
   .btn-ranking:hover{background:#eff6ff}
 
   /* Ranking card */
-  .ranking-tabs{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto}
-  .rank-tab{flex:1;padding:10px 8px;text-align:center;background:#f1f5f9;border:none;border-radius:10px;font-size:13px;font-weight:600;color:#64748b;cursor:pointer;white-space:nowrap}
+  .ranking-tabs{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto}
+  .rank-tab{flex:1;padding:8px 6px;text-align:center;background:#f1f5f9;border:none;border-radius:10px;font-size:12px;font-weight:600;color:#64748b;cursor:pointer;white-space:nowrap}
   .rank-tab.active{background:#2563eb;color:#fff}
-  .rank-item{display:flex;align-items:center;gap:12px;padding:14px;background:#f8fafc;border-radius:12px;margin-bottom:8px;border:1px solid #e2e8f0}
+  .rank-item{display:flex;align-items:center;gap:10px;padding:12px;background:#f8fafc;border-radius:12px;margin-bottom:8px;border:1px solid #e2e8f0}
   .rank-item.gold{background:linear-gradient(90deg,#fef3c7,#fde68a);border-color:#fbbf24}
   .rank-item.silver{background:linear-gradient(90deg,#f1f5f9,#e2e8f0);border-color:#cbd5e1}
   .rank-item.bronze{background:linear-gradient(90deg,#fff7ed,#fed7aa);border-color:#fdba74}
-  .rank-pos{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-weight:800;font-size:13px;background:#e2e8f0;color:#475569}
+  .rank-pos{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-weight:800;font-size:12px;background:#e2e8f0;color:#475569}
   .rank-pos.gold{background:#fbbf24;color:#78350f}
   .rank-pos.silver{background:#cbd5e1;color:#334155}
   .rank-pos.bronze{background:#fdba74;color:#7c2d12}
   .rank-info{flex:1}
-  .rank-name{font-weight:700;font-size:14px;color:#1e293b}
-  .rank-detail{font-size:12px;color:#64748b}
-  .rank-valor{font-weight:800;color:#dc2626;font-size:16px}
+  .rank-name{font-weight:700;font-size:13px;color:#1e293b}
+  .rank-detail{font-size:11px;color:#64748b}
+  .rank-valor{font-weight:800;color:#dc2626;font-size:15px}
 
   /* Footer */
-  .footer{text-align:center;padding:20px 16px 40px;color:#94a3b8;font-size:12px}
+  .footer{text-align:center;padding:16px 12px 30px;color:#94a3b8;font-size:11px}
 
   /* Modals */
   .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:1000;padding:16px;backdrop-filter:blur(4px)}
   .modal-overlay.active{display:flex}
-  .modal{background:#fff;border-radius:20px;width:100%;max-width:400px;padding:28px;box-shadow:0 20px 50px rgba(0,0,0,.3);position:relative}
-  .modal h3{font-size:20px;margin-bottom:6px;color:#1e3a8a}
-  .modal p.sub{color:#64748b;font-size:14px;margin-bottom:20px}
-  .form-group{margin-bottom:14px}
-  .form-group label{display:block;margin-bottom:5px;font-size:13px;font-weight:600;color:#374151}
-  .form-group input{width:100%;padding:14px 16px;border:1px solid #d1d5db;border-radius:12px;font-size:15px;background:#f9fafb}
+  .modal{background:#fff;border-radius:20px;width:100%;max-width:400px;padding:24px;box-shadow:0 20px 50px rgba(0,0,0,.3);position:relative}
+  .modal h3{font-size:18px;margin-bottom:6px;color:#1e3a8a}
+  .modal p.sub{color:#64748b;font-size:13px;margin-bottom:18px}
+  .form-group{margin-bottom:12px}
+  .form-group label{display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#374151}
+  .form-group input{width:100%;padding:12px 14px;border:1px solid #d1d5db;border-radius:12px;font-size:14px;background:#f9fafb}
   .form-group input:focus{outline:none;border-color:#3b82f6;background:#fff}
-  .btn{width:100%;padding:16px;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer}
+  .btn{width:100%;padding:14px;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer}
   .btn-primary{background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff}
   .btn-success{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
-  .close-btn{position:absolute;top:14px;right:14px;background:#f1f5f9;border:none;width:36px;height:36px;border-radius:50%;font-size:18px;cursor:pointer;color:#64748b}
-  .pix-box{background:#f0fdf4;border:2px dashed #86efac;border-radius:14px;padding:20px;text-align:center;margin:16px 0}
-  .pix-box .qr{width:160px;height:160px;background:#fff;border-radius:12px;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;color:#1e3a8a;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
-  .pix-box code{font-size:12px;word-break:break-all;color:#166534;font-family:ui-monospace,SFMono-Regular,monospace}
+  .close-btn{position:absolute;top:12px;right:12px;background:#f1f5f9;border:none;width:34px;height:34px;border-radius:50%;font-size:16px;cursor:pointer;color:#64748b}
+  .pix-box{background:#f0fdf4;border:2px dashed #86efac;border-radius:14px;padding:18px;text-align:center;margin:14px 0}
+  .pix-box .qr{width:150px;height:150px;background:#fff;border-radius:12px;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;color:#1e3a8a;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+  .pix-box code{font-size:11px;word-break:break-all;color:#166534;font-family:ui-monospace,SFMono-Regular,monospace}
 
   /* Toast */
   .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(100px);background:#1e293b;color:#fff;padding:14px 24px;border-radius:14px;font-weight:700;font-size:14px;z-index:2000;transition:transform .3s;box-shadow:0 10px 30px rgba(0,0,0,.3)}
@@ -120,13 +123,93 @@
   .toast.error{background:#dc2626}
 
   /* Loading */
-  .loading{text-align:center;padding:60px 20px}
-  .spinner{width:40px;height:40px;border:4px solid #e2e8f0;border-top-color:#3b82f6;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 16px}
+  .loading{text-align:center;padding:50px 20px}
+  .spinner{width:36px;height:36px;border:4px solid #e2e8f0;border-top-color:#3b82f6;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 14px}
   @keyframes spin{to{transform:rotate(360deg)}}
-
-  /* Empty */
-  .empty-state{text-align:center;padding:40px 20px;color:#94a3b8}
+  .empty-state{text-align:center;padding:30px 20px;color:#94a3b8}
   .empty-state p{margin-top:8px}
+
+  /* ===== TABLET (481px - 768px) ===== */
+  @media(min-width:481px){
+    .container{max-width:600px;padding:0 20px}
+    .card{padding:22px;margin:14px 0;border-radius:18px}
+    .card-title{font-size:24px}
+    .card-subtitle{font-size:14px}
+    .prize-img{max-width:320px;height:240px}
+    .timer-box{padding:22px}
+    .timer-box .time{font-size:40px}
+    .timer-box .lance-atual{font-size:16px}
+    .timer-box .lance-atual span{font-size:24px}
+    .btn-lance{padding:18px;font-size:18px}
+    .proximo-lance .valor{font-size:28px}
+    .section-title{font-size:16px}
+    .rank-name{font-size:14px}
+    .rank-valor{font-size:16px}
+    .user-name{max-width:160px;font-size:14px}
+    .modal{padding:28px;max-width:420px}
+    .modal h3{font-size:20px}
+    .pix-box .qr{width:170px;height:170px}
+  }
+
+  /* ===== NOTEBOOK / DESKTOP (769px+) ===== */
+  @media(min-width:769px){
+    .container{max-width:960px;padding:0 24px}
+    .topbar{padding:12px 24px}
+    .brand{font-size:18px}
+    .user-name{max-width:200px;font-size:15px}
+
+    /* Layout em 2 colunas no desktop */
+    .desktop-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+    .desktop-grid .card{margin:0}
+    .desktop-full{grid-column:1 / -1}
+
+    .card{padding:24px;margin:16px 0;border-radius:20px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+    .card-title{font-size:26px}
+    .card-subtitle{font-size:15px}
+    .prize-img{max-width:100%;height:280px}
+    .prize-badge{font-size:12px}
+    .meta-text{font-size:16px}
+    .meta-text strong{font-size:20px}
+
+    .winner-box{padding:18px}
+    .winner-box .trophy{font-size:26px}
+    .winner-box .name{font-size:18px}
+    .winner-box .value{font-size:22px}
+
+    .timer-box{padding:24px}
+    .timer-box .time{font-size:48px}
+    .timer-box .lance-atual{font-size:18px}
+    .timer-box .lance-atual span{font-size:26px}
+
+    .btn-lance{padding:20px;font-size:20px;border-radius:16px}
+    .proximo-lance .valor{font-size:32px}
+    .info-text{font-size:13px}
+
+    .section-title{font-size:18px}
+    .lance-item{padding:12px 0}
+    .lance-avatar{width:36px;height:36px;font-size:14px}
+    .lance-name{font-size:14px}
+    .lance-valor{font-size:17px}
+
+    .rank-item{padding:14px}
+    .rank-pos{width:34px;height:34px;font-size:14px}
+    .rank-name{font-size:15px}
+    .rank-valor{font-size:18px}
+
+    .btn-ranking{padding:14px;font-size:15px}
+
+    .modal{padding:32px;max-width:480px}
+    .modal h3{font-size:22px}
+    .pix-box .qr{width:180px;height:180px}
+    .footer{font-size:13px;padding:20px 0 40px}
+  }
+
+  /* ===== WIDE DESKTOP (1200px+) ===== */
+  @media(min-width:1200px){
+    .container{max-width:1100px}
+    .prize-img{height:320px}
+    .timer-box .time{font-size:56px}
+  }
 </style>
 </head>
 <body>
@@ -226,34 +309,40 @@ function renderCampanha(){
   if(ativa&&!encerrada){
     timerHtml=`<div class="timer-box"><div class="label">⏱️ TEMPO RESTANTE</div><div class="time" id="timer">00:00:00</div><div class="lance-atual">💰 Lance atual: <span>R$ ${vlanceStr}</span></div></div>`;
   }else if(encerrada){
-    timerHtml=`<div class="timer-box" style="background:linear-gradient(135deg,#64748b,#475569)"><div class="label">🏁 LEILÃO ENCERRADO</div><div class="time" style="font-size:20px">Obrigado por participar!</div></div>`;
+    timerHtml=`<div class="timer-box" style="background:linear-gradient(135deg,#64748b,#475569)"><div class="label">🏁 LEILÃO ENCERRADO</div><div class="time" style="font-size:18px">Obrigado por participar!</div></div>`;
   }
 
   const nomeExibicao=c.premio_nome||c.nome;
   const descExibicao=c.premio_descricao||c.descricao||'';
 
-  let html=`
-    <div class="card">
-      <div class="card-title">${nomeExibicao}</div>
-      <div class="card-subtitle">${descExibicao}</div>
-      <div class="prize-badge">🎯 PRÊMIO DO LEILÃO</div>
-      ${imgHtml}
-      <div class="meta-text">Meta: <strong>R$ ${meta}</strong></div>
-      <div id="winnerBox"></div>
-      ${timerHtml}
-      <div class="participants">📊 <strong id="partCount">0</strong> participantes</div>
-      <div class="proximo-lance">
-        <div class="label">💎 Próximo lance</div>
-        <div class="valor">R$ ${proxLance}</div>
-      </div>
-      ${btnHtml}
-      <div class="info-text">ℹ️ Cada lance aumenta R$ ${vlanceStr}</div>
-    </div>
+  // Desktop: grid de 2 colunas para cards principais
+  const isDesktop=window.innerWidth>=769;
+  const gridClass=isDesktop?'desktop-grid':'';
 
-    <div class="card">
-      <div class="section-title">📊 Últimos Lances</div>
-      <div id="ultimosLances"><div class="empty-state"><p>Nenhum lance ainda.</p></div></div>
-      <button class="btn-ranking" onclick="toggleRanking()">🏆 Ver Ranking Completo (Top 10)</button>
+  let html=`
+    <div class="${gridClass}">
+      <div class="card ${isDesktop?'':'desktop-full'}">
+        <div class="card-title">${nomeExibicao}</div>
+        <div class="card-subtitle">${descExibicao}</div>
+        <div class="prize-badge">🎯 PRÊMIO DO LEILÃO</div>
+        ${imgHtml}
+        <div class="meta-text">Meta: <strong>R$ ${meta}</strong></div>
+        <div id="winnerBox"></div>
+        ${timerHtml}
+        <div class="participants">📊 <strong id="partCount">0</strong> participantes</div>
+        <div class="proximo-lance">
+          <div class="label">💎 Próximo lance</div>
+          <div class="valor">R$ ${proxLance}</div>
+        </div>
+        ${btnHtml}
+        <div class="info-text">ℹ️ Cada lance aumenta R$ ${vlanceStr}</div>
+      </div>
+
+      <div class="card ${isDesktop?'':'desktop-full'}">
+        <div class="section-title">📊 Últimos Lances</div>
+        <div id="ultimosLances"><div class="empty-state"><p>Nenhum lance ainda.</p></div></div>
+        <button class="btn-ranking" onclick="toggleRanking()">🏆 Ver Ranking Completo (Top 10)</button>
+      </div>
     </div>
 
     <div class="card" id="rankingCard" style="display:none">
@@ -344,7 +433,6 @@ function toggleRanking(){
 function setRankTab(btn,tipo){
   document.querySelectorAll('.rank-tab').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
-  // Por enquanto todos mostram maior lance. Pode expandir depois.
   renderRanking();
 }
 
