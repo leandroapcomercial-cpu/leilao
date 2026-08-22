@@ -43,6 +43,10 @@
   .badge-ativa{background:#16a34a20;color:#16a34a}
   .badge-pausada{background:#94a3b820;color:#94a3b8}
   .badge-finalizada{background:#dc262620;color:#dc2626}
+  .log-info{background:#2563eb20;color:#60a5fa}
+  .log-warn{background:#f59e0b20;color:#f59e0b}
+  .log-error{background:#dc262620;color:#dc2626}
+  .log-debug{background:#94a3b820;color:#94a3b8}
   .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
   .modal-overlay.active{display:flex}
   .modal{background:#1e293b;border:1px solid #334155;border-radius:16px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto}
@@ -82,6 +86,11 @@
   .img-source-tab.active{background:#2563eb;color:#fff;border-color:#2563eb}
   .img-source-panel{display:none}
   .img-source-panel.active{display:block}
+  .log-filters{display:flex;gap:10px;margin-bottom:20px}
+  .log-filters select{padding:8px 14px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:14px}
+  .log-filters button{padding:8px 16px}
+  .log-payload{background:#0f172a;border:1px solid #334155;border-radius:6px;padding:10px;font-size:12px;font-family:monospace;color:#94a3b8;max-height:120px;overflow:auto;white-space:pre-wrap;word-break:break-all;margin-top:8px}
+  .log-payload:empty{display:none}
 </style>
 </head>
 <body>
@@ -121,6 +130,10 @@
     <div class="nav-item" onclick="mostrarSecao('usuarios')">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/></svg>
       Usuários
+    </div>
+    <div class="nav-item" onclick="mostrarSecao('logs')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      Logs do Sistema
     </div>
     <div class="nav-item" onclick="mostrarSecao('configuracoes')">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
@@ -168,6 +181,34 @@
     <section id="sec-usuarios" class="hidden">
       <div class="header"><h2>Usuários</h2></div>
       <div class="card"><table class="table"><thead><tr><th>Nome</th><th>Email</th><th>Data</th></tr></thead><tbody id="tabelaUsuarios"></tbody></table></div>
+    </section>
+
+    <!-- LOGS DO SISTEMA -->
+    <section id="sec-logs" class="hidden">
+      <div class="header"><h2>📋 Logs do Sistema</h2></div>
+      <div class="log-filters">
+        <select id="logFiltroNivel" onchange="carregarLogs()">
+          <option value="todos">Todos os níveis</option>
+          <option value="ERROR">❌ ERROR</option>
+          <option value="WARN">⚠️ WARN</option>
+          <option value="INFO">ℹ️ INFO</option>
+          <option value="DEBUG">🔧 DEBUG</option>
+        </select>
+        <select id="logFiltroLimite" onchange="carregarLogs()">
+          <option value="50">Últimos 50</option>
+          <option value="100">Últimos 100</option>
+          <option value="200">Últimos 200</option>
+          <option value="500">Últimos 500</option>
+        </select>
+        <button class="btn btn-primary" onclick="carregarLogs()">🔄 Atualizar</button>
+        <button class="btn" style="background:#334155;color:#e2e8f0" onclick="limparLogs()">🗑️ Limpar visão</button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <table class="table">
+          <thead><tr><th style="width:80px">Nível</th><th style="width:140px">Data</th><th style="width:100px">Método</th><th>Rota</th><th>Mensagem</th></tr></thead>
+          <tbody id="tabelaLogs"></tbody>
+        </table>
+      </div>
     </section>
 
     <!-- CONFIGURAÇÕES -->
@@ -278,53 +319,26 @@ async function api(path, opts={}){
   return res.status===204?null:res.json();
 }
 
-// LOGIN COM DEBUG
+// LOGIN
 async function fazerLogin(){
   const email = document.getElementById('loginEmail').value.trim();
   const senha = document.getElementById('loginSenha').value.trim();
-
-  console.log('[LOGIN FRONT] Email:', email);
-  console.log('[LOGIN FRONT] Senha length:', senha.length);
-
-  if(!email || !senha){
-    mostrarToast('Preencha email e senha', true);
-    return;
-  }
-
+  if(!email || !senha){mostrarToast('Preencha email e senha', true); return;}
   try{
-    const body = JSON.stringify({email, senha});
-    console.log('[LOGIN FRONT] Body:', body);
-
     const res = await fetch(API+'/api/admin/login', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: body
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({email, senha})
     });
-
-    console.log('[LOGIN FRONT] Status:', res.status);
-
-    if(!res.ok){
-      const e = await res.json().catch(()=>({}));
-      console.log('[LOGIN FRONT] Erro:', e);
-      throw new Error(e.erro||'Erro '+res.status);
-    }
-
+    if(!res.ok){const e=await res.json(); throw new Error(e.erro||'Erro '+res.status);}
     const data = await res.json();
-    console.log('[LOGIN FRONT] Sucesso:', data);
-
-    token = data.token;
-    localStorage.setItem('admin_token', token);
+    token = data.token; localStorage.setItem('admin_token', token);
     document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('appScreen').classList.remove('hidden');
     carregarTudo();
     mostrarToast('Bem-vindo, '+data.admin.nome+'!');
-  }catch(e){
-    console.error('[LOGIN FRONT] Catch:', e);
-    mostrarToast(e.message, true);
-  }
+  }catch(e){mostrarToast(e.message, true);}
 }
-
-function logout(){localStorage.removeItem('admin_token');location.reload();}
+function logout(){localStorage.removeItem('admin_token'); location.reload();}
 
 // NAVEGAÇÃO
 function mostrarSecao(sec){
@@ -335,10 +349,11 @@ function mostrarSecao(sec){
   if(sec==='campanhas') carregarCampanhas();
   if(sec==='influencers') carregarInfluencers();
   if(sec==='usuarios') carregarUsuarios();
+  if(sec==='logs') carregarLogs();
   if(sec==='configuracoes') carregarConfiguracoes();
 }
 
-async function carregarTudo(){carregarDashboard();carregarCampanhas();carregarInfluencers();}
+async function carregarTudo(){carregarDashboard(); carregarCampanhas(); carregarInfluencers();}
 
 // DASHBOARD
 async function carregarDashboard(){
@@ -381,29 +396,23 @@ function gerarSlug(){
   document.getElementById('campSlug').value=slug;
   document.getElementById('slugPreview').textContent=slug?'URL: /'+slug:'';
 }
-
 function trocarAbaImagem(aba){
   document.querySelectorAll('.img-source-tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.img-source-panel').forEach(p=>p.classList.remove('active'));
   event.currentTarget.classList.add('active');
   document.getElementById('panel-'+aba).classList.add('active');
 }
-
 function previewImagemUrl(){
   const url=document.getElementById('campImagemUrl').value;
   const img=document.getElementById('imgPreview');
   if(url){img.src=url;img.classList.add('active');}
   else img.classList.remove('active');
 }
-
 function previewImagemUpload(ev){
-  const file=ev.target.files[0];
-  if(!file)return;
+  const file=ev.target.files[0]; if(!file)return;
   const img=document.getElementById('imgPreview');
-  img.src=URL.createObjectURL(file);
-  img.classList.add('active');
+  img.src=URL.createObjectURL(file); img.classList.add('active');
 }
-
 function abrirModalCampanha(){
   document.getElementById('campId').value='';
   document.getElementById('campNome').value='';
@@ -421,7 +430,6 @@ function abrirModalCampanha(){
   carregarSelectInfluencers();
   document.getElementById('modalCampanha').classList.add('active');
 }
-
 function editarCampanha(c){
   document.getElementById('campId').value=c.id;
   document.getElementById('campNome').value=c.nome;
@@ -442,7 +450,6 @@ function editarCampanha(c){
   carregarSelectInfluencers(c.influencer_id);
   document.getElementById('modalCampanha').classList.add('active');
 }
-
 function fecharModalCampanha(){document.getElementById('modalCampanha').classList.remove('active');}
 
 async function salvarCampanha(){
@@ -459,13 +466,10 @@ async function salvarCampanha(){
       const formData = new FormData();
       formData.append('imagem', fileInput.files[0]);
       const res = await fetch(API+'/api/upload-imagem', {
-        method:'POST',
-        headers:{'Authorization':'Bearer '+token},
-        body:formData
+        method:'POST', headers:{'Authorization':'Bearer '+token}, body:formData
       });
       if(!res.ok){const e=await res.json(); throw new Error(e.erro||'Erro no upload');}
-      const data = await res.json();
-      premio_imagem = data.url;
+      const data = await res.json(); premio_imagem = data.url;
     }
 
     const payload = {
@@ -484,9 +488,7 @@ async function salvarCampanha(){
       await api('/api/admin/campanhas',{method:'POST',body:JSON.stringify(payload)});
       mostrarToast('Campanha criada!');
     }
-    fecharModalCampanha();
-    carregarCampanhas();
-    carregarDashboard();
+    fecharModalCampanha(); carregarCampanhas(); carregarDashboard();
   }catch(e){mostrarToast(e.message,true);}
 }
 
@@ -514,6 +516,38 @@ async function excluirInfluencer(id){if(!confirm('Tem certeza?'))return;try{awai
 
 // USUÁRIOS
 async function carregarUsuarios(){try{const lista=await api('/api/admin/usuarios');document.getElementById('tabelaUsuarios').innerHTML=lista.map(u=>`<tr><td>${u.nome}</td><td>${u.email}</td><td>${new Date(u.created_at).toLocaleString('pt-BR')}</td></tr>`).join('');}catch(e){mostrarToast(e.message,true);}}
+
+// LOGS DO SISTEMA
+async function carregarLogs(){
+  try{
+    const nivel = document.getElementById('logFiltroNivel').value;
+    const limite = document.getElementById('logFiltroLimite').value;
+    let url = '/api/admin/logs?limite='+limite;
+    if(nivel !== 'todos') url += '&nivel='+nivel;
+    const lista = await api(url);
+    const tbody = document.getElementById('tabelaLogs');
+    if(lista.length === 0){tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:#64748b;padding:30px">Nenhum log encontrado</td></tr>';return;}
+    tbody.innerHTML = lista.map(l=>{
+      const badgeClass = {'INFO':'log-info','WARN':'log-warn','ERROR':'log-error','DEBUG':'log-debug'}[l.nivel]||'log-debug';
+      const data = new Date(l.created_at).toLocaleString('pt-BR');
+      const payload = l.payload ? JSON.stringify(l.payload, null, 2) : '';
+      const erro = l.erro || '';
+      return `<tr>
+        <td><span class="badge ${badgeClass}">${l.nivel}</span></td>
+        <td style="font-size:12px;color:#94a3b8;white-space:nowrap">${data}</td>
+        <td style="font-size:12px;color:#94a3b8">${l.metodo||'—'}</td>
+        <td style="font-size:12px;color:#60a5fa">${l.rota||'—'}</td>
+        <td>
+          <div style="font-size:13px">${l.mensagem}</div>
+          ${payload ? `<div class="log-payload">Payload:
+${payload}</div>` : ''}
+          ${erro ? `<div class="log-payload" style="color:#f87171;border-color:#dc2626">Erro: ${erro}</div>` : ''}
+        </td>
+      </tr>`;
+    }).join('');
+  }catch(e){mostrarToast(e.message,true);}
+}
+function limparLogs(){document.getElementById('tabelaLogs').innerHTML='<tr><td colspan="5" style="text-align:center;color:#64748b;padding:30px">Clique em Atualizar para carregar os logs</td></tr>';}
 
 // CONFIGURAÇÕES
 async function carregarConfiguracoes(){try{const c=await api('/api/admin/configuracoes');if(c){document.getElementById('cfgLance').value=c.lance_padrao||'';document.getElementById('cfgDuracao').value=c.duracao_padrao||'';document.getElementById('cfgTaxa').value=c.taxa_pix||'';}}catch(e){}}

@@ -39,12 +39,65 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
 
 // ============================================================
+// SISTEMA DE LOGS PERMANENTE
+// ============================================================
+async function registrarLog(nivel, rota, metodo, mensagem, payload, erro) {
+  try {
+    await pool.query(
+      `INSERT INTO system_logs (nivel, rota, metodo, mensagem, payload, erro, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+      [nivel, rota, metodo, mensagem, payload ? JSON.stringify(payload) : null, erro ? erro.toString().substring(0,2000) : null]
+    );
+  } catch (e) {
+    console.error('[LOG FAIL]', e.message);
+  }
+}
+
+// Middleware de log global
+app.use((req, res, next) => {
+  const start = Date.now();
+  const rota = req.path;
+  const metodo = req.method;
+
+  res.on('finish', async () => {
+    const duracao = Date.now() - start;
+    const status = res.statusCode;
+    const nivel = status >= 500 ? 'ERROR' : status >= 400 ? 'WARN' : 'INFO';
+    const payload = metodo !== 'GET' ? { body: req.body, query: req.query } : { query: req.query };
+
+    await registrarLog(
+      nivel, rota, metodo,
+      `${status} | ${duracao}ms`,
+      payload,
+      status >= 400 ? `HTTP ${status}` : null
+    );
+  });
+
+  next();
+});
+
+// ============================================================
 // AUTO-MIGRATION
 // ============================================================
 async function runMigrations() {
   try {
-    console.log('[MIGRATION] Verificando tabelas...');
+    console.log('[MIGRATION] Iniciando...');
 
+    // Tabela de logs permanente
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS system_logs (
+        id SERIAL PRIMARY KEY,
+        nivel VARCHAR(10) NOT NULL CHECK (nivel IN ('INFO','WARN','ERROR','DEBUG')),
+        rota VARCHAR(255),
+        metodo VARCHAR(10),
+        mensagem TEXT,
+        payload JSONB,
+        erro TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    // Administradores
     await pool.query(`
       CREATE TABLE IF NOT EXISTS administradores (
         id SERIAL PRIMARY KEY,
@@ -54,15 +107,15 @@ async function runMigrations() {
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
-
     const { rows: admins } = await pool.query('SELECT COUNT(*) as total FROM administradores');
     if (parseInt(admins[0].total) === 0) {
       const senhaHash = await bcrypt.hash('admin123', 10);
       await pool.query('INSERT INTO administradores (nome, email, senha) VALUES ($1, $2, $3)',
         ['Administrador', 'admin@leilao.com', senhaHash]);
-      console.log('[MIGRATION] Admin padrão criado: admin@leilao.com / admin123');
+      console.log('[MIGRATION] Admin criado: admin@leilao.com / admin123');
     }
 
+    // Campanhas
     await pool.query(`
       CREATE TABLE IF NOT EXISTS campanhas (
         id SERIAL PRIMARY KEY,
@@ -81,7 +134,10 @@ async function runMigrations() {
         updated_at TIMESTAMP DEFAULT NOW()
       )
     `);
+    await pool.query(`ALTER TABLE campanhas DROP CONSTRAINT IF EXISTS campanhas_status_check`);
+    await pool.query(`ALTER TABLE campanhas ADD CONSTRAINT campanhas_status_check CHECK (status IN ('pendente', 'ativa', 'pausada', 'finalizada'))`);
 
+    // Usuarios
     await pool.query(`
       CREATE TABLE IF NOT EXISTS usuarios (
         id SERIAL PRIMARY KEY,
@@ -91,6 +147,7 @@ async function runMigrations() {
       )
     `);
 
+    // Lances
     await pool.query(`
       CREATE TABLE IF NOT EXISTS lances (
         id SERIAL PRIMARY KEY,
@@ -102,6 +159,7 @@ async function runMigrations() {
       )
     `);
 
+    // Pagamentos
     await pool.query(`
       CREATE TABLE IF NOT EXISTS pagamentos (
         id SERIAL PRIMARY KEY,
@@ -116,6 +174,7 @@ async function runMigrations() {
       )
     `);
 
+    // Influencers
     await pool.query(`
       CREATE TABLE IF NOT EXISTS influencers (
         id SERIAL PRIMARY KEY,
@@ -128,6 +187,7 @@ async function runMigrations() {
       )
     `);
 
+    // Configuracoes
     await pool.query(`
       CREATE TABLE IF NOT EXISTS configuracoes (
         id INTEGER PRIMARY KEY DEFAULT 1,
@@ -139,8 +199,10 @@ async function runMigrations() {
     `);
 
     console.log('[MIGRATION] OK');
+    await registrarLog('INFO', '/migration', 'SYS', 'Migrations executadas com sucesso', null, null);
   } catch (err) {
     console.error('[MIGRATION ERROR]', err.message);
+    await registrarLog('ERROR', '/migration', 'SYS', 'Falha na migration', null, err);
   }
 }
 
@@ -160,24 +222,73 @@ const authAdmin = (req, res, next) => {
 // ROTAS ADMIN
 // ============================================================
 
-app.post('/api/admin/login', async (req, res) => {
-  const { email, senha } = req.body;
-  console.log('[LOGIN] Tentativa:', email);
+// Logs do sistema
+app.get('/api/admin/logs', authAdmin, async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM administradores WHERE email = $1', [email]);
-    if (rows.length === 0) return res.status(401).json({ erro: 'Credenciais inválidas' });
-    const admin = rows[0];
-    const ok = await bcrypt.compare(senha, admin.senha);
-    const plainOk = (senha === admin.senha);
-    if (!ok && !plainOk) return res.status(401).json({ erro: 'Credenciais inválidas' });
-    const token = jwt.sign({ id: admin.id, email: admin.email }, process.env.JWT_SECRET || 'segredo-leilao', { expiresIn: '8h' });
-    res.json({ token, admin: { id: admin.id, nome: admin.nome, email: admin.email } });
+    const { nivel, limite = 100 } = req.query;
+    let sql = 'SELECT * FROM system_logs';
+    const params = [];
+    if (nivel && nivel !== 'todos') {
+      sql += ' WHERE nivel = $1';
+      params.push(nivel);
+    }
+    sql += ' ORDER BY created_at DESC LIMIT $' + (params.length + 1);
+    params.push(parseInt(limite) || 100);
+    const { rows } = await pool.query(sql, params);
+    res.json(rows);
   } catch (err) {
-    console.error('[LOGIN]', err);
+    await registrarLog('ERROR', '/api/admin/logs', 'GET', 'Erro ao buscar logs', req.query, err);
     res.status(500).json({ erro: err.message });
   }
 });
 
+// Health check
+app.get('/api/health', async (req, res) => {
+  const checks = { database: false, supabase: false, timestamp: new Date().toISOString() };
+  try {
+    await pool.query('SELECT 1');
+    checks.database = true;
+  } catch (e) { checks.database_error = e.message; }
+
+  try {
+    const sb = getSupabase();
+    checks.supabase = !!sb;
+    if (sb) {
+      const { data } = await sb.storage.from('leilao-facil').list('campanhas', { limit: 1 });
+      checks.supabase_bucket = data !== null;
+    }
+  } catch (e) { checks.supabase_error = e.message; }
+
+  const ok = checks.database;
+  res.status(ok ? 200 : 503).json(checks);
+});
+
+// Login admin
+app.post('/api/admin/login', async (req, res) => {
+  const { email, senha } = req.body;
+  try {
+    const { rows } = await pool.query('SELECT * FROM administradores WHERE email = $1', [email]);
+    if (rows.length === 0) {
+      await registrarLog('WARN', '/api/admin/login', 'POST', 'Login falhou - email nao encontrado', { email }, null);
+      return res.status(401).json({ erro: 'Credenciais inválidas' });
+    }
+    const admin = rows[0];
+    const ok = await bcrypt.compare(senha, admin.senha);
+    const plainOk = (senha === admin.senha);
+    if (!ok && !plainOk) {
+      await registrarLog('WARN', '/api/admin/login', 'POST', 'Login falhou - senha incorreta', { email }, null);
+      return res.status(401).json({ erro: 'Credenciais inválidas' });
+    }
+    const token = jwt.sign({ id: admin.id, email: admin.email }, process.env.JWT_SECRET || 'segredo-leilao', { expiresIn: '8h' });
+    await registrarLog('INFO', '/api/admin/login', 'POST', 'Login sucesso', { email, admin_id: admin.id }, null);
+    res.json({ token, admin: { id: admin.id, nome: admin.nome, email: admin.email } });
+  } catch (err) {
+    await registrarLog('ERROR', '/api/admin/login', 'POST', 'Erro no login', req.body, err);
+    res.status(500).json({ erro: err.message });
+  }
+});
+
+// Dashboard
 app.get('/api/admin/dashboard', authAdmin, async (req, res) => {
   try {
     const campanhas = await pool.query('SELECT COUNT(*) as total FROM campanhas');
@@ -193,6 +304,7 @@ app.get('/api/admin/dashboard', authAdmin, async (req, res) => {
   } catch (err) { res.status(500).json({ erro: err.message }); }
 });
 
+// Listar campanhas
 app.get('/api/admin/campanhas', authAdmin, async (req, res) => {
   try {
     const { rows } = await pool.query(`SELECT c.*, i.nome as influencer_nome FROM campanhas c LEFT JOIN influencers i ON c.influencer_id = i.id ORDER BY c.created_at DESC`);
@@ -200,6 +312,7 @@ app.get('/api/admin/campanhas', authAdmin, async (req, res) => {
   } catch (err) { res.status(500).json({ erro: err.message }); }
 });
 
+// Criar campanha
 app.post('/api/admin/campanhas', authAdmin, async (req, res) => {
   const { nome, slug, descricao, premio_imagem, meta_valor, lance_inicial, duracao_horas, influencer_id } = req.body;
   try {
@@ -207,17 +320,18 @@ app.post('/api/admin/campanhas', authAdmin, async (req, res) => {
       INSERT INTO campanhas (nome, slug, descricao, premio_imagem, meta_valor, lance_inicial, duracao_horas, status, influencer_id)
       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pendente', $8) RETURNING *
     `, [nome, slug, descricao, premio_imagem || null, meta_valor, lance_inicial, duracao_horas, influencer_id || null]);
+    await registrarLog('INFO', '/api/admin/campanhas', 'POST', 'Campanha criada', { nome, slug }, null);
     res.status(201).json(rows[0]);
-  } catch (err) { res.status(500).json({ erro: err.message }); }
+  } catch (err) {
+    await registrarLog('ERROR', '/api/admin/campanhas', 'POST', 'Erro ao criar campanha', req.body, err);
+    res.status(500).json({ erro: err.message });
+  }
 });
 
-// Atualizar campanha — mescla com dados existentes
+// Atualizar campanha
 app.put('/api/admin/campanhas/:id', authAdmin, async (req, res) => {
   const { id } = req.params;
-  console.log('[CAMPANHA UPDATE] ID:', id, 'Body:', JSON.stringify(req.body));
-
   try {
-    // Busca campanha atual
     const { rows: atual } = await pool.query('SELECT * FROM campanhas WHERE id = $1', [id]);
     if (atual.length === 0) return res.status(404).json({ erro: 'Campanha não encontrada' });
 
@@ -232,8 +346,6 @@ app.put('/api/admin/campanhas/:id', authAdmin, async (req, res) => {
     const status = req.body.status !== undefined ? req.body.status : c.status;
     const influencer_id = req.body.influencer_id !== undefined ? req.body.influencer_id : c.influencer_id;
 
-    console.log('[CAMPANHA UPDATE] Valores mesclados:', { nome, slug, meta_valor, status });
-
     const { rows } = await pool.query(`
       UPDATE campanhas 
       SET nome = $1, slug = $2, descricao = $3, premio_imagem = $4, meta_valor = $5, 
@@ -241,34 +353,49 @@ app.put('/api/admin/campanhas/:id', authAdmin, async (req, res) => {
       WHERE id = $10 RETURNING *
     `, [nome, slug, descricao, premio_imagem, meta_valor, lance_inicial, duracao_horas, status, influencer_id, id]);
 
+    await registrarLog('INFO', '/api/admin/campanhas/'+id, 'PUT', 'Campanha atualizada', { nome, status }, null);
     res.json(rows[0]);
   } catch (err) {
-    console.error('[CAMPANHA UPDATE ERROR]', err);
+    await registrarLog('ERROR', '/api/admin/campanhas/'+id, 'PUT', 'Erro ao atualizar campanha', req.body, err);
     res.status(500).json({ erro: err.message });
   }
 });
 
+// Excluir campanha
 app.delete('/api/admin/campanhas/:id', authAdmin, async (req, res) => {
   try {
     await pool.query('DELETE FROM campanhas WHERE id = $1', [req.params.id]);
+    await registrarLog('INFO', '/api/admin/campanhas/'+req.params.id, 'DELETE', 'Campanha excluida', null, null);
     res.json({ ok: true });
   } catch (err) { res.status(500).json({ erro: err.message }); }
 });
 
+// Upload de imagem
 app.post('/api/upload-imagem', authAdmin, upload.single('imagem'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ erro: 'Nenhuma imagem enviada' });
     const sb = getSupabase();
-    if (!sb) return res.status(503).json({ erro: 'Upload não configurado. Use URL externa.' });
+    if (!sb) {
+      await registrarLog('WARN', '/api/upload-imagem', 'POST', 'Upload nao configurado', null, null);
+      return res.status(503).json({ erro: 'Upload não configurado. Use URL externa.' });
+    }
     const ext = path.extname(req.file.originalname) || '.jpg';
     const fileName = `campanhas/${Date.now()}-${Math.random().toString(36).substring(2)}${ext}`;
     const { data, error } = await sb.storage.from('leilao-facil').upload(fileName, req.file.buffer, { contentType: req.file.mimetype });
-    if (error) return res.status(500).json({ erro: 'Erro upload: ' + error.message });
+    if (error) {
+      await registrarLog('ERROR', '/api/upload-imagem', 'POST', 'Erro upload Supabase', null, error);
+      return res.status(500).json({ erro: 'Erro upload: ' + error.message });
+    }
     const { data: urlData } = sb.storage.from('leilao-facil').getPublicUrl(fileName);
+    await registrarLog('INFO', '/api/upload-imagem', 'POST', 'Upload OK', { url: urlData.publicUrl }, null);
     res.json({ url: urlData.publicUrl });
-  } catch (err) { res.status(500).json({ erro: err.message }); }
+  } catch (err) {
+    await registrarLog('ERROR', '/api/upload-imagem', 'POST', 'Erro upload', null, err);
+    res.status(500).json({ erro: err.message });
+  }
 });
 
+// Influencers
 app.get('/api/admin/influencers', authAdmin, async (req, res) => {
   try { const { rows } = await pool.query('SELECT * FROM influencers ORDER BY nome'); res.json(rows); }
   catch (err) { res.status(500).json({ erro: err.message }); }
@@ -291,11 +418,13 @@ app.delete('/api/admin/influencers/:id', authAdmin, async (req, res) => {
   catch (err) { res.status(500).json({ erro: err.message }); }
 });
 
+// Usuários
 app.get('/api/admin/usuarios', authAdmin, async (req, res) => {
   try { const { rows } = await pool.query('SELECT * FROM usuarios ORDER BY created_at DESC'); res.json(rows); }
   catch (err) { res.status(500).json({ erro: err.message }); }
 });
 
+// Configurações
 app.get('/api/admin/configuracoes', authAdmin, async (req, res) => {
   try { const { rows } = await pool.query('SELECT * FROM configuracoes LIMIT 1'); res.json(rows[0] || {}); }
   catch (err) { res.status(500).json({ erro: err.message }); }
