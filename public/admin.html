@@ -5,102 +5,90 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Leilão Fácil - Admin</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f3f4f6; color: #1f2937; }
-  .login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); }
-  .login-box { background: #fff; padding: 40px; border-radius: 16px; width: 100%; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-  .login-box h1 { color: #1e40af; margin-bottom: 8px; font-size: 24px; }
-  .login-box p { color: #6b7280; margin-bottom: 24px; font-size: 14px; }
-  .form-group { margin-bottom: 16px; }
-  .form-group label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: #374151; }
-  .form-group input { width: 100%; padding: 12px 14px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; transition: border .2s; }
-  .form-group input:focus { outline: none; border-color: #3b82f6; }
-  .btn { display: inline-flex; align-items: center; justify-content: center; padding: 12px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s; }
-  .btn-primary { background: #2563eb; color: #fff; width: 100%; }
-  .btn-primary:hover { background: #1d4ed8; }
-  .btn-sm { padding: 6px 12px; font-size: 12px; }
-  .btn-success { background: #10b981; color: #fff; }
-  .btn-warning { background: #f59e0b; color: #fff; }
-  .btn-danger { background: #ef4444; color: #fff; }
-  .btn-secondary { background: #6b7280; color: #fff; }
-  .btn-info { background: #3b82f6; color: #fff; }
-  .app { display: none; }
-  .sidebar { position: fixed; left: 0; top: 0; width: 240px; height: 100vh; background: #1e3a8a; color: #fff; padding: 24px 16px; overflow-y: auto; }
-  .sidebar h2 { font-size: 18px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.2); }
-  .nav-item { display: block; padding: 12px 16px; border-radius: 8px; cursor: pointer; margin-bottom: 4px; font-size: 14px; transition: background .2s; }
-  .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.15); }
-  .main { margin-left: 240px; padding: 32px; min-height: 100vh; }
-  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-  .header h1 { font-size: 22px; color: #111827; }
-  .card { background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 24px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
-  .stat-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border-left: 4px solid #3b82f6; }
-  .stat-card h3 { font-size: 12px; text-transform: uppercase; color: #6b7280; margin-bottom: 8px; }
-  .stat-card .value { font-size: 28px; font-weight: 700; color: #1f2937; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
-  th { background: #f9fafb; font-weight: 600; color: #374151; font-size: 12px; text-transform: uppercase; }
-  .badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; }
-  .badge-pendente { background: #fef3c7; color: #92400e; }
-  .badge-ativa { background: #d1fae5; color: #065f46; }
-  .badge-pausada { background: #fee2e2; color: #991b1b; }
-  .badge-finalizada { background: #e5e7eb; color: #374151; }
-  .actions { display: flex; gap: 6px; flex-wrap: wrap; }
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
-  .modal-overlay.active { display: flex; }
-  .modal { background: #fff; border-radius: 16px; width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px rgba(0,0,0,0.25); }
-  .modal-header { padding: 20px 24px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; }
-  .modal-body { padding: 24px; }
-  .modal-footer { padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 8px; }
-  .tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid #e5e7eb; }
-  .tab { padding: 10px 16px; cursor: pointer; font-size: 13px; font-weight: 600; color: #6b7280; border-bottom: 2px solid transparent; }
-  .tab.active { color: #2563eb; border-bottom-color: #2563eb; }
-  .tab-content { display: none; }
-  .tab-content.active { display: block; }
-  .img-preview { max-width: 100%; max-height: 200px; border-radius: 8px; margin-top: 12px; border: 1px solid #e5e7eb; }
-  .empty-state { text-align: center; padding: 48px 20px; color: #6b7280; }
-  .empty-state svg { width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.4; }
-  .toast { position: fixed; top: 20px; right: 20px; padding: 14px 20px; border-radius: 10px; color: #fff; font-weight: 600; font-size: 13px; z-index: 2000; transform: translateX(150%); transition: transform .3s; }
-  .toast.show { transform: translateX(0); }
-  .toast-success { background: #10b981; }
-  .toast-error { background: #ef4444; }
-  .pagination { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
-  .pagination button { padding: 6px 14px; }
-  .pagination span { font-size: 13px; color: #4b5563; }
-  .filters { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
-  .filters select, .filters input { padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; }
-  .log-row { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
-  .log-ERROR { color: #dc2626; }
-  .log-WARN { color: #d97706; }
-  .log-INFO { color: #2563eb; }
-  .log-DEBUG { color: #6b7280; }
-  .truncate { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  @media (max-width: 768px) {
-    .sidebar { width: 100%; position: relative; height: auto; }
-    .main { margin-left: 0; }
-  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f1f5f9;color:#1e293b}
+  .login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1e3a8a 0%,#3b82f6 100%)}
+  .login-box{background:#fff;padding:40px;border-radius:16px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  .login-box h1{color:#1e40af;margin-bottom:8px;font-size:24px}
+  .login-box p{color:#64748b;margin-bottom:24px;font-size:14px}
+  .form-group{margin-bottom:16px}
+  .form-group label{display:block;margin-bottom:6px;font-size:13px;font-weight:600;color:#374151}
+  .form-group input{width:100%;padding:12px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:14px}
+  .form-group input:focus{outline:none;border-color:#3b82f6}
+  .btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 20px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+  .btn-primary{background:#2563eb;color:#fff;width:100%}
+  .btn-primary:hover{background:#1d4ed8}
+  .btn-sm{padding:6px 12px;font-size:12px}
+  .btn-success{background:#10b981;color:#fff}
+  .btn-warning{background:#f59e0b;color:#fff}
+  .btn-danger{background:#ef4444;color:#fff}
+  .btn-secondary{background:#6b7280;color:#fff}
+  .btn-info{background:#3b82f6;color:#fff}
+  .app{display:none}
+  .sidebar{position:fixed;left:0;top:0;width:240px;height:100vh;background:#1e3a8a;color:#fff;padding:24px 16px;overflow-y:auto}
+  .sidebar h2{font-size:18px;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,.2)}
+  .nav-item{display:block;padding:12px 16px;border-radius:8px;cursor:pointer;margin-bottom:4px;font-size:14px;transition:background .2s}
+  .nav-item:hover,.nav-item.active{background:rgba(255,255,255,.15)}
+  .main{margin-left:240px;padding:32px;min-height:100vh}
+  .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+  .header h1{font-size:22px;color:#111827}
+  .card{background:#fff;border-radius:12px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:24px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+  .stat-card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.08);border-left:4px solid #3b82f6}
+  .stat-card h3{font-size:12px;text-transform:uppercase;color:#6b7280;margin-bottom:8px}
+  .stat-card .value{font-size:28px;font-weight:700;color:#1f2937}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:12px;text-align:left;border-bottom:1px solid #e5e7eb}
+  th{background:#f9fafb;font-weight:600;color:#374151;font-size:12px;text-transform:uppercase}
+  .badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600}
+  .badge-pendente{background:#fef3c7;color:#92400e}
+  .badge-ativa{background:#d1fae5;color:#065f46}
+  .badge-pausada{background:#fee2e2;color:#991b1b}
+  .badge-finalizada{background:#e5e7eb;color:#374151}
+  .actions{display:flex;gap:6px;flex-wrap:wrap}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
+  .modal-overlay.active{display:flex}
+  .modal{background:#fff;border-radius:16px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:0 25px 50px rgba(0,0,0,.25)}
+  .modal-header{padding:20px 24px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center}
+  .modal-body{padding:24px}
+  .modal-footer{padding:16px 24px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:8px}
+  .tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid #e5e7eb}
+  .tab{padding:10px 16px;cursor:pointer;font-size:13px;font-weight:600;color:#6b7280;border-bottom:2px solid transparent}
+  .tab.active{color:#2563eb;border-bottom-color:#2563eb}
+  .tab-content{display:none}
+  .tab-content.active{display:block}
+  .img-preview{max-width:100%;max-height:200px;border-radius:8px;margin-top:12px;border:1px solid #e5e7eb}
+  .empty-state{text-align:center;padding:48px 20px;color:#6b7280}
+  .toast{position:fixed;top:20px;right:20px;padding:14px 20px;border-radius:10px;color:#fff;font-weight:600;font-size:13px;z-index:2000;transform:translateX(150%);transition:transform .3s}
+  .toast.show{transform:translateX(0)}
+  .toast-success{background:#10b981}
+  .toast-error{background:#ef4444}
+  .pagination{display:flex;align-items:center;gap:12px;margin-top:16px}
+  .pagination button{padding:6px 14px}
+  .pagination span{font-size:13px;color:#4b5563}
+  .filters{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+  .filters select,.filters input{padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px}
+  .log-row{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+  .log-ERROR{color:#dc2626}
+  .log-WARN{color:#d97706}
+  .log-INFO{color:#2563eb}
+  .log-DEBUG{color:#6b7280}
+  .truncate{max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  @media(max-width:768px){.sidebar{width:100%;position:relative;height:auto}.main{margin-left:0}}
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
 <div class="login-screen" id="loginScreen">
   <div class="login-box">
     <h1>🔨 Leilão Fácil</h1>
-    <p>Painel Administrativo v2.4</p>
-    <div class="form-group">
-      <label>Email</label>
-      <input type="email" id="loginEmail" value="admin@leilao.com" placeholder="admin@leilao.com">
-    </div>
-    <div class="form-group">
-      <label>Senha</label>
-      <input type="password" id="loginSenha" value="admin123" placeholder="••••••••">
-    </div>
+    <p>Painel Administrativo v2.5</p>
+    <div class="form-group"><label>Email</label><input type="email" id="loginEmail" value="admin@leilao.com"></div>
+    <div class="form-group"><label>Senha</label><input type="password" id="loginSenha" value="admin123"></div>
     <button class="btn btn-primary" onclick="fazerLogin()">Entrar</button>
   </div>
 </div>
 
-<!-- APP -->
 <div class="app" id="app">
   <div class="sidebar">
     <h2>⚙️ Admin</h2>
@@ -108,72 +96,52 @@
     <div class="nav-item" onclick="showSection('campanhas')">🎯 Campanhas</div>
     <div class="nav-item" onclick="showSection('logs')">📋 Logs do Sistema</div>
     <div class="nav-item" onclick="showSection('config')">🔧 Configurações</div>
-    <div class="nav-item" style="margin-top: 40px; color: #fca5a5;" onclick="logout()">🚪 Sair</div>
+    <div class="nav-item" style="margin-top:40px;color:#fca5a5" onclick="logout()">🚪 Sair</div>
   </div>
-
   <div class="main">
-    <!-- DASHBOARD -->
     <div id="section-dashboard">
       <div class="header"><h1>Dashboard</h1><span id="adminName"></span></div>
       <div class="grid">
         <div class="stat-card"><h3>Campanhas</h3><div class="value" id="dashTotal">0</div></div>
-        <div class="stat-card" style="border-left-color: #10b981;"><h3>Ativas</h3><div class="value" id="dashAtivas">0</div></div>
-        <div class="stat-card" style="border-left-color: #f59e0b;"><h3>Arrecadado</h3><div class="value" id="dashArrecadado">R$ 0,00</div></div>
-        <div class="stat-card" style="border-left-color: #8b5cf6;"><h3>Total Lances</h3><div class="value" id="dashLances">0</div></div>
+        <div class="stat-card" style="border-left-color:#10b981"><h3>Ativas</h3><div class="value" id="dashAtivas">0</div></div>
+        <div class="stat-card" style="border-left-color:#f59e0b"><h3>Arrecadado</h3><div class="value" id="dashArrecadado">R$ 0,00</div></div>
+        <div class="stat-card" style="border-left-color:#8b5cf6"><h3>Total Lances</h3><div class="value" id="dashLances">0</div></div>
       </div>
     </div>
-
-    <!-- CAMPANHAS -->
-    <div id="section-campanhas" style="display:none;">
+    <div id="section-campanhas" style="display:none">
       <div class="header"><h1>Campanhas</h1><button class="btn btn-success btn-sm" onclick="openModal()">+ Nova Campanha</button></div>
       <div class="card"><div id="campanhasList"></div></div>
     </div>
-
-    <!-- LOGS -->
-    <div id="section-logs" style="display:none;">
-      <div class="header"><h1>Logs do Sistema</h1><button class="btn btn-secondary btn-sm" onclick="loadLogs()">🔄 Atualizar</button></div>
+    <div id="section-logs" style="display:none">
+      <div class="header"><h1>Logs do Sistema</h1><button class="btn btn-secondary btn-sm" onclick="loadLogs(1)">🔄 Atualizar</button></div>
       <div class="card">
         <div class="filters">
-          <select id="logLevel" onchange="loadLogs(1)">
-            <option value="">Todos os níveis</option>
-            <option value="ERROR">ERROR</option>
-            <option value="WARN">WARN</option>
-            <option value="INFO">INFO</option>
-            <option value="DEBUG">DEBUG</option>
-          </select>
-          <select id="logLimit" onchange="loadLogs(1)">
-            <option value="20">20 por página</option>
-            <option value="50">50 por página</option>
-            <option value="100">100 por página</option>
-          </select>
+          <select id="logLevel" onchange="loadLogs(1)"><option value="">Todos os níveis</option><option value="ERROR">ERROR</option><option value="WARN">WARN</option><option value="INFO">INFO</option><option value="DEBUG">DEBUG</option></select>
+          <select id="logLimit" onchange="loadLogs(1)"><option value="20">20 por página</option><option value="50" selected>50 por página</option><option value="100">100 por página</option></select>
         </div>
         <div id="logsList"></div>
         <div class="pagination" id="logsPagination"></div>
       </div>
     </div>
-
-    <!-- CONFIG -->
-    <div id="section-config" style="display:none;">
+    <div id="section-config" style="display:none">
       <div class="header"><h1>Configurações</h1></div>
       <div class="card">
-        <p style="margin-bottom: 12px;">Use esta seção para ajustar parâmetros globais do sistema.</p>
-        <div class="form-group"><label>Chave JWT (apenas leitura)</label><input type="text" value="Configurada no servidor" disabled></div>
-        <div class="form-group"><label>URL do Servidor</label><input type="text" id="serverUrl" value=""></div>
-        <button class="btn btn-primary btn-sm" onclick="salvarConfig()">Salvar</button>
+        <p style="margin-bottom:12px">Parâmetros globais do sistema.</p>
+        <div class="form-group"><label>URL do Servidor</label><input type="text" id="serverUrl" value="https://leilao-facil.onrender.com"></div>
+        <button class="btn btn-primary btn-sm" onclick="showToast('Configurações salvas!')">Salvar</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- MODAL CAMPANHA -->
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal">
     <div class="modal-header"><h3 id="modalTitle">Nova Campanha</h3><button class="btn btn-sm btn-secondary" onclick="closeModal()">✕</button></div>
     <div class="modal-body">
       <div class="tabs">
-        <div class="tab active" onclick="switchTab('tab-dados')">📋 Dados</div>
-        <div class="tab" onclick="switchTab('tab-premio')">🎁 Prêmio</div>
-        <div class="tab" onclick="switchTab('tab-config')">⚙️ Config</div>
+        <div class="tab active" onclick="switchTab('tab-dados',this)">📋 Dados</div>
+        <div class="tab" onclick="switchTab('tab-premio',this)">🎁 Prêmio</div>
+        <div class="tab" onclick="switchTab('tab-config',this)">⚙️ Config</div>
       </div>
       <div class="tab-content active" id="tab-dados">
         <input type="hidden" id="campId">
@@ -184,17 +152,17 @@
       <div class="tab-content" id="tab-premio">
         <div class="form-group"><label>Nome do Prêmio</label><input type="text" id="campPremioNome" placeholder="Ex: iPhone 15"></div>
         <div class="form-group"><label>Descrição do Prêmio</label><input type="text" id="campPremioDesc" placeholder="Detalhes do prêmio"></div>
-        <div class="tabs" style="margin-top: 16px;">
-          <div class="tab active" onclick="switchSubTab('sub-url')">🔗 URL da Imagem</div>
-          <div class="tab" onclick="switchSubTab('sub-upload')">📤 Fazer Upload</div>
+        <div class="tabs" style="margin-top:16px">
+          <div class="tab active" onclick="switchSubTab('sub-url',this)">🔗 URL da Imagem</div>
+          <div class="tab" onclick="switchSubTab('sub-upload',this)">📤 Fazer Upload</div>
         </div>
         <div class="tab-content active" id="sub-url">
           <div class="form-group"><label>URL da imagem</label><input type="text" id="campImagemUrl" placeholder="https://..." oninput="previewImage(this.value)"></div>
         </div>
         <div class="tab-content" id="sub-upload">
-          <div class="form-group"><label>Selecionar arquivo</label><input type="file" id="campImagemFile" accept="image/*" onchange="handleFileSelect(this)"></div>
+          <div class="form-group"><label>Selecionar arquivo (JPG/PNG/WEBP, max 5MB)</label><input type="file" id="campImagemFile" accept="image/*" onchange="handleFileSelect(this)"></div>
         </div>
-        <img id="imgPreview" class="img-preview" style="display:none;">
+        <img id="imgPreview" class="img-preview" style="display:none">
       </div>
       <div class="tab-content" id="tab-config">
         <div class="form-group"><label>Valor do Lance (R$)</label><input type="number" step="0.01" id="campValorLance" value="0.50"></div>
@@ -211,270 +179,214 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const API = '';
-let token = localStorage.getItem('lf_token');
-let campanhas = [];
-let logsPage = 1;
-let logsData = { logs: [], pagination: {} };
+const API='';
+let token=localStorage.getItem('lf_token');
+let campanhas=[];
+let logsPage=1;
+let logsData={logs:[],pagination:{}};
 
-if (token) { try { const p = JSON.parse(atob(token.split('.')[1])); if (p.exp * 1000 > Date.now()) initApp(); } catch(e){} }
+if(token){try{const p=JSON.parse(atob(token.split('.')[1]));if(p.exp*1000>Date.now())initApp()}catch(e){}}
 
-async function fazerLogin() {
-  const email = document.getElementById('loginEmail').value.trim();
-  const senha = document.getElementById('loginSenha').value;
-  try {
-    const res = await fetch(`${API}/api/login`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, senha })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.erro || 'Erro no login');
-    token = data.token;
-    localStorage.setItem('lf_token', token);
-    initApp();
-  } catch (err) { showToast(err.message, 'error'); }
+async function fazerLogin(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const senha=document.getElementById('loginSenha').value;
+  try{
+    const res=await fetch(`${API}/api/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,senha})});
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.erro||'Erro no login');
+    token=data.token;localStorage.setItem('lf_token',token);initApp();
+  }catch(err){showToast(err.message,'error')}
 }
 
-function initApp() {
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  const p = JSON.parse(atob(token.split('.')[1]));
-  document.getElementById('adminName').textContent = p.email;
-  loadCampanhas();
-  showSection('dashboard');
+function initApp(){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').style.display='block';
+  const p=JSON.parse(atob(token.split('.')[1]));
+  document.getElementById('adminName').textContent=p.email;
+  loadCampanhas();showSection('dashboard');
 }
 
-function logout() {
-  localStorage.removeItem('lf_token');
-  location.reload();
-}
+function logout(){localStorage.removeItem('lf_token');location.reload()}
 
-function showSection(id) {
-  ['dashboard','campanhas','logs','config'].forEach(s => document.getElementById('section-'+s).style.display = 'none');
-  document.getElementById('section-'+id).style.display = 'block';
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+function showSection(id){
+  ['dashboard','campanhas','logs','config'].forEach(s=>document.getElementById('section-'+s).style.display='none');
+  document.getElementById('section-'+id).style.display='block';
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   event.target.classList.add('active');
-  if (id === 'logs') loadLogs(1);
-  if (id === 'dashboard') updateDashboard();
+  if(id==='logs')loadLogs(1);
+  if(id==='dashboard')updateDashboard();
 }
 
-// ---------- CAMPANHAS ----------
-async function loadCampanhas() {
-  try {
-    const res = await fetch(`${API}/api/campanhas`, { headers: { 'Authorization': 'Bearer '+token } });
-    campanhas = await res.json();
-    renderCampanhas();
-    updateDashboard();
-  } catch (err) { showToast('Erro ao carregar campanhas', 'error'); }
+async function loadCampanhas(){
+  try{
+    const res=await fetch(`${API}/api/campanhas`,{headers:{'Authorization':'Bearer '+token}});
+    campanhas=await res.json();
+    renderCampanhas();updateDashboard();
+  }catch(err){showToast('Erro ao carregar campanhas','error')}
 }
 
-function updateDashboard() {
-  const total = campanhas.length;
-  const ativas = campanhas.filter(c => c.status === 'ativa').length;
-  const arrecadado = campanhas.reduce((a, c) => a + (parseFloat(c.arrecadado)||0), 0);
-  const lances = campanhas.reduce((a, c) => a + (parseInt(c.total_lances)||0), 0);
-  document.getElementById('dashTotal').textContent = total;
-  document.getElementById('dashAtivas').textContent = ativas;
-  document.getElementById('dashArrecadado').textContent = 'R$ ' + arrecadado.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-  document.getElementById('dashLances').textContent = lances;
+function updateDashboard(){
+  const total=campanhas.length;
+  const ativas=campanhas.filter(c=>c.status==='ativa').length;
+  const arrecadado=campanhas.reduce((a,c)=>a+(parseFloat(c.arrecadado)||0),0);
+  const lances=campanhas.reduce((a,c)=>a+(parseInt(c.total_lances)||0),0);
+  document.getElementById('dashTotal').textContent=total;
+  document.getElementById('dashAtivas').textContent=ativas;
+  document.getElementById('dashArrecadado').textContent='R$ '+arrecadado.toLocaleString('pt-BR',{minimumFractionDigits:2});
+  document.getElementById('dashLances').textContent=lances;
 }
 
-function renderCampanhas() {
-  const el = document.getElementById('campanhasList');
-  if (!campanhas.length) { el.innerHTML = '<div class="empty-state">Nenhuma campanha criada ainda.</div>'; return; }
-  let html = `<table><thead><tr><th>Nome</th><th>Slug</th><th>Status</th><th>Meta</th><th>Arrecadado</th><th>Ações</th></tr></thead><tbody>`;
-  campanhas.forEach(c => {
-    const statusClass = 'badge-' + c.status;
-    const arrec = parseFloat(c.arrecadado||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
-    const meta = parseFloat(c.meta_valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
-    html += `<tr>
-      <td><strong>${c.nome}</strong><br><small style="color:#6b7280">${c.premio_nome||''}</small></td>
+function renderCampanhas(){
+  const el=document.getElementById('campanhasList');
+  if(!campanhas.length){el.innerHTML='<div class="empty-state">Nenhuma campanha criada ainda.</div>';return}
+  let html='<table><thead><tr><th>Nome</th><th>Slug</th><th>Status</th><th>Meta</th><th>Arrecadado</th><th>Ações</th></tr></thead><tbody>';
+  campanhas.forEach(c=>{
+    const statusClass='badge-'+c.status;
+    const arrec=parseFloat(c.arrecadado||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+    const meta=parseFloat(c.meta_valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+    html+=`<tr><td><strong>${c.nome}</strong><br><small style="color:#6b7280">${c.premio_nome||''}</small></td>
       <td><a href="/${c.slug}" target="_blank" style="color:#2563eb">/${c.slug}</a></td>
       <td><span class="badge ${statusClass}">${c.status}</span></td>
-      <td>R$ ${meta}</td>
-      <td>R$ ${arrec}</td>
+      <td>R$ ${meta}</td><td>R$ ${arrec}</td>
       <td class="actions">
         <button class="btn btn-sm btn-info" onclick="editarCampanha(${c.id})">Editar</button>
-        ${c.status !== 'ativa' ? `<button class="btn btn-sm btn-success" onclick="acaoCampanha(${c.id},'ativar')">Ativar</button>` : ''}
-        ${c.status === 'ativa' ? `<button class="btn btn-sm btn-warning" onclick="acaoCampanha(${c.id},'pausar')">Pausar</button>` : ''}
+        ${c.status!=='ativa'?`<button class="btn btn-sm btn-success" onclick="acaoCampanha(${c.id},'ativar')">Ativar</button>`:''}
+        ${c.status==='ativa'?`<button class="btn btn-sm btn-warning" onclick="acaoCampanha(${c.id},'pausar')">Pausar</button>`:''}
         <button class="btn btn-sm btn-danger" onclick="excluirCampanha(${c.id})">Excluir</button>
-      </td>
-    </tr>`;
+      </td></tr>`;
   });
-  html += '</tbody></table>';
-  el.innerHTML = html;
+  html+='</tbody></table>';el.innerHTML=html;
 }
 
-function openModal() {
-  document.getElementById('modalTitle').textContent = 'Nova Campanha';
-  document.getElementById('campId').value = '';
-  ['campNome','campDesc','campMeta','campPremioNome','campPremioDesc','campImagemUrl','campValorLance','campDuracao'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('campValorLance').value = '0.50';
-  document.getElementById('campDuracao').value = '24';
-  document.getElementById('imgPreview').style.display = 'none';
-  switchTab('tab-dados');
+function openModal(){
+  document.getElementById('modalTitle').textContent='Nova Campanha';
+  document.getElementById('campId').value='';
+  ['campNome','campDesc','campMeta','campPremioNome','campPremioDesc','campImagemUrl'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('campValorLance').value='0.50';
+  document.getElementById('campDuracao').value='24';
+  document.getElementById('imgPreview').style.display='none';
+  switchTab('tab-dados',document.querySelector('.tab'));
   document.getElementById('modalOverlay').classList.add('active');
 }
 
-function closeModal() {
-  document.getElementById('modalOverlay').classList.remove('active');
+function closeModal(){document.getElementById('modalOverlay').classList.remove('active')}
+
+function switchTab(id,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');document.getElementById(id).classList.add('active');
 }
 
-function switchTab(id) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  event.target.classList.add('active');
-  document.getElementById(id).classList.add('active');
+function switchSubTab(id,el){
+  const parent=document.getElementById('tab-premio');
+  parent.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  parent.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');document.getElementById(id).classList.add('active');
 }
 
-function switchSubTab(id) {
-  document.querySelectorAll('#tab-premio .tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('#tab-premio .tab-content').forEach(t => t.classList.remove('active'));
-  event.target.classList.add('active');
-  document.getElementById(id).classList.add('active');
+function previewImage(url){
+  const img=document.getElementById('imgPreview');
+  if(!url){img.style.display='none';return}
+  img.src=url;img.style.display='block';
 }
 
-function previewImage(url) {
-  const img = document.getElementById('imgPreview');
-  if (!url) { img.style.display = 'none'; return; }
-  img.src = url;
-  img.style.display = 'block';
+async function handleFileSelect(input){
+  const file=input.files[0];if(!file)return;
+  if(file.size>5*1024*1024){showToast('Arquivo muito grande (máx 5MB)','error');return}
+  const formData=new FormData();formData.append('imagem',file);
+  try{
+    const res=await fetch(`${API}/api/upload`,{method:'POST',headers:{'Authorization':'Bearer '+token},body:formData});
+    const data=await res.json();if(!res.ok)throw new Error(data.erro||'Erro no upload');
+    document.getElementById('campImagemUrl').value=data.url;previewImage(data.url);showToast('Upload concluído!');
+  }catch(err){showToast(err.message,'error')}
 }
 
-async function handleFileSelect(input) {
-  const file = input.files[0];
-  if (!file) return;
-  if (file.size > 5 * 1024 * 1024) { showToast('Arquivo muito grande (máx 5MB)', 'error'); return; }
-  const formData = new FormData();
-  formData.append('imagem', file);
-  try {
-    const res = await fetch(`${API}/api/upload`, { method: 'POST', headers: { 'Authorization': 'Bearer '+token }, body: formData });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.erro || 'Erro no upload');
-    document.getElementById('campImagemUrl').value = data.url;
-    previewImage(data.url);
-    showToast('Upload concluído!');
-  } catch (err) { showToast(err.message, 'error'); }
-}
-
-async function salvarCampanha() {
-  const id = document.getElementById('campId').value;
-  const payload = {
-    nome: document.getElementById('campNome').value,
-    descricao: document.getElementById('campDesc').value,
-    meta_valor: parseFloat(document.getElementById('campMeta').value) || 0,
-    premio_nome: document.getElementById('campPremioNome').value,
-    premio_descricao: document.getElementById('campPremioDesc').value,
-    premio_imagem: document.getElementById('campImagemUrl').value,
-    valor_lance: parseFloat(document.getElementById('campValorLance').value) || 0.50,
-    duracao_horas: parseInt(document.getElementById('campDuracao').value) || 24
+async function salvarCampanha(){
+  const id=document.getElementById('campId').value;
+  const payload={
+    nome:document.getElementById('campNome').value,
+    descricao:document.getElementById('campDesc').value,
+    meta_valor:parseFloat(document.getElementById('campMeta').value)||0,
+    premio_nome:document.getElementById('campPremioNome').value,
+    premio_descricao:document.getElementById('campPremioDesc').value,
+    premio_imagem:document.getElementById('campImagemUrl').value,
+    valor_lance:parseFloat(document.getElementById('campValorLance').value)||0.50,
+    duracao_horas:parseInt(document.getElementById('campDuracao').value)||24
   };
-  if (!payload.nome) { showToast('Nome da campanha é obrigatório', 'error'); return; }
-  try {
-    const url = id ? `${API}/api/campanhas/${id}` : `${API}/api/campanhas`;
-    const res = await fetch(url, {
-      method: id ? 'PUT' : 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer '+token },
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.erro || 'Erro ao salvar');
-    showToast(id ? 'Campanha atualizada!' : 'Campanha criada!');
-    closeModal();
-    loadCampanhas();
-  } catch (err) { showToast(err.message, 'error'); }
+  if(!payload.nome){showToast('Nome da campanha é obrigatório','error');return}
+  try{
+    const url=id?`${API}/api/campanhas/${id}`:`${API}/api/campanhas`;
+    const res=await fetch(url,{method:id?'PUT':'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify(payload)});
+    const data=await res.json();if(!res.ok)throw new Error(data.erro||'Erro ao salvar');
+    showToast(id?'Campanha atualizada!':'Campanha criada!');closeModal();loadCampanhas();
+  }catch(err){showToast(err.message,'error')}
 }
 
-async function editarCampanha(id) {
-  const c = campanhas.find(x => x.id == id);
-  if (!c) return;
-  document.getElementById('modalTitle').textContent = 'Editar Campanha';
-  document.getElementById('campId').value = c.id;
-  document.getElementById('campNome').value = c.nome || '';
-  document.getElementById('campDesc').value = c.descricao || '';
-  document.getElementById('campMeta').value = c.meta_valor || '';
-  document.getElementById('campPremioNome').value = c.premio_nome || '';
-  document.getElementById('campPremioDesc').value = c.premio_descricao || '';
-  document.getElementById('campImagemUrl').value = c.premio_imagem || '';
-  document.getElementById('campValorLance').value = c.valor_lance || 0.50;
-  document.getElementById('campDuracao').value = c.duracao_horas || 24;
+async function editarCampanha(id){
+  const c=campanhas.find(x=>x.id==id);if(!c)return;
+  document.getElementById('modalTitle').textContent='Editar Campanha';
+  document.getElementById('campId').value=c.id;
+  document.getElementById('campNome').value=c.nome||'';
+  document.getElementById('campDesc').value=c.descricao||'';
+  document.getElementById('campMeta').value=c.meta_valor||'';
+  document.getElementById('campPremioNome').value=c.premio_nome||'';
+  document.getElementById('campPremioDesc').value=c.premio_descricao||'';
+  document.getElementById('campImagemUrl').value=c.premio_imagem||'';
+  document.getElementById('campValorLance').value=c.valor_lance||0.50;
+  document.getElementById('campDuracao').value=c.duracao_horas||24;
   previewImage(c.premio_imagem);
-  switchTab('tab-dados');
+  switchTab('tab-dados',document.querySelector('.tab'));
   document.getElementById('modalOverlay').classList.add('active');
 }
 
-async function acaoCampanha(id, acao) {
-  try {
-    const res = await fetch(`${API}/api/campanhas/${id}/${acao}`, { method: 'POST', headers: { 'Authorization': 'Bearer '+token } });
-    if (!res.ok) throw new Error('Erro');
-    showToast(`Campanha ${acao} com sucesso!`);
-    loadCampanhas();
-  } catch (err) { showToast('Erro na ação', 'error'); }
+async function acaoCampanha(id,acao){
+  try{
+    const res=await fetch(`${API}/api/campanhas/${id}/${acao}`,{method:'POST',headers:{'Authorization':'Bearer '+token}});
+    if(!res.ok)throw new Error('Erro');showToast(`Campanha ${acao} com sucesso!`);loadCampanhas();
+  }catch(err){showToast('Erro na ação','error')}
 }
 
-async function excluirCampanha(id) {
-  if (!confirm('Tem certeza que deseja excluir esta campanha?')) return;
-  try {
-    const res = await fetch(`${API}/api/campanhas/${id}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer '+token } });
-    if (!res.ok) throw new Error('Erro');
-    showToast('Campanha excluída');
-    loadCampanhas();
-  } catch (err) { showToast('Erro ao excluir', 'error'); }
+async function excluirCampanha(id){
+  if(!confirm('Tem certeza que deseja excluir esta campanha?'))return;
+  try{
+    const res=await fetch(`${API}/api/campanhas/${id}`,{method:'DELETE',headers:{'Authorization':'Bearer '+token}});
+    if(!res.ok)throw new Error('Erro');showToast('Campanha excluída');loadCampanhas();
+  }catch(err){showToast('Erro ao excluir','error')}
 }
 
-// ---------- LOGS ----------
-async function loadLogs(page = 1) {
-  logsPage = page;
-  const level = document.getElementById('logLevel').value;
-  const limit = document.getElementById('logLimit').value;
-  try {
-    const res = await fetch(`${API}/api/logs?page=${page}&limit=${limit}&level=${level}`, { headers: { 'Authorization': 'Bearer '+token } });
-    logsData = await res.json();
-    renderLogs();
-  } catch (err) { document.getElementById('logsList').innerHTML = '<div class="empty-state">Erro ao carregar logs</div>'; }
+async function loadLogs(page=1){
+  logsPage=page;
+  const level=document.getElementById('logLevel').value;
+  const limit=document.getElementById('logLimit').value;
+  try{
+    const res=await fetch(`${API}/api/logs?page=${page}&limit=${limit}&level=${level}`,{headers:{'Authorization':'Bearer '+token}});
+    logsData=await res.json();renderLogs();
+  }catch(err){document.getElementById('logsList').innerHTML='<div class="empty-state">Erro ao carregar logs</div>'}
 }
 
-function renderLogs() {
-  const el = document.getElementById('logsList');
-  const { logs, pagination } = logsData;
-  if (!logs || !logs.length) { el.innerHTML = '<div class="empty-state">Nenhum log encontrado.</div>'; document.getElementById('logsPagination').innerHTML = ''; return; }
-
-  let html = `<table><thead><tr><th>Data</th><th>Nível</th><th>Método</th><th>Rota</th><th>Status</th><th>Mensagem</th></tr></thead><tbody>`;
-  logs.forEach(l => {
-    const data = new Date(l.created_at).toLocaleString('pt-BR');
-    html += `<tr class="log-row">
-      <td>${data}</td>
-      <td class="log-${l.level}"><strong>${l.level}</strong></td>
-      <td>${l.method||'-'}</td>
-      <td class="truncate" title="${l.route||''}">${l.route||'-'}</td>
-      <td>${l.status||'-'}</td>
-      <td class="truncate" title="${(l.message||'').replace(/"/g,'&quot;')}">${l.message||'-'}</td>
-    </tr>`;
+function renderLogs(){
+  const el=document.getElementById('logsList');
+  const{logs,pagination}=logsData;
+  if(!logs||!logs.length){el.innerHTML='<div class="empty-state">Nenhum log encontrado.</div>';document.getElementById('logsPagination').innerHTML='';return}
+  let html='<table><thead><tr><th>Data</th><th>Nível</th><th>Método</th><th>Rota</th><th>Status</th><th>Mensagem</th></tr></thead><tbody>';
+  logs.forEach(l=>{
+    const data=new Date(l.created_at).toLocaleString('pt-BR');
+    html+=`<tr class="log-row"><td>${data}</td><td class="log-${l.level}"><strong>${l.level}</strong></td><td>${l.method||'-'}</td><td class="truncate" title="${l.route||''}">${l.route||'-'}</td><td>${l.status||'-'}</td><td class="truncate" title="${(l.message||'').replace(/"/g,'&quot;')}">${l.message||'-'}</td></tr>`;
   });
-  html += '</tbody></table>';
-  el.innerHTML = html;
-
-  // Paginação
-  let pag = '';
-  if (pagination.totalPages > 1) {
-    pag += `<button class="btn btn-sm btn-secondary" ${pagination.page <= 1 ? 'disabled' : ''} onclick="loadLogs(${pagination.page - 1})">← Anterior</button>`;
-    pag += `<span>Página <strong>${pagination.page}</strong> de <strong>${pagination.totalPages}</strong> (${pagination.total} registros)</span>`;
-    pag += `<button class="btn btn-sm btn-secondary" ${pagination.page >= pagination.totalPages ? 'disabled' : ''} onclick="loadLogs(${pagination.page + 1})">Próxima →</button>`;
-  } else {
-    pag = `<span>${pagination.total} registros no total</span>`;
-  }
-  document.getElementById('logsPagination').innerHTML = pag;
+  html+='</tbody></table>';el.innerHTML=html;
+  let pag='';
+  if(pagination.totalPages>1){
+    pag+=`<button class="btn btn-sm btn-secondary" ${pagination.page<=1?'disabled':''} onclick="loadLogs(${pagination.page-1})">← Anterior</button>`;
+    pag+=`<span>Página <strong>${pagination.page}</strong> de <strong>${pagination.totalPages}</strong> (${pagination.total} registros)</span>`;
+    pag+=`<button class="btn btn-sm btn-secondary" ${pagination.page>=pagination.totalPages?'disabled':''} onclick="loadLogs(${pagination.page+1})">Próxima →</button>`;
+  }else{pag=`<span>${pagination.total} registros no total</span>`}
+  document.getElementById('logsPagination').innerHTML=pag;
 }
 
-function salvarConfig() {
-  showToast('Configurações salvas!');
-}
-
-function showToast(msg, type='success') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast toast-' + type + ' show';
-  setTimeout(() => t.classList.remove('show'), 3000);
+function showToast(msg,type='success'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast toast-'+type+' show';
+  setTimeout(()=>t.classList.remove('show'),3000);
 }
 </script>
 </body>

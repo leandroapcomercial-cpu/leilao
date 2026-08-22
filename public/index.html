@@ -5,91 +5,105 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Leilão Fácil</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; }
-  .container { max-width: 720px; margin: 0 auto; padding: 20px; }
-  .header { text-align: center; padding: 32px 0 16px; }
-  .header h1 { font-size: 32px; color: #dc2626; margin-bottom: 8px; }
-  .header p { color: #64748b; font-size: 16px; }
-  .card { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 20px; }
-  .premio-img { width: 100%; max-height: 360px; object-fit: cover; border-radius: 12px; margin-bottom: 16px; }
-  .premio-nome { font-size: 22px; font-weight: 700; color: #1e293b; margin-bottom: 8px; }
-  .premio-desc { color: #64748b; font-size: 15px; line-height: 1.5; }
-  .timer-box { text-align: center; padding: 20px; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: #fff; border-radius: 12px; margin-bottom: 20px; }
-  .timer-box .label { font-size: 13px; text-transform: uppercase; opacity: 0.9; letter-spacing: 1px; }
-  .timer-box .time { font-size: 42px; font-weight: 800; font-variant-numeric: tabular-nums; margin: 8px 0; }
-  .meta-box { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-top: 1px solid #e2e8f0; margin-top: 16px; }
-  .meta-item { text-align: center; }
-  .meta-item .num { font-size: 24px; font-weight: 700; color: #2563eb; }
-  .meta-item .lbl { font-size: 12px; color: #64748b; text-transform: uppercase; }
-  .btn-lance { display: block; width: 100%; padding: 18px; font-size: 18px; font-weight: 700; color: #fff; background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); border: none; border-radius: 12px; cursor: pointer; transition: transform .1s, box-shadow .2s; }
-  .btn-lance:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(22,163,74,0.3); }
-  .btn-lance:disabled { background: #94a3b8; cursor: not-allowed; transform: none; }
-  .ranking { margin-top: 8px; }
-  .ranking h3 { font-size: 16px; margin-bottom: 12px; color: #334155; }
-  .rank-item { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 10px; margin-bottom: 8px; background: #f1f5f9; }
-  .rank-item.gold { background: linear-gradient(90deg, #fef3c7 0%, #fde68a 100%); }
-  .rank-item.silver { background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 100%); }
-  .rank-item.bronze { background: linear-gradient(90deg, #fff7ed 0%, #fed7aa 100%); }
-  .rank-pos { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 700; font-size: 14px; background: #fff; color: #475569; }
-  .rank-name { flex: 1; font-weight: 600; font-size: 14px; }
-  .rank-val { font-weight: 700; color: #dc2626; font-size: 16px; }
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; backdrop-filter: blur(4px); }
-  .modal-overlay.active { display: flex; }
-  .modal { background: #fff; border-radius: 16px; width: 100%; max-width: 420px; padding: 28px; box-shadow: 0 25px 50px rgba(0,0,0,0.25); }
-  .modal h3 { margin-bottom: 16px; font-size: 20px; }
-  .form-group { margin-bottom: 14px; }
-  .form-group label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: #475569; }
-  .form-group input { width: 100%; padding: 12px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; }
-  .form-group input:focus { outline: none; border-color: #2563eb; }
-  .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 8px; }
-  .btn-primary { background: #2563eb; color: #fff; }
-  .btn-success { background: #16a34a; color: #fff; }
-  .pix-box { background: #f0fdf4; border: 2px dashed #86efac; border-radius: 12px; padding: 20px; text-align: center; margin: 16px 0; }
-  .pix-box code { font-size: 13px; word-break: break-all; color: #166534; }
-  .close-btn { position: absolute; top: 16px; right: 16px; background: #fff; border: none; width: 36px; height: 36px; border-radius: 50%; font-size: 18px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
-  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: #1e293b; color: #fff; padding: 14px 24px; border-radius: 10px; font-weight: 600; font-size: 14px; z-index: 2000; transition: transform .3s; }
-  .toast.show { transform: translateX(-50%) translateY(0); }
-  .empty-state { text-align: center; padding: 60px 20px; color: #94a3b8; }
-  .spinner { width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: #dc2626; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Roboto,-apple-system,BlinkMacSystemFont,sans-serif;background:linear-gradient(180deg,#0f172a 0%,#1e293b 100%);color:#f8fafc;min-height:100vh}
+  .container{max-width:800px;margin:0 auto;padding:0 16px}
+  .header{text-align:center;padding:32px 0 8px}
+  .header .logo{font-size:40px;margin-bottom:4px}
+  .header h1{font-size:30px;font-weight:800;background:linear-gradient(90deg,#fbbf24,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .header p{color:#94a3b8;font-size:15px;margin-top:4px}
+  .prize-card{background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%);border:1px solid #334155;border-radius:20px;overflow:hidden;margin-bottom:20px;box-shadow:0 20px 40px rgba(0,0,0,.4)}
+  .prize-img{width:100%;height:340px;object-fit:cover;display:block}
+  .prize-body{padding:24px}
+  .prize-tag{display:inline-block;background:#dc2626;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;padding:4px 12px;border-radius:999px;margin-bottom:12px;letter-spacing:.5px}
+  .prize-name{font-size:26px;font-weight:800;margin-bottom:8px;color:#fff}
+  .prize-desc{color:#cbd5e1;font-size:15px;line-height:1.6}
+  .stats-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+  .stat-box{background:rgba(30,41,59,.8);border:1px solid #334155;border-radius:16px;padding:20px 12px;text-align:center;backdrop-filter:blur(10px)}
+  .stat-box .num{font-size:24px;font-weight:800;color:#fbbf24}
+  .stat-box .lbl{font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+  .timer-wrap{background:linear-gradient(135deg,#dc2626 0%,#991b1b 100%);border-radius:20px;padding:28px;text-align:center;margin-bottom:20px;box-shadow:0 10px 30px rgba(220,38,38,.3)}
+  .timer-wrap .label{font-size:13px;text-transform:uppercase;letter-spacing:2px;opacity:.9;margin-bottom:8px}
+  .timer-wrap .time{font-size:52px;font-weight:900;font-variant-numeric:tabular-nums;text-shadow:0 2px 10px rgba(0,0,0,.3)}
+  .timer-wrap .time small{font-size:18px;opacity:.8}
+  .btn-lance{display:block;width:100%;padding:22px;font-size:20px;font-weight:800;color:#fff;background:linear-gradient(135deg,#16a34a 0%,#15803d 100%);border:none;border-radius:16px;cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:1px;box-shadow:0 8px 25px rgba(22,163,74,.4);margin-bottom:20px}
+  .btn-lance:hover{transform:translateY(-3px);box-shadow:0 12px 35px rgba(22,163,74,.5)}
+  .btn-lance:active{transform:translateY(0)}
+  .btn-lance:disabled{background:#475569;cursor:not-allowed;transform:none;box-shadow:none}
+  .ranking-card{background:rgba(30,41,59,.6);border:1px solid #334155;border-radius:20px;padding:24px;margin-bottom:20px}
+  .ranking-card h3{font-size:18px;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+  .rank-item{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;margin-bottom:10px;background:rgba(15,23,42,.5);border:1px solid #1e293b;transition:transform .2s}
+  .rank-item:hover{transform:translateX(4px)}
+  .rank-item.gold{background:linear-gradient(90deg,rgba(251,191,36,.15) 0%,rgba(245,158,11,.1) 100%);border-color:rgba(251,191,36,.3)}
+  .rank-item.silver{background:linear-gradient(90deg,rgba(148,163,184,.15) 0%,rgba(100,116,139,.1) 100%);border-color:rgba(148,163,184,.3)}
+  .rank-item.bronze{background:linear-gradient(90deg,rgba(251,146,60,.15) 0%,rgba(234,88,12,.1) 100%);border-color:rgba(251,146,60,.3)}
+  .rank-pos{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-weight:800;font-size:14px;background:#1e293b;color:#94a3b8;border:2px solid #334155}
+  .rank-pos.gold{background:#fbbf24;color:#78350f;border-color:#f59e0b}
+  .rank-pos.silver{background:#cbd5e1;color:#334155;border-color:#94a3b8}
+  .rank-pos.bronze{background:#fdba74;color:#7c2d12;border-color:#f97316}
+  .rank-name{flex:1;font-weight:600;font-size:15px}
+  .rank-val{font-weight:800;color:#fbbf24;font-size:18px}
+  .footer{text-align:center;padding:24px 0 40px;color:#64748b;font-size:13px}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px;backdrop-filter:blur(6px)}
+  .modal-overlay.active{display:flex}
+  .modal{background:linear-gradient(180deg,#1e293b 0%,#0f172a 100%);border:1px solid #334155;border-radius:24px;width:100%;max-width:440px;padding:32px;box-shadow:0 25px 60px rgba(0,0,0,.5);position:relative}
+  .modal h3{font-size:22px;margin-bottom:8px}
+  .modal p.sub{color:#94a3b8;font-size:14px;margin-bottom:24px}
+  .form-group{margin-bottom:16px}
+  .form-group label{display:block;margin-bottom:6px;font-size:13px;font-weight:600;color:#cbd5e1}
+  .form-group input{width:100%;padding:14px 16px;border:1px solid #334155;border-radius:12px;font-size:15px;background:#0f172a;color:#fff}
+  .form-group input:focus{outline:none;border-color:#fbbf24}
+  .btn{width:100%;padding:16px;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer}
+  .btn-primary{background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 100%);color:#fff}
+  .btn-success{background:linear-gradient(135deg,#16a34a 0%,#15803d 100%);color:#fff}
+  .close-btn{position:absolute;top:16px;right:16px;background:#334155;border:none;width:36px;height:36px;border-radius:50%;font-size:18px;cursor:pointer;color:#fff}
+  .pix-box{background:rgba(22,163,74,.1);border:2px dashed #16a34a;border-radius:16px;padding:24px;text-align:center;margin:20px 0}
+  .pix-box code{font-size:13px;word-break:break-all;color:#86efac;font-family:ui-monospace,SFMono-Regular,monospace}
+  .pix-box .qr{width:180px;height:180px;background:#fff;border-radius:12px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;color:#0f172a;font-size:12px}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:#1e293b;color:#fff;padding:16px 28px;border-radius:14px;font-weight:700;font-size:14px;z-index:2000;transition:transform .3s;border:1px solid #334155;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+  .loading{text-align:center;padding:80px 20px}
+  .spinner{width:48px;height:48px;border:4px solid #334155;border-top-color:#fbbf24;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 20px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .empty-state{text-align:center;padding:60px 20px;color:#94a3b8}
+  @media(max-width:600px){.header h1{font-size:22px}.timer-wrap .time{font-size:36px}.prize-img{height:220px}.stats-bar{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 
 <div class="container">
   <div class="header">
-    <h1>🔨 Leilão Fácil</h1>
-    <p id="campSubtitulo">Carregando...</p>
+    <div class="logo">🔨</div>
+    <h1>Leilão Fácil</h1>
+    <p id="campSubtitulo">Carregando campanha...</p>
   </div>
-
   <div id="content">
-    <div class="empty-state"><div class="spinner"></div><p>Carregando campanha...</p></div>
+    <div class="loading"><div class="spinner"></div><p>Carregando campanha...</p></div>
   </div>
+  <div class="footer"><p>🔨 Leilão Fácil — Participe e concorra!</p></div>
 </div>
 
-<!-- Modal Login -->
 <div class="modal-overlay" id="modalLogin">
   <div class="modal">
-    <h3>👋 Bem-vindo!</h3>
-    <p style="color:#64748b; margin-bottom:16px; font-size:14px;">Informe seus dados para participar do leilão.</p>
-    <div class="form-group"><label>Seu nome</label><input type="text" id="userNome" placeholder="João Silva"></div>
+    <h3>👋 Bem-vindo ao Leilão!</h3>
+    <p class="sub">Informe seus dados para participar e concorrer ao prêmio.</p>
+    <div class="form-group"><label>Seu nome completo</label><input type="text" id="userNome" placeholder="Ex: João Silva"></div>
     <div class="form-group"><label>Seu email</label><input type="email" id="userEmail" placeholder="joao@email.com"></div>
-    <button class="btn btn-primary" onclick="entrarLeilao()">Entrar no Leilão</button>
+    <button class="btn btn-primary" onclick="entrarLeilao()">🚀 Entrar no Leilão</button>
   </div>
 </div>
 
-<!-- Modal PIX -->
 <div class="modal-overlay" id="modalPix">
-  <div class="modal" style="position:relative;">
+  <div class="modal" style="position:relative">
     <button class="close-btn" onclick="closePix()">✕</button>
     <h3>💳 Confirmar Lance</h3>
-    <p style="color:#64748b; margin-bottom:12px; font-size:14px;">Você está dando um lance de <strong id="pixValor">R$ 0,00</strong>.</p>
+    <p class="sub">Você está dando um lance de <strong id="pixValor" style="color:#fbbf24">R$ 0,00</strong></p>
     <div class="pix-box">
-      <p style="font-size:12px; color:#166534; margin-bottom:8px;">Escaneie o QR Code ou copie o código PIX:</p>
+      <div class="qr">📱 QR Code PIX</div>
+      <p style="font-size:12px;color:#86efac;margin-bottom:8px">Escaneie ou copie o código:</p>
       <code id="pixCode">00020126580014br.gov.bcb.pix0136...</code>
     </div>
-    <button class="btn btn-success" onclick="confirmarPagamento()">✅ Já paguei (Confirmar)</button>
+    <button class="btn btn-success" onclick="confirmarPagamento()">✅ Já paguei — Confirmar Lance</button>
   </div>
 </div>
 
@@ -97,167 +111,125 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-const API = '';
-const socket = io();
-let campanha = null;
-let usuario = null;
-let lances = [];
-let timerInterval = null;
+const API='';
+const socket=io();
+let campanha=null,usuario=null,lances=[],timerInterval=null;
+const slug=window.location.pathname.replace(/^\//,'').split('?')[0]||'';
 
-const slug = window.location.pathname.replace(/^\//, '').split('?')[0] || '';
-
-async function init() {
-  if (!slug) { showContent('<div class="empty-state">Nenhuma campanha encontrada.</div>'); return; }
-  try {
-    const res = await fetch(`${API}/api/campanha/${slug}`);
-    if (!res.ok) throw new Error('Campanha não encontrada');
-    campanha = await res.json();
-    document.title = campanha.nome + ' | Leilão Fácil';
-    document.getElementById('campSubtitulo').textContent = campanha.descricao || 'Participe e concorra!';
-    renderCampanha();
-    loadLances();
-    checkUser();
-  } catch (err) { showContent('<div class="empty-state"><h3>😕 Campanha não encontrada</h3><p>'+err.message+'</p></div>'); }
+async function init(){
+  if(!slug){showContent('<div class="empty-state"><h3>😕 Nenhuma campanha encontrada</h3><p>Verifique o link e tente novamente.</p></div>');return}
+  try{
+    const res=await fetch(`${API}/api/campanha/${slug}`);
+    if(!res.ok)throw new Error('Campanha não encontrada');
+    campanha=await res.json();
+    document.title=(campanha.premio_nome||campanha.nome)+' | Leilão Fácil';
+    document.getElementById('campSubtitulo').textContent=campanha.descricao||'Participe e concorra a prêmios incríveis!';
+    renderCampanha();loadLances();checkUser();
+  }catch(err){showContent('<div class="empty-state"><h3>😕 Campanha não encontrada</h3><p>'+err.message+'</p></div>')}
 }
 
-function showContent(html) { document.getElementById('content').innerHTML = html; }
+function showContent(html){document.getElementById('content').innerHTML=html}
 
-function renderCampanha() {
-  const c = campanha;
-  const imgHtml = c.premio_imagem ? `<img src="${c.premio_imagem}" class="premio-img" alt="Prêmio" onerror="this.style.display='none'">` : '';
-  const meta = parseFloat(c.meta_valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
-  const arrec = parseFloat(c.arrecadado||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
-  const vlance = parseFloat(c.valor_lance||0.01).toLocaleString('pt-BR',{minimumFractionDigits:2});
-  const ativa = c.status === 'ativa';
-  const encerrada = c.status === 'finalizada' || (c.data_fim && new Date(c.data_fim) < new Date());
-
-  let btnHtml = '';
-  if (encerrada) btnHtml = '<button class="btn-lance" disabled>🏁 Leilão Encerrado</button>';
-  else if (!ativa) btnHtml = '<button class="btn-lance" disabled>⏳ Leilão não iniciado</button>';
-  else btnHtml = `<button class="btn-lance" onclick="abrirPix()">🔥 Dar Lance (R$ ${vlance})</button>`;
-
-  let timerHtml = '';
-  if (ativa && !encerrada) {
-    timerHtml = `<div class="timer-box"><div class="label">⏱️ Tempo restante</div><div class="time" id="timer">00:00:00</div></div>`;
-  }
-
+function renderCampanha(){
+  const c=campanha;
+  const imgHtml=c.premio_imagem?`<img src="${c.premio_imagem}" class="prize-img" alt="${c.premio_nome||c.nome}" onerror="this.style.display='none'">`:'';
+  const meta=parseFloat(c.meta_valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+  const arrec=parseFloat(c.arrecadado||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+  const vlance=parseFloat(c.valor_lance||0.01).toLocaleString('pt-BR',{minimumFractionDigits:2});
+  const ativa=c.status==='ativa',encerrada=c.status==='finalizada'||(c.data_fim&&new Date(c.data_fim)<new Date()),pausada=c.status==='pausada';
+  let btnHtml='';
+  if(encerrada)btnHtml='<button class="btn-lance" disabled>🏁 Leilão Encerrado</button>';
+  else if(pausada)btnHtml='<button class="btn-lance" disabled>⏸️ Leilão Pausado</button>';
+  else if(!ativa)btnHtml='<button class="btn-lance" disabled>⏳ Leilão não iniciado</button>';
+  else btnHtml=`<button class="btn-lance" onclick="abrirPix()">🔥 DAR LANCE — R$ ${vlance}</button>`;
+  let timerHtml='';
+  if(ativa&&!encerrada)timerHtml=`<div class="timer-wrap"><div class="label">⏱️ Tempo restante para o fim do leilão</div><div class="time" id="timer">00:00:00</div></div>`;
+  const nomeExibicao=c.premio_nome||c.nome;
+  const descExibicao=c.premio_descricao||c.descricao||'';
   showContent(`
-    <div class="card">
-      ${imgHtml}
-      <div class="premio-nome">${c.premio_nome || c.nome}</div>
-      <div class="premio-desc">${c.premio_descricao || c.descricao || ''}</div>
-      <div class="meta-box">
-        <div class="meta-item"><div class="num">R$ ${arrec}</div><div class="lbl">Arrecadado</div></div>
-        <div class="meta-item"><div class="num">R$ ${meta}</div><div class="lbl">Meta</div></div>
-        <div class="meta-item"><div class="num">${c.total_lances||0}</div><div class="lbl">Lances</div></div>
-      </div>
+    <div class="prize-card">${imgHtml}<div class="prize-body"><span class="prize-tag">🏆 Prêmio do Leilão</span><div class="prize-name">${nomeExibicao}</div><div class="prize-desc">${descExibicao}</div></div></div>
+    <div class="stats-bar">
+      <div class="stat-box"><div class="num">R$ ${arrec}</div><div class="lbl">Arrecadado</div></div>
+      <div class="stat-box"><div class="num">R$ ${meta}</div><div class="lbl">Meta</div></div>
+      <div class="stat-box"><div class="num">${c.total_lances||0}</div><div class="lbl">Lances</div></div>
     </div>
-    ${timerHtml}
-    ${btnHtml}
-    <div class="card ranking">
-      <h3>🏆 Ranking</h3>
-      <div id="rankingList"><p style="color:#94a3b8; text-align:center; padding:20px;">Nenhum lance ainda. Seja o primeiro!</p></div>
-    </div>
+    ${timerHtml}${btnHtml}
+    <div class="ranking-card"><h3>🏆 Ranking dos Lances</h3><div id="rankingList"><div class="empty-state"><p>Nenhum lance ainda. Seja o primeiro a participar!</p></div></div></div>
   `);
-
-  if (ativa && c.data_fim) startTimer(new Date(c.data_fim));
+  if(ativa&&c.data_fim)startTimer(new Date(c.data_fim));
 }
 
-function startTimer(endDate) {
-  if (timerInterval) clearInterval(timerInterval);
-  function update() {
-    const diff = endDate - Date.now();
-    const el = document.getElementById('timer');
-    if (!el) { clearInterval(timerInterval); return; }
-    if (diff <= 0) { el.textContent = '00:00:00'; clearInterval(timerInterval); location.reload(); return; }
-    const h = String(Math.floor(diff/3600000)).padStart(2,'0');
-    const m = String(Math.floor((diff%3600000)/60000)).padStart(2,'0');
-    const s = String(Math.floor((diff%60000)/1000)).padStart(2,'0');
-    el.textContent = `${h}:${m}:${s}`;
+function startTimer(endDate){
+  if(timerInterval)clearInterval(timerInterval);
+  function update(){
+    const diff=endDate-Date.now();
+    const el=document.getElementById('timer');
+    if(!el){clearInterval(timerInterval);return}
+    if(diff<=0){el.textContent='00:00:00';clearInterval(timerInterval);setTimeout(()=>location.reload(),2000);return}
+    const h=String(Math.floor(diff/3600000)).padStart(2,'0');
+    const m=String(Math.floor((diff%3600000)/60000)).padStart(2,'0');
+    const s=String(Math.floor((diff%60000)/1000)).padStart(2,'0');
+    el.innerHTML=`${h}<small>h</small> ${m}<small>m</small> ${s}<small>s</small>`;
   }
-  update();
-  timerInterval = setInterval(update, 1000);
+  update();timerInterval=setInterval(update,1000);
 }
 
-async function loadLances() {
-  if (!campanha) return;
-  try {
-    const res = await fetch(`${API}/api/lances/${campanha.id}`);
-    lances = await res.json();
-    renderRanking();
-  } catch (e) {}
+async function loadLances(){
+  if(!campanha)return;
+  try{const res=await fetch(`${API}/api/lances/${campanha.id}`);lances=await res.json();renderRanking()}catch(e){}
 }
 
-function renderRanking() {
-  const el = document.getElementById('rankingList');
-  if (!el) return;
-  if (!lances.length) { el.innerHTML = '<p style="color:#94a3b8; text-align:center; padding:20px;">Nenhum lance ainda. Seja o primeiro!</p>'; return; }
-  let html = '';
-  lances.forEach((l, i) => {
-    const cls = i===0 ? 'gold' : i===1 ? 'silver' : i===2 ? 'bronze' : '';
-    const medal = i===0 ? '🥇' : i===1 ? '🥈' : i===2 ? '🥉' : `<span class="rank-pos">${i+1}</span>`;
-    html += `<div class="rank-item ${cls}">${medal}<div class="rank-name">${l.nome_usuario||l.nome||'Anônimo'}</div><div class="rank-val">R$ ${parseFloat(l.valor).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>`;
+function renderRanking(){
+  const el=document.getElementById('rankingList');if(!el)return;
+  if(!lances.length){el.innerHTML='<div class="empty-state"><p>Nenhum lance ainda. Seja o primeiro a participar!</p></div>';return}
+  let html='';
+  lances.forEach((l,i)=>{
+    const cls=i===0?'gold':i===1?'silver':i===2?'bronze':'';
+    const posCls=i===0?'gold':i===1?'silver':i===2?'bronze':'';
+    const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}º`;
+    html+=`<div class="rank-item ${cls}"><div class="rank-pos ${posCls}">${medal}</div><div class="rank-name">${l.nome_usuario||l.nome||'Anônimo'}</div><div class="rank-val">R$ ${parseFloat(l.valor).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>`;
   });
-  el.innerHTML = html;
+  el.innerHTML=html;
 }
 
-function checkUser() {
-  const u = localStorage.getItem('lf_user');
-  if (u) { usuario = JSON.parse(u); return; }
-  if (campanha && campanha.status === 'ativa') setTimeout(() => document.getElementById('modalLogin').classList.add('active'), 800);
+function checkUser(){
+  const u=localStorage.getItem('lf_user');
+  if(u){usuario=JSON.parse(u);return}
+  if(campanha&&campanha.status==='ativa')setTimeout(()=>document.getElementById('modalLogin').classList.add('active'),1000);
 }
 
-async function entrarLeilao() {
-  const nome = document.getElementById('userNome').value.trim();
-  const email = document.getElementById('userEmail').value.trim();
-  if (!nome || !email) { showToast('Preencha nome e email', 'error'); return; }
-  try {
-    const res = await fetch(`${API}/api/usuarios`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({nome, email}) });
-    usuario = await res.json();
-    localStorage.setItem('lf_user', JSON.stringify(usuario));
-    document.getElementById('modalLogin').classList.remove('active');
-    showToast('Bem-vindo, ' + nome + '!');
-  } catch (e) { showToast('Erro ao entrar', 'error'); }
+async function entrarLeilao(){
+  const nome=document.getElementById('userNome').value.trim();
+  const email=document.getElementById('userEmail').value.trim();
+  if(!nome||!email){showToast('Preencha nome e email','error');return}
+  try{
+    const res=await fetch(`${API}/api/usuarios`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nome,email})});
+    usuario=await res.json();localStorage.setItem('lf_user',JSON.stringify(usuario));
+    document.getElementById('modalLogin').classList.remove('active');showToast('🎉 Bem-vindo, '+nome+'!');
+  }catch(e){showToast('Erro ao entrar','error')}
 }
 
-function abrirPix() {
-  if (!usuario) { document.getElementById('modalLogin').classList.add('active'); return; }
-  const valor = parseFloat(campanha.valor_lance||0.01).toLocaleString('pt-BR',{minimumFractionDigits:2});
-  document.getElementById('pixValor').textContent = 'R$ ' + valor;
-  document.getElementById('modalPix').classList.add('active');
+function abrirPix(){
+  if(!usuario){document.getElementById('modalLogin').classList.add('active');return}
+  const valor=parseFloat(campanha.valor_lance||0.01).toLocaleString('pt-BR',{minimumFractionDigits:2});
+  document.getElementById('pixValor').textContent='R$ '+valor;document.getElementById('modalPix').classList.add('active');
+}
+function closePix(){document.getElementById('modalPix').classList.remove('active')}
+
+async function confirmarPagamento(){
+  if(!usuario||!campanha)return;
+  try{
+    const res=await fetch(`${API}/api/lances`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({campanha_id:campanha.id,usuario_id:usuario.id,valor:campanha.valor_lance})});
+    if(!res.ok)throw new Error('Erro ao registrar lance');
+    closePix();showToast('✅ Lance confirmado com sucesso!');loadLances();
+  }catch(e){showToast(e.message,'error')}
 }
 
-function closePix() { document.getElementById('modalPix').classList.remove('active'); }
-
-async function confirmarPagamento() {
-  if (!usuario || !campanha) return;
-  try {
-    const res = await fetch(`${API}/api/lances`, {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ campanha_id: campanha.id, usuario_id: usuario.id, valor: campanha.valor_lance })
-    });
-    if (!res.ok) throw new Error('Erro ao registrar lance');
-    closePix();
-    showToast('✅ Lance confirmado!');
-    loadLances();
-  } catch (e) { showToast(e.message, 'error'); }
+function showToast(msg,type='success'){
+  const t=document.getElementById('toast');t.textContent=msg;t.style.background=type==='error'?'#dc2626':'#1e293b';t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3500);
 }
 
-function showToast(msg, type='success') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.style.background = type==='error' ? '#dc2626' : '#1e293b';
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
-}
-
-// Socket.IO
-socket.on('novo_lance', (data) => {
-  if (campanha && data.campanha_id == campanha.id) {
-    loadLances();
-  }
-});
-
+socket.on('novo_lance',(data)=>{if(campanha&&data.campanha_id==campanha.id)loadLances()});
 init();
 </script>
 </body>

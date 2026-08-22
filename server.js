@@ -17,12 +17,14 @@ try { bcrypt = require('bcryptjs'); } catch (e) {
 let supabase = null;
 function getSupabase() {
   if (supabase) return supabase;
-  const { createClient } = require('@supabase/supabase-js');
-  const url = process.env.SUPABASE_URL || process.env.SUPABASE_SERVICE_URL;
-  const key = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY;
-  if (!url || !key) return null;
-  supabase = createClient(url, key);
-  return supabase;
+  try {
+    const { createClient } = require('@supabase/supabase-js');
+    const url = process.env.SUPABASE_URL || process.env.SUPABASE_SERVICE_URL;
+    const key = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY;
+    if (!url || !key) return null;
+    supabase = createClient(url, key);
+    return supabase;
+  } catch { return null; }
 }
 
 const app = express();
@@ -58,7 +60,7 @@ function authenticate(req, res, next) {
   } catch { return res.status(401).json({ erro: 'Token inválido' }); }
 }
 
-// Log fire-and-forget (só erros/avisos >= 400)
+// Log fire-and-forget (só erros >= 400)
 function logError(level, route, method, status, payload, message, ip) {
   const sql = `INSERT INTO system_logs (level, route, method, status, payload, message, ip) VALUES ($1,$2,$3,$4,$5,$6,$7)`;
   pool.query(sql, [level, route, method, status, payload, message, ip]).catch(() => {});
@@ -68,10 +70,10 @@ function logError(level, route, method, status, payload, message, ip) {
 async function cleanupLogs() {
   try {
     await pool.query(`DELETE FROM system_logs WHERE created_at < NOW() - INTERVAL '7 days'`);
-  } catch (e) { console.error('[CLEANUP LOGS]', e.message); }
+  } catch (e) { /* ignora */ }
 }
 
-// Verifica se coluna existe em uma tabela
+// Verifica se coluna existe
 async function columnExists(table, column) {
   const r = await pool.query(
     `SELECT 1 FROM information_schema.columns WHERE table_name = $1 AND column_name = $2`,
@@ -80,10 +82,19 @@ async function columnExists(table, column) {
   return r.rows.length > 0;
 }
 
-// Auto-migration
-async function runMigrations() {
-  console.log('[MIGRATION] Verificando tabelas...');
+// Adiciona coluna se não existir
+async function addColumnIfMissing(table, column, def) {
+  if (!(await columnExists(table, column))) {
+    await pool.query(`ALTER TABLE ${table} ADD COLUMN ${column} ${def}`);
+    console.log(`[MIGRATION] Coluna ${column} adicionada em ${table}`);
+  }
+}
 
+// Auto-migration completa
+async function runMigrations() {
+  console.log('[MIGRATION] Iniciando...');
+
+  // 1. administradores
   await pool.query(`
     CREATE TABLE IF NOT EXISTS administradores (
       id SERIAL PRIMARY KEY,
@@ -93,6 +104,7 @@ async function runMigrations() {
       created_at TIMESTAMP DEFAULT NOW()
     )`);
 
+  // 2. campanhas
   await pool.query(`
     CREATE TABLE IF NOT EXISTS campanhas (
       id SERIAL PRIMARY KEY,
@@ -115,7 +127,27 @@ async function runMigrations() {
       created_at TIMESTAMP DEFAULT NOW(),
       updated_at TIMESTAMP DEFAULT NOW()
     )`);
+  // Colunas extras campanhas
+  await addColumnIfMissing('campanhas', 'descricao', 'TEXT');
+  await addColumnIfMissing('campanhas', 'status', "VARCHAR(50) DEFAULT 'pendente'");
+  await addColumnIfMissing('campanhas', 'data_inicio', 'TIMESTAMP');
+  await addColumnIfMissing('campanhas', 'data_fim', 'TIMESTAMP');
+  await addColumnIfMissing('campanhas', 'duracao_horas', 'INTEGER DEFAULT 24');
+  await addColumnIfMissing('campanhas', 'valor_lance', 'DECIMAL(10,2) DEFAULT 0.01');
+  await addColumnIfMissing('campanhas', 'meta_valor', 'DECIMAL(10,2) DEFAULT 0');
+  await addColumnIfMissing('campanhas', 'premio_imagem', 'TEXT');
+  await addColumnIfMissing('campanhas', 'premio_nome', 'VARCHAR(255)');
+  await addColumnIfMissing('campanhas', 'premio_descricao', 'TEXT');
+  await addColumnIfMissing('campanhas', 'influencer_id', 'INTEGER');
+  await addColumnIfMissing('campanhas', 'arrecadado', 'DECIMAL(10,2) DEFAULT 0');
+  await addColumnIfMissing('campanhas', 'total_lances', 'INTEGER DEFAULT 0');
+  await addColumnIfMissing('campanhas', 'visualizacoes', 'INTEGER DEFAULT 0');
+  await addColumnIfMissing('campanhas', 'updated_at', 'TIMESTAMP DEFAULT NOW()');
 
+  // Remove constraint antiga de status
+  try { await pool.query(`ALTER TABLE campanhas DROP CONSTRAINT IF EXISTS campanhas_status_check`); } catch {}
+
+  // 3. usuarios
   await pool.query(`
     CREATE TABLE IF NOT EXISTS usuarios (
       id SERIAL PRIMARY KEY,
@@ -124,6 +156,7 @@ async function runMigrations() {
       created_at TIMESTAMP DEFAULT NOW()
     )`);
 
+  // 4. lances
   await pool.query(`
     CREATE TABLE IF NOT EXISTS lances (
       id SERIAL PRIMARY KEY,
@@ -133,6 +166,7 @@ async function runMigrations() {
       created_at TIMESTAMP DEFAULT NOW()
     )`);
 
+  // 5. pagamentos
   await pool.query(`
     CREATE TABLE IF NOT EXISTS pagamentos (
       id SERIAL PRIMARY KEY,
@@ -144,6 +178,7 @@ async function runMigrations() {
       created_at TIMESTAMP DEFAULT NOW()
     )`);
 
+  // 6. influencers
   await pool.query(`
     CREATE TABLE IF NOT EXISTS influencers (
       id SERIAL PRIMARY KEY,
@@ -154,6 +189,7 @@ async function runMigrations() {
       created_at TIMESTAMP DEFAULT NOW()
     )`);
 
+  // 7. configuracoes
   await pool.query(`
     CREATE TABLE IF NOT EXISTS configuracoes (
       id SERIAL PRIMARY KEY,
@@ -162,7 +198,7 @@ async function runMigrations() {
       updated_at TIMESTAMP DEFAULT NOW()
     )`);
 
-  // Tabela system_logs com schema completo
+  // 8. system_logs
   await pool.query(`
     CREATE TABLE IF NOT EXISTS system_logs (
       id SERIAL PRIMARY KEY,
@@ -175,26 +211,16 @@ async function runMigrations() {
       ip VARCHAR(45),
       created_at TIMESTAMP DEFAULT NOW()
     )`);
+  await addColumnIfMissing('system_logs', 'level', "VARCHAR(20) NOT NULL DEFAULT 'INFO'");
+  await addColumnIfMissing('system_logs', 'route', 'VARCHAR(255)');
+  await addColumnIfMissing('system_logs', 'method', 'VARCHAR(10)');
+  await addColumnIfMissing('system_logs', 'status', 'INTEGER');
+  await addColumnIfMissing('system_logs', 'payload', 'TEXT');
+  await addColumnIfMissing('system_logs', 'message', 'TEXT');
+  await addColumnIfMissing('system_logs', 'ip', 'VARCHAR(45)');
+  await addColumnIfMissing('system_logs', 'created_at', 'TIMESTAMP DEFAULT NOW()');
 
-  // Adiciona colunas faltantes (se tabela foi criada em versão antiga)
-  const logCols = [
-    ['level', 'VARCHAR(20) NOT NULL DEFAULT \'INFO\''],
-    ['route', 'VARCHAR(255)'],
-    ['method', 'VARCHAR(10)'],
-    ['status', 'INTEGER'],
-    ['payload', 'TEXT'],
-    ['message', 'TEXT'],
-    ['ip', 'VARCHAR(45)'],
-    ['created_at', 'TIMESTAMP DEFAULT NOW()']
-  ];
-  for (const [col, def] of logCols) {
-    if (!(await columnExists('system_logs', col))) {
-      await pool.query(`ALTER TABLE system_logs ADD COLUMN ${col} ${def}`);
-      console.log(`[MIGRATION] Coluna ${col} adicionada em system_logs`);
-    }
-  }
-
-  // Índices (isolados em try/catch — nunca quebram o deploy)
+  // Índices (isolados)
   const indices = [
     `CREATE INDEX IF NOT EXISTS idx_logs_level ON system_logs(level)`,
     `CREATE INDEX IF NOT EXISTS idx_logs_created ON system_logs(created_at)`,
@@ -208,13 +234,7 @@ async function runMigrations() {
   }
 
   // Normaliza status antigos
-  await pool.query(`UPDATE campanhas SET status = 'pendente' WHERE status NOT IN ('pendente','ativa','pausada','finalizada')`);
-
-  // Remove constraint antiga de status se existir
-  try {
-    await pool.query(`ALTER TABLE campanhas DROP CONSTRAINT IF EXISTS campanhas_status_check`);
-    console.log('[MIGRATION] Constraint antiga removida');
-  } catch (e) { /* ignora */ }
+  await pool.query(`UPDATE campanhas SET status = 'pendente' WHERE status IS NULL OR status NOT IN ('pendente','ativa','pausada','finalizada')`);
 
   // Admin padrão
   const adm = await pool.query(`SELECT * FROM administradores WHERE email = $1`, ['admin@leilao.com']);
@@ -226,7 +246,7 @@ async function runMigrations() {
     console.log('[MIGRATION] Admin padrão criado: admin@leilao.com / admin123');
   }
 
-  console.log('[MIGRATION] OK - Todas as tabelas verificadas/criadas');
+  console.log('[MIGRATION] OK');
 }
 
 // Middlewares
@@ -248,7 +268,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Request logger leve (só erros)
 app.use((req, res, next) => {
-  const start = Date.now();
   res.on('finish', () => {
     const status = res.statusCode;
     if (status >= 400) {
@@ -284,7 +303,7 @@ app.post('/api/login', async (req, res) => {
     console.log('[LOGIN] Tentativa:', email);
     if (!email || !senha) return res.status(400).json({ erro: 'Email e senha obrigatórios' });
     const result = await pool.query('SELECT * FROM administradores WHERE email = $1', [email]);
-    console.log('[LOGIN] Registros encontrados:', result.rows.length);
+    console.log('[LOGIN] Registros:', result.rows.length);
     if (result.rows.length === 0) {
       console.log('[LOGIN] Email não encontrado');
       return res.status(401).json({ erro: 'Credenciais inválidas' });
@@ -296,7 +315,7 @@ app.post('/api/login', async (req, res) => {
     } else {
       valid = senha === admin.senha;
     }
-    console.log('[LOGIN] bcrypt disponível:', !!bcrypt, '| Senha válida:', valid);
+    console.log('[LOGIN] bcrypt:', !!bcrypt, '| válido:', valid);
     if (!valid) return res.status(401).json({ erro: 'Credenciais inválidas' });
     const token = jwt.sign({ id: admin.id, email: admin.email }, JWT_SECRET, { expiresIn: '24h' });
     res.json({ token, admin: { id: admin.id, nome: admin.nome, email: admin.email } });
@@ -365,7 +384,7 @@ app.put('/api/campanhas/:id', authenticate, async (req, res) => {
        premio_imagem, premio_nome, premio_descricao, influencer_id, id]
     );
     res.json(result.rows[0]);
-  } catch (err) { console.error('[CAMPANHA UPDATE ERROR]', err); res.status(500).json({ erro: err.message }); }
+  } catch (err) { console.error('[CAMPANHA UPDATE]', err); res.status(500).json({ erro: err.message }); }
 });
 
 app.delete('/api/campanhas/:id', authenticate, async (req, res) => {
@@ -437,7 +456,7 @@ app.get('/api/logs', authenticate, async (req, res) => {
   } catch (err) { res.status(500).json({ erro: err.message }); }
 });
 
-// ===================== ROTAS PÚBLICAS DO LEILÃO =====================
+// ===================== ROTAS PÚBLICAS =====================
 
 app.get('/api/campanha/:slug', async (req, res) => {
   try {
@@ -494,10 +513,10 @@ app.post('/api/lances', async (req, res) => {
     const lanceData = { ...result.rows[0], nome_usuario: userRes.rows[0]?.nome || 'Anônimo' };
     io.emit('novo_lance', { campanha_id, lance: lanceData });
     res.json(lanceData);
-  } catch (err) { console.error('[LANCE ERROR]', err); res.status(500).json({ erro: err.message }); }
+  } catch (err) { console.error('[LANCE]', err); res.status(500).json({ erro: err.message }); }
 });
 
-// Serve index.html para qualquer slug (SPA do leilão)
+// SPA fallback para slugs
 app.get('/:slug', async (req, res) => {
   if (req.params.slug.startsWith('api') || req.params.slug.startsWith('socket')) {
     return res.status(404).json({ erro: 'Not found' });
@@ -507,8 +526,8 @@ app.get('/:slug', async (req, res) => {
 
 // Socket.IO
 io.on('connection', (socket) => {
-  console.log('[SOCKET] Cliente conectado:', socket.id);
-  socket.on('disconnect', () => console.log('[SOCKET] Cliente desconectado:', socket.id));
+  console.log('[SOCKET] Conectado:', socket.id);
+  socket.on('disconnect', () => console.log('[SOCKET] Desconectado:', socket.id));
 });
 
 // Inicialização
@@ -517,7 +536,7 @@ io.on('connection', (socket) => {
     await runMigrations();
     await cleanupLogs();
     setInterval(cleanupLogs, 24 * 60 * 60 * 1000);
-    server.listen(PORT, () => console.log(`[SERVER] Rodando na porta ${PORT}`));
+    server.listen(PORT, () => console.log(`[SERVER] Porta ${PORT}`));
   } catch (err) {
     console.error('[FATAL]', err);
     process.exit(1);
