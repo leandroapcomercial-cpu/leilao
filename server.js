@@ -71,6 +71,15 @@ async function cleanupLogs() {
   } catch (e) { console.error('[CLEANUP LOGS]', e.message); }
 }
 
+// Verifica se coluna existe em uma tabela
+async function columnExists(table, column) {
+  const r = await pool.query(
+    `SELECT 1 FROM information_schema.columns WHERE table_name = $1 AND column_name = $2`,
+    [table, column]
+  );
+  return r.rows.length > 0;
+}
+
 // Auto-migration
 async function runMigrations() {
   console.log('[MIGRATION] Verificando tabelas...');
@@ -153,6 +162,7 @@ async function runMigrations() {
       updated_at TIMESTAMP DEFAULT NOW()
     )`);
 
+  // Tabela system_logs com schema completo
   await pool.query(`
     CREATE TABLE IF NOT EXISTS system_logs (
       id SERIAL PRIMARY KEY,
@@ -166,16 +176,45 @@ async function runMigrations() {
       created_at TIMESTAMP DEFAULT NOW()
     )`);
 
-  // Índices para performance
-  await pool.query(`CREATE INDEX IF NOT EXISTS idx_logs_level ON system_logs(level)`);
-  await pool.query(`CREATE INDEX IF NOT EXISTS idx_logs_created ON system_logs(created_at)`);
-  await pool.query(`CREATE INDEX IF NOT EXISTS idx_logs_route ON system_logs(route)`);
-  await pool.query(`CREATE INDEX IF NOT EXISTS idx_campanhas_status ON campanhas(status)`);
-  await pool.query(`CREATE INDEX IF NOT EXISTS idx_campanhas_slug ON campanhas(slug)`);
-  await pool.query(`CREATE INDEX IF NOT EXISTS idx_lances_campanha ON lances(campanha_id)`);
+  // Adiciona colunas faltantes (se tabela foi criada em versão antiga)
+  const logCols = [
+    ['level', 'VARCHAR(20) NOT NULL DEFAULT \'INFO\''],
+    ['route', 'VARCHAR(255)'],
+    ['method', 'VARCHAR(10)'],
+    ['status', 'INTEGER'],
+    ['payload', 'TEXT'],
+    ['message', 'TEXT'],
+    ['ip', 'VARCHAR(45)'],
+    ['created_at', 'TIMESTAMP DEFAULT NOW()']
+  ];
+  for (const [col, def] of logCols) {
+    if (!(await columnExists('system_logs', col))) {
+      await pool.query(`ALTER TABLE system_logs ADD COLUMN ${col} ${def}`);
+      console.log(`[MIGRATION] Coluna ${col} adicionada em system_logs`);
+    }
+  }
+
+  // Índices (isolados em try/catch — nunca quebram o deploy)
+  const indices = [
+    `CREATE INDEX IF NOT EXISTS idx_logs_level ON system_logs(level)`,
+    `CREATE INDEX IF NOT EXISTS idx_logs_created ON system_logs(created_at)`,
+    `CREATE INDEX IF NOT EXISTS idx_logs_route ON system_logs(route)`,
+    `CREATE INDEX IF NOT EXISTS idx_campanhas_status ON campanhas(status)`,
+    `CREATE INDEX IF NOT EXISTS idx_campanhas_slug ON campanhas(slug)`,
+    `CREATE INDEX IF NOT EXISTS idx_lances_campanha ON lances(campanha_id)`
+  ];
+  for (const sql of indices) {
+    try { await pool.query(sql); } catch (e) { console.log('[MIGRATION SKIP] Índice:', e.message); }
+  }
 
   // Normaliza status antigos
   await pool.query(`UPDATE campanhas SET status = 'pendente' WHERE status NOT IN ('pendente','ativa','pausada','finalizada')`);
+
+  // Remove constraint antiga de status se existir
+  try {
+    await pool.query(`ALTER TABLE campanhas DROP CONSTRAINT IF EXISTS campanhas_status_check`);
+    console.log('[MIGRATION] Constraint antiga removida');
+  } catch (e) { /* ignora */ }
 
   // Admin padrão
   const adm = await pool.query(`SELECT * FROM administradores WHERE email = $1`, ['admin@leilao.com']);
@@ -476,7 +515,7 @@ io.on('connection', (socket) => {
   try {
     await runMigrations();
     await cleanupLogs();
-    setInterval(cleanupLogs, 24 * 60 * 60 * 1000); // limpa a cada 24h
+    setInterval(cleanupLogs, 24 * 60 * 60 * 1000);
     server.listen(PORT, () => console.log(`[SERVER] Rodando na porta ${PORT}`));
   } catch (err) {
     console.error('[FATAL]', err);
