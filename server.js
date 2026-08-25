@@ -606,8 +606,7 @@ app.get('/:slug', async (req, res) => {
 
     // Substitui o <title> existente e injeta as OG tags antes de </head>
     html = html.replace(/<title>.*?<\/title>/, '');
-    html = html.replace('</head>', ogTags + '
-</head>');
+    html = html.replace('</head>', ogTags + '\n</head>');
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(html);
