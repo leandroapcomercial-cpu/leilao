@@ -496,7 +496,7 @@ app.post('/api/lances', async (req, res) => {
       return res.status(400).json({ erro: 'Dados incompletos' });
     }
 
-    // Verifica se usuário existe (pode ter sido perdido no reset do banco)
+    // Verifica se usuário existe
     const userCheck = await pool.query('SELECT * FROM usuarios WHERE id = $1', [usuario_id]);
     if (userCheck.rows.length === 0) {
       console.log('[LANCE] Usuário não encontrado no banco. ID:', usuario_id);
@@ -510,21 +510,42 @@ app.post('/api/lances', async (req, res) => {
     if (c.status !== 'ativa') return res.status(400).json({ erro: 'Campanha não está ativa' });
     if (c.data_fim && new Date(c.data_fim) < new Date()) return res.status(400).json({ erro: 'Leilão finalizado' });
 
-    const valorNum = parseFloat(valor);
+    // Calcula valor do lance: (total_lances + 1) * valor_lance
+    // Ex: 0 lances → 1 * 0,01 = 0,01 | 1 lance → 2 * 0,01 = 0,02
+    const totalAtual = parseInt(c.total_lances || 0);
+    const valorLance = parseFloat(c.valor_lance || 0.01);
+    const valorNum = (totalAtual + 1) * valorLance;
+
     const result = await pool.query(
       'INSERT INTO lances (campanha_id, usuario_id, valor) VALUES ($1,$2,$3) RETURNING *',
       [campanha_id, usuario_id, valorNum]
     );
 
-    if (!c.data_fim) {
-      const dataFim = new Date(Date.now() + (c.duracao_horas || 24) * 60 * 60 * 1000);
-      await pool.query('UPDATE campanhas SET data_fim = $1 WHERE id = $2', [dataFim, campanha_id]);
+    let dataFim = c.data_fim;
+    let primeiroLance = false;
+    if (!dataFim) {
+      dataFim = new Date(Date.now() + (c.duracao_horas || 24) * 60 * 60 * 1000);
+      await pool.query('UPDATE campanhas SET data_fim = $1, total_lances = total_lances + 1, arrecadado = arrecadado + $2 WHERE id = $3', [dataFim, valorNum, campanha_id]);
+      primeiroLance = true;
+    } else {
+      await pool.query('UPDATE campanhas SET total_lances = total_lances + 1, arrecadado = arrecadado + $1 WHERE id = $2', [valorNum, campanha_id]);
     }
 
-    await pool.query('UPDATE campanhas SET total_lances = total_lances + 1, arrecadado = arrecadado + $1 WHERE id = $2', [valorNum, campanha_id]);
-
     const lanceData = { ...result.rows[0], nome_usuario: userCheck.rows[0].nome };
+
+    // Emite o lance para todos
     io.emit('novo_lance', { campanha_id, lance: lanceData });
+
+    // Se foi o primeiro lance, emite atualização da campanha com data_fim para iniciar o timer
+    if (primeiroLance) {
+      io.emit('campanha_atualizada', { 
+        id: campanha_id, 
+        data_fim: dataFim,
+        total_lances: totalAtual + 1,
+        arrecadado: parseFloat(c.arrecadado || 0) + valorNum
+      });
+    }
+
     console.log('[LANCE] Sucesso:', lanceData);
     res.json(lanceData);
   } catch (err) { 
