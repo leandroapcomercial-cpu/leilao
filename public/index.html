@@ -3,373 +3,383 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0ea5e9">
+<meta name="description" content="Leilão Fácil - Lance e ganhe prêmios incríveis via PIX">
 <title>Leilão Fácil</title>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:#e8ecf1;color:#1a1a2e;min-height:100vh}
+/* ===== RESET ===== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#eef2f7;color:#1e293b;line-height:1.5;overflow-x:hidden;min-height:100dvh}
+img{max-width:100%;height:auto;display:block}
+button{font-family:inherit;cursor:pointer;border:none;background:none;touch-action:manipulation}
+input{font-family:inherit;outline:none}
 
-  /* ===== MOBILE FIRST (base) ===== */
-  .container{max-width:100%;margin:0 auto;padding:0 12px}
+/* ===== VARS ===== */
+:root{
+  --primary:#0ea5e9;--primary-dark:#0284c7;--success:#22c55e;--success-dark:#16a34a;
+  --danger:#ef4444;--warning:#f59e0b;--gold:#fbbf24;--silver:#94a3b8;--bronze:#b45309;
+  --card:#fff;--text:#1e293b;--muted:#64748b;--border:#e2e8f0;
+  --shadow:0 1px 3px rgba(0,0,0,.08);--shadow-lg:0 10px 25px rgba(0,0,0,.12);
+  --radius:16px;--radius-sm:10px;--tr:.2s ease;
+}
 
-  /* Header */
-  .topbar{background:#fff;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e2e8f0;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.05)}
-  .brand{display:flex;align-items:center;gap:6px;font-weight:800;font-size:16px;color:#1a1a2e}
-  .brand .bolt{color:#fbbf24;font-size:18px}
-  .topbar-right{display:flex;align-items:center;gap:8px}
-  .badge-live{background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:999px;display:flex;align-items:center;gap:4px}
-  .badge-live::before{content:'';width:6px;height:6px;background:#fff;border-radius:50%;animation:pulse 1.5s infinite}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-  .user-name{font-size:13px;color:#475569;font-weight:600;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .btn-sair{background:#fff;border:1px solid #ef4444;color:#ef4444;padding:4px 10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer}
-  .btn-sair:hover{background:#fef2f2}
+/* ===== UTILS ===== */
+.flex{display:flex}.aic{align-items:center}.jcc{justify-content:center}.jcsb{justify-content:space-between}
+.g2{gap:8px}.g3{gap:12px}.w100{width:100%}.tc{text-align:center}.hidden{display:none!important}
+.rel{position:relative}.oh{overflow:hidden}
 
-  /* Cards */
-  .card{background:#fff;border-radius:16px;margin:12px 0;padding:18px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
-  .card-title{text-align:center;font-size:20px;font-weight:800;color:#1e3a8a;margin-bottom:6px}
-  .card-subtitle{text-align:center;font-size:13px;color:#64748b;margin-bottom:14px;line-height:1.4}
-  .prize-badge{display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;font-weight:700;color:#dc2626;margin-bottom:12px}
-  .prize-img-wrap{position:relative;text-align:center;margin-bottom:14px}
-  .prize-img{width:100%;max-width:260px;height:200px;object-fit:cover;border-radius:16px;display:inline-block;border:1px solid #e2e8f0}
-  .zoom-btn{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.6);color:#fff;padding:5px 12px;border-radius:999px;font-size:11px;font-weight:600;border:none;cursor:pointer;backdrop-filter:blur(4px)}
-  .meta-text{text-align:center;font-size:15px;color:#64748b;margin-bottom:14px}
-  .meta-text strong{color:#2563eb;font-size:18px}
+/* ===== HEADER ===== */
+.header{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:10px 16px}
+.header-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.logo{font-size:1.15rem;font-weight:800;color:var(--primary);letter-spacing:-.5px}
+.badge-live{display:inline-flex;align-items:center;gap:6px;background:#fee2e2;color:#dc2626;font-size:.7rem;font-weight:700;padding:4px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px}
+.badge-live::before{content:'';width:7px;height:7px;background:#dc2626;border-radius:50%;animation:pulse-live 1.5s infinite}
+@keyframes pulse-live{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.85)}}
+.user-info{font-size:.8rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+.btn-sm{padding:6px 12px;border-radius:var(--radius-sm);font-size:.8rem;font-weight:600;transition:var(--tr)}
+.btn-outline{border:1px solid var(--border);color:var(--muted);background:#fff}
+.btn-outline:active{transform:scale(.97)}
 
-  /* Vencedor */
-  .winner-box{text-align:center;padding:14px;background:linear-gradient(135deg,#fef3c7,#fde68a);border-radius:12px;margin-bottom:14px}
-  .winner-box .trophy{font-size:22px;margin-bottom:4px}
-  .winner-box .label{font-size:10px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:1px}
-  .winner-box .name{font-size:16px;font-weight:800;color:#78350f;margin:4px 0}
-  .winner-box .value{font-size:18px;font-weight:800;color:#dc2626}
-  .winner-box .date{font-size:11px;color:#a16207;margin-top:4px}
+/* ===== CONTAINER ===== */
+.container{width:100%;max-width:1100px;margin:0 auto;padding:16px}
 
-  /* Timer */
-  .timer-box{background:linear-gradient(135deg,#1e40af,#3b82f6);border-radius:16px;padding:18px;text-align:center;color:#fff;margin-bottom:14px}
-  .timer-box .label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;opacity:.9;margin-bottom:8px}
-  .timer-box .time{font-size:32px;font-weight:800;font-variant-numeric:tabular-nums;text-shadow:0 2px 8px rgba(0,0,0,.2)}
-  .timer-box .lance-atual{font-size:14px;font-weight:700;margin-top:8px}
-  .timer-box .lance-atual span{color:#fbbf24;font-size:20px}
+/* ===== CARD ===== */
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:12px;contain:layout style paint}
+.card-premio{padding:20px;text-align:center}
+.premio-img{width:100%;max-width:320px;margin:0 auto 12px;border-radius:var(--radius-sm);object-fit:cover;aspect-ratio:1/1;background:#f1f5f9;cursor:pointer;transition:transform .3s}
+.premio-img:active{transform:scale(.98)}
+.premio-nome{font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:4px}
+.premio-desc{font-size:.85rem;color:var(--muted)}
+.meta-valor{display:inline-block;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;font-size:.9rem;font-weight:700;padding:6px 16px;border-radius:20px;margin-top:10px}
 
-  /* Stats */
-  .participants{text-align:center;font-size:13px;color:#64748b;margin-bottom:10px}
-  .participants strong{color:#1e3a8a}
+/* ===== VENCEDOR ===== */
+.vencedor-box{background:linear-gradient(135deg,#fef3c7,#fde68a);border-radius:var(--radius-sm);padding:14px;margin:12px 0;display:flex;align-items:center;gap:12px}
+.vencedor-avatar{width:44px;height:44px;border-radius:50%;background:var(--primary);color:#fff;display:grid;place-items:center;font-size:1.2rem;font-weight:700;flex-shrink:0}
+.vencedor-info{flex:1;min-width:0}
+.vencedor-nome{font-weight:700;font-size:.95rem;color:#92400e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vencedor-valor{font-size:1.1rem;font-weight:800;color:#b45309}
+.vencedor-data{font-size:.75rem;color:#a16207}
 
-  /* Próximo lance */
-  .proximo-lance{text-align:center;margin-bottom:14px}
-  .proximo-lance .label{font-size:12px;color:#64748b;display:flex;align-items:center;justify-content:center;gap:6px}
-  .proximo-lance .valor{font-size:24px;font-weight:800;color:#1e3a8a}
+/* ===== TIMER ===== */
+.timer-box{background:linear-gradient(135deg,var(--primary),var(--primary-dark));border-radius:var(--radius);padding:18px 16px;text-align:center;color:#fff;margin-bottom:12px;position:relative;overflow:hidden}
+.timer-box::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.15),transparent 60%);pointer-events:none}
+.timer-label{font-size:.7rem;text-transform:uppercase;letter-spacing:1.5px;opacity:.85;margin-bottom:6px}
+.timer-display{font-size:2.6rem;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:2px;line-height:1;text-shadow:0 2px 4px rgba(0,0,0,.15)}
+.lance-atual-label{font-size:.75rem;margin-top:8px;opacity:.9}
+.lance-atual-valor{font-size:1.3rem;font-weight:800;color:var(--gold);text-shadow:0 1px 2px rgba(0,0,0,.2)}
 
-  /* Botão */
-  .btn-lance{display:block;width:100%;padding:16px;font-size:16px;font-weight:800;color:#fff;background:linear-gradient(135deg,#10b981,#059669);border:none;border-radius:14px;cursor:pointer;transition:all .2s;box-shadow:0 4px 15px rgba(16,185,129,.3);margin-bottom:8px}
-  .btn-lance:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(16,185,129,.4)}
-  .btn-lance:active{transform:translateY(0)}
-  .btn-lance:disabled{background:#94a3b8;cursor:not-allowed;transform:none;box-shadow:none}
-  .info-text{text-align:center;font-size:11px;color:#94a3b8;margin-bottom:14px}
+/* ===== PROXIMO LANCE ===== */
+.proximo-box{background:#f0fdf4;border:2px dashed var(--success);border-radius:var(--radius-sm);padding:14px;text-align:center;margin-bottom:12px}
+.proximo-label{font-size:.8rem;color:var(--success-dark);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.proximo-valor{font-size:1.6rem;font-weight:800;color:var(--success);margin-top:2px}
 
-  /* Últimos lances */
-  .section-title{font-size:15px;font-weight:800;color:#1e3a8a;margin-bottom:12px;display:flex;align-items:center;gap:6px}
-  .lance-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f1f5f9}
-  .lance-item:last-child{border-bottom:none}
-  .lance-user{display:flex;align-items:center;gap:10px}
-  .lance-avatar{width:32px;height:32px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700}
-  .lance-name{font-size:13px;font-weight:600;color:#1e293b}
-  .lance-time{font-size:11px;color:#94a3b8}
-  .lance-valor{font-size:15px;font-weight:800;color:#2563eb}
+/* ===== BOTÃO LANCE ===== */
+.btn-lance{width:100%;padding:18px 24px;border-radius:var(--radius);background:linear-gradient(135deg,var(--success),var(--success-dark));color:#fff;font-size:1.15rem;font-weight:800;box-shadow:0 4px 14px rgba(34,197,94,.35);display:flex;align-items:center;justify-content:center;gap:10px;transition:transform .15s,box-shadow .15s;position:relative;overflow:hidden}
+.btn-lance::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);transform:translateX(-100%);transition:none}
+.btn-lance:active{transform:scale(.97);box-shadow:0 2px 8px rgba(34,197,94,.3)}
+.btn-lance:hover::after{transform:translateX(100%);transition:transform .6s}
+.btn-lance:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.rocket{font-size:1.3rem}
 
-  /* Ver ranking */
-  .btn-ranking{display:block;width:100%;padding:12px;text-align:center;background:#fff;border:2px solid #3b82f6;color:#3b82f6;font-size:13px;font-weight:700;border-radius:12px;cursor:pointer;margin-top:8px}
-  .btn-ranking:hover{background:#eff6ff}
+/* ===== ULTIMOS LANCES ===== */
+.section-title{font-size:.85rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 10px;padding-left:4px}
+.lance-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#f8fafc;border-radius:var(--radius-sm);margin-bottom:6px;animation:slideIn .3s ease}
+@keyframes slideIn{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+.lance-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#6366f1);color:#fff;display:grid;place-items:center;font-size:.85rem;font-weight:700;flex-shrink:0}
+.lance-info{flex:1;min-width:0}
+.lance-nome{font-size:.85rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lance-hora{font-size:.75rem;color:var(--muted)}
+.lance-valor{font-weight:800;color:var(--primary);font-size:.9rem}
 
-  /* Ranking card */
-  .ranking-tabs{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto}
-  .rank-tab{flex:1;padding:8px 6px;text-align:center;background:#f1f5f9;border:none;border-radius:10px;font-size:12px;font-weight:600;color:#64748b;cursor:pointer;white-space:nowrap}
-  .rank-tab.active{background:#2563eb;color:#fff}
-  .rank-item{display:flex;align-items:center;gap:10px;padding:12px;background:#f8fafc;border-radius:12px;margin-bottom:8px;border:1px solid #e2e8f0}
-  .rank-item.gold{background:linear-gradient(90deg,#fef3c7,#fde68a);border-color:#fbbf24}
-  .rank-item.silver{background:linear-gradient(90deg,#f1f5f9,#e2e8f0);border-color:#cbd5e1}
-  .rank-item.bronze{background:linear-gradient(90deg,#fff7ed,#fed7aa);border-color:#fdba74}
-  .rank-pos{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-weight:800;font-size:12px;background:#e2e8f0;color:#475569}
-  .rank-pos.gold{background:#fbbf24;color:#78350f}
-  .rank-pos.silver{background:#cbd5e1;color:#334155}
-  .rank-pos.bronze{background:#fdba74;color:#7c2d12}
-  .rank-info{flex:1}
-  .rank-name{font-weight:700;font-size:13px;color:#1e293b}
-  .rank-detail{font-size:11px;color:#64748b}
-  .rank-valor{font-weight:800;color:#dc2626;font-size:15px}
+/* ===== RANKING ===== */
+.ranking-tabs{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.ranking-tabs::-webkit-scrollbar{display:none}
+.tab{flex:1;min-width:90px;padding:10px 8px;border-radius:var(--radius-sm);font-size:.8rem;font-weight:700;text-align:center;background:#f1f5f9;color:var(--muted);transition:var(--tr);white-space:nowrap;border:none}
+.tab.active{background:var(--primary);color:#fff;box-shadow:var(--shadow)}
+.tab:active{transform:scale(.96)}
+.ranking-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#f8fafc;border-radius:var(--radius-sm);margin-bottom:6px;transition:background .2s}
+.ranking-item:active{background:#e0f2fe}
+.rank-pos{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:.8rem;font-weight:800;flex-shrink:0}
+.rank-1{background:linear-gradient(135deg,#fde047,#fbbf24);color:#713f12}
+.rank-2{background:linear-gradient(135deg,#e2e8f0,#94a3b8);color:#334155}
+.rank-3{background:linear-gradient(135deg,#fdba74,#fb923c);color:#7c2d12}
+.rank-n{background:#e2e8f0;color:#64748b}
+.rank-name{flex:1;font-size:.9rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank-valor{font-weight:800;color:var(--primary)}
 
-  /* Footer */
-  .footer{text-align:center;padding:16px 12px 30px;color:#94a3b8;font-size:11px}
+/* ===== MODAIS ===== */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .25s}
+.modal-overlay.open{opacity:1;pointer-events:auto}
+.modal{background:#fff;border-radius:var(--radius);width:100%;max-width:420px;max-height:90dvh;overflow-y:auto;transform:scale(.92) translateY(10px);transition:transform .25s;box-shadow:var(--shadow-lg)}
+.modal-overlay.open .modal{transform:scale(1) translateY(0)}
+.modal-header{padding:18px 20px 0;display:flex;justify-content:space-between;align-items:center}
+.modal-title{font-size:1.15rem;font-weight:800}
+.modal-close{width:32px;height:32px;border-radius:50%;background:#f1f5f9;color:var(--muted);display:grid;place-items:center;font-size:1.1rem;border:none}
+.modal-close:active{background:#e2e8f0}
+.modal-body{padding:16px 20px 20px}
+.input-field{width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:1rem;transition:border-color .2s;margin-bottom:10px}
+.input-field:focus{border-color:var(--primary)}
+.btn-primary{width:100%;padding:14px;border-radius:var(--radius-sm);background:var(--primary);color:#fff;font-size:1rem;font-weight:700;margin-top:6px;transition:var(--tr);border:none}
+.btn-primary:active{background:var(--primary-dark);transform:scale(.98)}
+.btn-success{width:100%;padding:14px;border-radius:var(--radius-sm);background:var(--success);color:#fff;font-size:1rem;font-weight:700;margin-top:8px;transition:var(--tr);border:none}
+.btn-success:active{background:var(--success-dark);transform:scale(.98)}
+.pix-code{background:#f0fdf4;border:2px dashed var(--success);border-radius:var(--radius-sm);padding:14px;text-align:center;font-family:monospace;font-size:1rem;font-weight:700;color:var(--success-dark);word-break:break-all;margin:12px 0;user-select:all}
 
-  /* Modals */
-  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:1000;padding:16px;backdrop-filter:blur(4px)}
-  .modal-overlay.active{display:flex}
-  .modal{background:#fff;border-radius:20px;width:100%;max-width:400px;padding:24px;box-shadow:0 20px 50px rgba(0,0,0,.3);position:relative}
-  .modal h3{font-size:18px;margin-bottom:6px;color:#1e3a8a}
-  .modal p.sub{color:#64748b;font-size:13px;margin-bottom:18px}
-  .form-group{margin-bottom:12px}
-  .form-group label{display:block;margin-bottom:4px;font-size:12px;font-weight:600;color:#374151}
-  .form-group input{width:100%;padding:12px 14px;border:1px solid #d1d5db;border-radius:12px;font-size:14px;background:#f9fafb}
-  .form-group input:focus{outline:none;border-color:#3b82f6;background:#fff}
-  .btn{width:100%;padding:14px;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer}
-  .btn-primary{background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff}
-  .btn-success{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
-  .close-btn{position:absolute;top:12px;right:12px;background:#f1f5f9;border:none;width:34px;height:34px;border-radius:50%;font-size:16px;cursor:pointer;color:#64748b}
-  .pix-box{background:#f0fdf4;border:2px dashed #86efac;border-radius:14px;padding:18px;text-align:center;margin:14px 0}
-  .pix-box .qr{width:150px;height:150px;background:#fff;border-radius:12px;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;color:#1e3a8a;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
-  .pix-box code{font-size:11px;word-break:break-all;color:#166534;font-family:ui-monospace,SFMono-Regular,monospace}
+/* ===== TOAST ===== */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:#1e293b;color:#fff;padding:12px 20px;border-radius:var(--radius-sm);font-size:.9rem;font-weight:600;z-index:300;opacity:0;transition:all .35s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;box-shadow:var(--shadow-lg)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.success{background:var(--success)}
+.toast.error{background:var(--danger)}
 
-  /* Toast */
-  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(100px);background:#1e293b;color:#fff;padding:14px 24px;border-radius:14px;font-weight:700;font-size:14px;z-index:2000;transition:transform .3s;box-shadow:0 10px 30px rgba(0,0,0,.3)}
-  .toast.show{transform:translateX(-50%) translateY(0)}
-  .toast.error{background:#dc2626}
+/* ===== FLOAT EFX ===== */
+.float-efx{position:fixed;pointer-events:none;z-index:250;font-size:1.6rem;font-weight:800;color:var(--success);text-shadow:0 2px 8px rgba(34,197,94,.4);animation:floatUp 1s ease-out forwards}
+@keyframes floatUp{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-80px) scale(1.3)}}
 
-  /* Loading */
-  .loading{text-align:center;padding:50px 20px}
-  .spinner{width:36px;height:36px;border:4px solid #e2e8f0;border-top-color:#3b82f6;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 14px}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .empty-state{text-align:center;padding:30px 20px;color:#94a3b8}
-  .empty-state p{margin-top:8px}
+/* ===== SKELETON ===== */
+.skeleton{background:linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;border-radius:var(--radius-sm);min-height:20px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
-  /* ===== TABLET (481px - 768px) ===== */
-  @media(min-width:481px){
-    .container{max-width:600px;padding:0 20px}
-    .card{padding:22px;margin:14px 0;border-radius:18px}
-    .card-title{font-size:24px}
-    .card-subtitle{font-size:14px}
-    .prize-img{max-width:320px;height:240px}
-    .timer-box{padding:22px}
-    .timer-box .time{font-size:40px}
-    .timer-box .lance-atual{font-size:16px}
-    .timer-box .lance-atual span{font-size:24px}
-    .btn-lance{padding:18px;font-size:18px}
-    .proximo-lance .valor{font-size:28px}
-    .section-title{font-size:16px}
-    .rank-name{font-size:14px}
-    .rank-valor{font-size:16px}
-    .user-name{max-width:160px;font-size:14px}
-    .modal{padding:28px;max-width:420px}
-    .modal h3{font-size:20px}
-    .pix-box .qr{width:170px;height:170px}
-  }
+/* ===== LOADING ===== */
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:16px}
+.spinner{width:40px;height:40px;border:4px solid #e2e8f0;border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-  /* ===== NOTEBOOK / DESKTOP (769px+) ===== */
-  @media(min-width:769px){
-    .container{max-width:960px;padding:0 24px}
-    .topbar{padding:12px 24px}
-    .brand{font-size:18px}
-    .user-name{max-width:200px;font-size:15px}
+/* ===== FOOTER ===== */
+.footer{text-align:center;padding:20px 16px 30px;color:var(--muted);font-size:.8rem}
 
-    /* Layout em 2 colunas no desktop */
-    .desktop-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-    .desktop-grid .card{margin:0}
-    .desktop-full{grid-column:1 / -1}
-
-    .card{padding:24px;margin:16px 0;border-radius:20px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
-    .card-title{font-size:26px}
-    .card-subtitle{font-size:15px}
-    .prize-img{max-width:100%;height:280px}
-    .prize-badge{font-size:12px}
-    .meta-text{font-size:16px}
-    .meta-text strong{font-size:20px}
-
-    .winner-box{padding:18px}
-    .winner-box .trophy{font-size:26px}
-    .winner-box .name{font-size:18px}
-    .winner-box .value{font-size:22px}
-
-    .timer-box{padding:24px}
-    .timer-box .time{font-size:48px}
-    .timer-box .lance-atual{font-size:18px}
-    .timer-box .lance-atual span{font-size:26px}
-
-    .btn-lance{padding:20px;font-size:20px;border-radius:16px}
-    .proximo-lance .valor{font-size:32px}
-    .info-text{font-size:13px}
-
-    .section-title{font-size:18px}
-    .lance-item{padding:12px 0}
-    .lance-avatar{width:36px;height:36px;font-size:14px}
-    .lance-name{font-size:14px}
-    .lance-valor{font-size:17px}
-
-    .rank-item{padding:14px}
-    .rank-pos{width:34px;height:34px;font-size:14px}
-    .rank-name{font-size:15px}
-    .rank-valor{font-size:18px}
-
-    .btn-ranking{padding:14px;font-size:15px}
-
-    .modal{padding:32px;max-width:480px}
-    .modal h3{font-size:22px}
-    .pix-box .qr{width:180px;height:180px}
-    .footer{font-size:13px;padding:20px 0 40px}
-  }
-
-  /* ===== WIDE DESKTOP (1200px+) ===== */
-  @media(min-width:1200px){
-    .container{max-width:1100px}
-    .prize-img{height:320px}
-    .timer-box .time{font-size:56px}
-  }
+/* ===== RESPONSIVO ===== */
+@media(min-width:769px){
+  .container{padding:24px;display:grid;grid-template-columns:1fr 380px;gap:20px;align-items:start}
+  .col-main{min-width:0}
+  .col-side{min-width:0}
+  .header-inner{padding:0 24px}
+  .timer-display{font-size:3.2rem}
+  .btn-lance{padding:22px;font-size:1.25rem}
+  .premio-img{max-width:280px}
+}
+@media(min-width:1200px){
+  .container{grid-template-columns:1fr 420px}
+  .timer-display{font-size:3.6rem}
+}
+@media(max-width:480px){
+  .timer-display{font-size:2rem}
+  .btn-lance{font-size:1rem;padding:16px}
+  .proximo-valor{font-size:1.3rem}
+}
 </style>
 </head>
 <body>
 
-<div class="container">
-  <!-- Header -->
-  <div class="topbar" id="topbar" style="display:none">
-    <div class="brand"><span class="bolt">⚡</span> Leilão Fácil</div>
-    <div class="topbar-right">
-      <span class="badge-live">AO VIVO</span>
-      <span class="user-name" id="headerUserName"></span>
-      <button class="btn-sair" onclick="sairLeilao()">✕ Sair</button>
+<!-- HEADER -->
+<header class="header" id="topbar" style="display:none">
+  <div class="header-inner">
+    <div class="flex aic g2">
+      <span class="logo">🏆 Leilão Fácil</span>
+      <span class="badge-live">Ao Vivo</span>
+    </div>
+    <div class="flex aic g3">
+      <span id="headerUserName" class="user-info hidden"></span>
+      <button id="btnSair" class="btn-sm btn-outline hidden" onclick="sairLeilao()">Sair</button>
+      <button id="btnEntrarHeader" class="btn-sm" style="background:var(--primary);color:#fff" onclick="abrirLogin()">Entrar</button>
     </div>
   </div>
+</header>
 
-  <!-- Loading -->
-  <div id="content">
-    <div class="loading">
-      <div class="spinner"></div>
-      <p style="color:#64748b">Carregando leilão...</p>
+<!-- MAIN -->
+<div class="container" id="mainContainer" style="display:none">
+  <div class="col-main">
+    <!-- PREMIO -->
+    <div class="card card-premio">
+      <img id="premioImg" class="premio-img" src="" alt="Prêmio" loading="eager" onclick="ampliarImagem()">
+      <div class="premio-nome" id="premioNome">Carregando...</div>
+      <div class="premio-desc" id="premioDesc"></div>
+      <div class="meta-valor" id="metaValor">Meta: R$ 0,00</div>
     </div>
+
+    <!-- VENCEDOR -->
+    <div class="vencedor-box" id="winnerBox">
+      <div class="vencedor-avatar">🏆</div>
+      <div class="vencedor-info">
+        <div class="vencedor-nome" id="vencedorNome">Nenhum lance ainda</div>
+        <div class="vencedor-valor" id="vencedorValor">R$ 0,00</div>
+        <div class="vencedor-data" id="vencedorData">Seja o primeiro!</div>
+      </div>
+    </div>
+
+    <!-- TIMER -->
+    <div class="timer-box">
+      <div class="timer-label">⏱️ Tempo Restante</div>
+      <div class="timer-display" id="timer">00:00:00</div>
+      <div class="lance-atual-label">💰 Lance Atual</div>
+      <div class="lance-atual-valor" id="lanceAtualValor">R$ 0,00</div>
+    </div>
+
+    <!-- PROXIMO LANCE -->
+    <div class="proximo-box">
+      <div class="proximo-label">Próximo Lance</div>
+      <div class="proximo-valor" id="proximoLance">R$ 0,00</div>
+    </div>
+
+    <!-- BOTAO LANCE -->
+    <button id="btnLance" class="btn-lance" onclick="abrirPix()">
+      <span class="rocket">🚀</span>
+      <span id="btnLanceText">Dar Lance</span>
+    </button>
+    <div class="tc" style="font-size:.8rem;color:var(--muted);margin-top:6px">ℹ️ Cada lance aumenta o valor</div>
   </div>
 
-  <div class="footer" id="footer" style="display:none">
-    <p>Leilão Fácil • PIX integrado • Transparente</p>
+  <div class="col-side">
+    <!-- ULTIMOS LANCES -->
+    <div class="section-title">🔥 Últimos Lances</div>
+    <div id="ultimosLances"></div>
+
+    <!-- RANKING -->
+    <div class="section-title">🏅 Ranking</div>
+    <div class="ranking-tabs">
+      <button class="tab active" onclick="setRankTab(this,'maior')" data-tab="maior">Maior Lance</button>
+      <button class="tab" onclick="setRankTab(this,'mais')" data-tab="mais">Mais Lances</button>
+      <button class="tab" onclick="setRankTab(this,'menos')" data-tab="menos">Menos Lances</button>
+    </div>
+    <div id="rankingList"></div>
+    <button class="btn-sm btn-outline w100" style="margin-top:10px;padding:10px;font-weight:700" onclick="toggleRanking()">Ver Ranking Completo (Top 10)</button>
+    <div id="rankingCard" style="display:none;margin-top:12px"></div>
   </div>
 </div>
 
-<!-- Modal Login -->
-<div class="modal-overlay" id="modalLogin">
-  <div class="modal">
-    <h3>👋 Bem-vindo!</h3>
-    <p class="sub">Informe seus dados para participar do leilão.</p>
-    <div class="form-group"><label>Seu nome completo</label><input type="text" id="userNome" placeholder="Ex: João Silva"></div>
-    <div class="form-group"><label>Seu email</label><input type="email" id="userEmail" placeholder="joao@email.com"></div>
-    <button class="btn btn-primary" onclick="entrarLeilao()">🚀 Entrar no Leilão</button>
+<!-- LOADING -->
+<div id="content">
+  <div class="loading">
+    <div class="spinner"></div>
+    <p style="color:var(--muted)">Carregando leilão...</p>
   </div>
 </div>
 
-<!-- Modal PIX -->
-<div class="modal-overlay" id="modalPix">
-  <div class="modal">
-    <button class="close-btn" onclick="closePix()">✕</button>
-    <h3>💳 Confirmar Lance</h3>
-    <p class="sub">Você está dando um lance de <strong id="pixValor" style="color:#dc2626">R$ 0,00</strong></p>
-    <div class="pix-box">
-      <div class="qr">📱 QR Code PIX</div>
-      <p style="font-size:12px;color:#166534;margin-bottom:8px">Escaneie ou copie o código:</p>
-      <code id="pixCode">00020126580014br.gov.bcb.pix0136...</code>
+<!-- FOOTER -->
+<div class="footer" id="footer" style="display:none">
+  <p>Leilão Fácil • PIX integrado • Transparente</p>
+</div>
+
+<!-- MODAL LOGIN -->
+<div id="modalLogin" class="modal-overlay" onclick="fecharModal(event,'modalLogin')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">👋 Entrar no Leilão</span>
+      <button class="modal-close" onclick="fecharModalDirect('modalLogin')">✕</button>
     </div>
-    <button class="btn btn-success" onclick="confirmarPagamento()">✅ Já paguei — Confirmar Lance</button>
+    <div class="modal-body">
+      <input type="text" id="userNome" class="input-field" placeholder="Seu nome completo" maxlength="30">
+      <input type="email" id="userEmail" class="input-field" placeholder="seu@email.com" maxlength="60">
+      <button class="btn-primary" onclick="entrarLeilao()">🚀 Entrar no Leilão</button>
+    </div>
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<!-- MODAL PIX -->
+<div id="modalPix" class="modal-overlay" onclick="fecharModal(event,'modalPix')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">💳 Confirmar Lance</span>
+      <button class="modal-close" onclick="fecharModalDirect('modalPix')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.9rem;color:var(--muted);margin-bottom:10px">Você está dando um lance de <strong id="pixValor" style="color:var(--danger)">R$ 0,00</strong></p>
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:10px">Escaneie o QR Code ou copie a chave:</p>
+      <div id="pixQR" style="text-align:center;margin-bottom:12px"></div>
+      <div class="pix-code" id="pixCode" onclick="copiarPix()"></div>
+      <button class="btn-success" onclick="confirmarPagamento()">✅ Já paguei — Confirmar Lance</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AMPLIAR IMAGEM -->
+<div id="modalImg" class="modal-overlay" style="background:rgba(0,0,0,.9)" onclick="fecharModalDirect('modalImg')">
+  <img id="imgAmpliada" style="max-width:95%;max-height:90dvh;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.5);margin:auto" src="">
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="toast"></div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
+/* ===== CONFIG ===== */
 const API='';
-const socket=io();
-let campanha=null,usuario=null,lances=[],timerInterval=null,showFullRanking=false;
-const slug=window.location.pathname.replace(/^\//,'').split('?')[0]||'';
+const slug=window.location.pathname.replace(/^\/,'').split('?')[0]||'';
+let socket,campanha=null,usuario=null,lances=[],timerInterval=null,showFullRanking=false,rankTab='maior';
+let comboCount=0,comboTimer=null,ultimoLanceId=0;
+
+/* ===== INIT ===== */
+document.addEventListener('DOMContentLoaded',()=>{
+  if(!slug){mostrarErro('Nenhuma campanha encontrada');return}
+  init();
+});
 
 async function init(){
-  if(!slug){showContent('<div class="empty-state"><p>😕 Nenhuma campanha encontrada.</p></div>');return}
   try{
     const res=await fetch(`${API}/api/campanha/${slug}`);
     if(!res.ok)throw new Error('Campanha não encontrada');
     campanha=await res.json();
     document.title=(campanha.premio_nome||campanha.nome)+' | Leilão Fácil';
-    renderCampanha();loadLances();checkUser();
-  }catch(err){showContent('<div class="empty-state"><p>😕 '+err.message+'</p></div>')}
+    conectarSocket();
+    renderCampanha();
+    loadLances();
+    checkUser();
+  }catch(err){mostrarErro(err.message)}
 }
 
-function showContent(html){document.getElementById('content').innerHTML=html}
+function mostrarErro(msg){
+  document.getElementById('content').innerHTML=`<div class="loading"><p>😕 ${msg}</p></div>`;
+}
 
+/* ===== SOCKET ===== */
+function conectarSocket(){
+  if(socket){socket.disconnect();socket=null}
+  socket=io({transports:['websocket','polling'],reconnection:true,reconnectionDelay:2000});
+  socket.on('connect',()=>{if(campanha)socket.emit('join',campanha.id)});
+  socket.on('novo_lance',data=>{if(campanha&&data.campanha_id==campanha.id){adicionarLanceSocket(data.lance)}});
+  socket.on('campanha_atualizada',data=>{if(data.id==campanha?.id){Object.assign(campanha,data);renderCampanha()}});
+}
+
+/* ===== CAMPANHA ===== */
 function renderCampanha(){
+  if(!campanha)return;
   const c=campanha;
   const ativa=c.status==='ativa';
   const encerrada=c.status==='finalizada'||(c.data_fim&&new Date(c.data_fim)<new Date());
   const pausada=c.status==='pausada';
 
-  const imgHtml=c.premio_imagem?`<div class="prize-img-wrap"><img src="${c.premio_imagem}" class="prize-img" alt="${c.premio_nome||c.nome}" onerror="this.style.display='none'"><button class="zoom-btn" onclick="window.open('${c.premio_imagem}','_blank')">🔍 Clique para ampliar</button></div>`:'';
+  document.getElementById('premioNome').textContent=c.premio_nome||c.nome||'Prêmio';
+  document.getElementById('premioDesc').textContent=c.premio_descricao||c.descricao||'';
+  document.getElementById('premioImg').src=c.premio_imagem||'https://via.placeholder.com/400?text=Prêmio';
+  document.getElementById('metaValor').textContent='Meta: R$ '+fmt(c.meta_valor||0);
 
-  const meta=parseFloat(c.meta_valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
   const vlance=parseFloat(c.valor_lance||0.01);
-  const vlanceStr=vlance.toLocaleString('pt-BR',{minimumFractionDigits:2});
-  const proxLance=(vlance*2).toLocaleString('pt-BR',{minimumFractionDigits:2});
+  document.getElementById('proximoLance').textContent='R$ '+fmt(vlance);
+  document.getElementById('btnLanceText').textContent='🚀 Dar Lance (R$ '+fmt(vlance)+')';
 
-  let btnHtml='';
-  if(encerrada)btnHtml='<button class="btn-lance" disabled>🏁 Leilão Encerrado</button>';
-  else if(pausada)btnHtml='<button class="btn-lance" disabled>⏸️ Leilão Pausado</button>';
-  else if(!ativa)btnHtml='<button class="btn-lance" disabled>⏳ Leilão não iniciado</button>';
-  else btnHtml=`<button class="btn-lance" onclick="abrirPix()">🚀 Dar lance (R$ ${vlanceStr})</button>`;
+  const btn=document.getElementById('btnLance');
+  if(encerrada){btn.disabled=true;btn.innerHTML='<span>🏁 Leilão Encerrado</span>'}
+  else if(pausada){btn.disabled=true;btn.innerHTML='<span>⏸️ Leilão Pausado</span>'}
+  else if(!ativa){btn.disabled=true;btn.innerHTML='<span>⏳ Leilão não iniciado</span>'}
+  else{btn.disabled=false;btn.innerHTML='<span class="rocket">🚀</span><span id="btnLanceText">Dar Lance (R$ '+fmt(vlance)+')</span>'}
 
-  let timerHtml='';
-  if(ativa&&!encerrada){
-    timerHtml=`<div class="timer-box"><div class="label">⏱️ TEMPO RESTANTE</div><div class="time" id="timer">00:00:00</div><div class="lance-atual">💰 Lance atual: <span>R$ ${vlanceStr}</span></div></div>`;
-  }else if(encerrada){
-    timerHtml=`<div class="timer-box" style="background:linear-gradient(135deg,#64748b,#475569)"><div class="label">🏁 LEILÃO ENCERRADO</div><div class="time" style="font-size:18px">Obrigado por participar!</div></div>`;
-  }
-
-  const nomeExibicao=c.premio_nome||c.nome;
-  const descExibicao=c.premio_descricao||c.descricao||'';
-
-  // Desktop: grid de 2 colunas para cards principais
-  const isDesktop=window.innerWidth>=769;
-  const gridClass=isDesktop?'desktop-grid':'';
-
-  let html=`
-    <div class="${gridClass}">
-      <div class="card ${isDesktop?'':'desktop-full'}">
-        <div class="card-title">${nomeExibicao}</div>
-        <div class="card-subtitle">${descExibicao}</div>
-        <div class="prize-badge">🎯 PRÊMIO DO LEILÃO</div>
-        ${imgHtml}
-        <div class="meta-text">Meta: <strong>R$ ${meta}</strong></div>
-        <div id="winnerBox"></div>
-        ${timerHtml}
-        <div class="participants">📊 <strong id="partCount">0</strong> participantes</div>
-        <div class="proximo-lance">
-          <div class="label">💎 Próximo lance</div>
-          <div class="valor">R$ ${proxLance}</div>
-        </div>
-        ${btnHtml}
-        <div class="info-text">ℹ️ Cada lance aumenta R$ ${vlanceStr}</div>
-      </div>
-
-      <div class="card ${isDesktop?'':'desktop-full'}">
-        <div class="section-title">📊 Últimos Lances</div>
-        <div id="ultimosLances"><div class="empty-state"><p>Nenhum lance ainda.</p></div></div>
-        <button class="btn-ranking" onclick="toggleRanking()">🏆 Ver Ranking Completo (Top 10)</button>
-      </div>
-    </div>
-
-    <div class="card" id="rankingCard" style="display:none">
-      <div class="section-title">🏆 Ranking (Top 10)</div>
-      <div class="ranking-tabs">
-        <button class="rank-tab active" onclick="setRankTab(this,'maior')">Maior Lance</button>
-        <button class="rank-tab" onclick="setRankTab(this,'mais')">Mais Lances</button>
-        <button class="rank-tab" onclick="setRankTab(this,'menos')">Menos Lances</button>
-      </div>
-      <div id="rankingList"></div>
-    </div>
-  `;
-
-  showContent(html);
-  document.getElementById('topbar').style.display='flex';
+  document.getElementById('content').style.display='none';
+  document.getElementById('topbar').style.display='block';
+  document.getElementById('mainContainer').style.display='';
   document.getElementById('footer').style.display='block';
 
-  if(ativa&&c.data_fim)startTimer(new Date(c.data_fim));
+  if(ativa&&c.data_fim){startTimer(new Date(c.data_fim))}
+  else if(encerrada){document.getElementById('timer').textContent='ENCERRADO'}
 }
 
+/* ===== TIMER ===== */
 function startTimer(endDate){
   if(timerInterval)clearInterval(timerInterval);
   function update(){
     const diff=endDate-Date.now();
     const el=document.getElementById('timer');
     if(!el){clearInterval(timerInterval);return}
-    if(diff<=0){el.textContent='00:00:00';clearInterval(timerInterval);setTimeout(()=>location.reload(),2000);return}
+    if(diff<=0){el.textContent='00:00:00';clearInterval(timerInterval);document.getElementById('btnLance').disabled=true;document.getElementById('btnLance').innerHTML='<span>🏁 Leilão Encerrado</span>';return}
     const h=String(Math.floor(diff/3600000)).padStart(2,'0');
     const m=String(Math.floor((diff%3600000)/60000)).padStart(2,'0');
     const s=String(Math.floor((diff%60000)/1000)).padStart(2,'0');
@@ -378,6 +388,7 @@ function startTimer(endDate){
   update();timerInterval=setInterval(update,1000);
 }
 
+/* ===== LANCES ===== */
 async function loadLances(){
   if(!campanha)return;
   try{
@@ -387,40 +398,78 @@ async function loadLances(){
   }catch(e){}
 }
 
+function adicionarLanceSocket(l){
+  if(!l)return;
+  lances.unshift(l);
+  if(lances.length>50)lances.pop();
+  renderLances();renderRanking();renderWinner();
+  efeitoFloat('+1');
+  comboCount++;clearTimeout(comboTimer);
+  comboTimer=setTimeout(()=>comboCount=0,3000);
+  if(comboCount>=3)showToast('🔥 Combo x'+comboCount+'!','success');
+}
+
 function renderWinner(){
   const el=document.getElementById('winnerBox');
-  if(!el||!lances.length)return;
+  if(!lances.length){
+    document.getElementById('vencedorNome').textContent='Nenhum lance ainda';
+    document.getElementById('vencedorValor').textContent='R$ 0,00';
+    document.getElementById('vencedorData').textContent='Seja o primeiro!';
+    document.getElementById('lanceAtualValor').textContent='R$ 0,00';
+    return;
+  }
   const top=lances[0];
-  const data=new Date(top.created_at).toLocaleString('pt-BR');
-  el.innerHTML=`<div class="winner-box"><div class="trophy">🏆</div><div class="label">VENCEDOR ATUAL</div><div class="name">${top.nome_usuario||top.nome||'Anônimo'}</div><div class="value">R$ ${parseFloat(top.valor).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><div class="date">⏱️ ${data}</div></div>`;
+  document.getElementById('vencedorNome').textContent=top.nome_usuario||top.nome||'Anônimo';
+  document.getElementById('vencedorValor').textContent='R$ '+fmt(top.valor);
+  document.getElementById('vencedorData').textContent=fmtData(top.created_at);
+  document.getElementById('lanceAtualValor').textContent='R$ '+fmt(top.valor);
 }
 
 function renderLances(){
   const el=document.getElementById('ultimosLances');
-  if(!el)return;
-  if(!lances.length){el.innerHTML='<div class="empty-state"><p>Nenhum lance ainda.</p></div>';return}
-  let html='';
-  lances.slice(0,5).forEach(l=>{
-    const data=new Date(l.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-    const inicial=(l.nome_usuario||l.nome||'A').charAt(0).toUpperCase();
-    html+=`<div class="lance-item"><div class="lance-user"><div class="lance-avatar">${inicial}</div><div><div class="lance-name">${l.nome_usuario||l.nome||'Anônimo'}</div><div class="lance-time">${data}</div></div></div><div class="lance-valor">R$ ${parseFloat(l.valor).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>`;
-  });
-  el.innerHTML=html;
-  document.getElementById('partCount').textContent=lances.length;
+  if(!lances.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:16px;font-size:.9rem">Nenhum lance ainda. Seja o primeiro! 🚀</div>';return}
+  el.innerHTML=lances.slice(0,8).map((l,i)=>{
+    const nome=l.nome_usuario||l.nome||'Anônimo';
+    const ini=nome.charAt(0).toUpperCase();
+    return `<div class="lance-item" style="animation-delay:${i*40}ms">
+      <div class="lance-avatar">${ini}</div>
+      <div class="lance-info"><div class="lance-nome">${esc(nome)}</div><div class="lance-hora">${fmtData(l.created_at)}</div></div>
+      <div class="lance-valor">R$ ${fmt(l.valor)}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ===== RANKING ===== */
+function setRankTab(btn,tipo){
+  rankTab=tipo;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tipo));
+  renderRanking();
 }
 
 function renderRanking(){
   const el=document.getElementById('rankingList');
-  if(!el)return;
-  if(!lances.length){el.innerHTML='<div class="empty-state"><p>Nenhum lance ainda.</p></div>';return}
-  let html='';
-  lances.slice(0,10).forEach((l,i)=>{
-    const cls=i===0?'gold':i===1?'silver':i===2?'bronze':'';
-    const posCls=i===0?'gold':i===1?'silver':i===2?'bronze':'';
-    const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}º`;
-    html+=`<div class="rank-item ${cls}"><div class="rank-pos ${posCls}">${medal}</div><div class="rank-info"><div class="rank-name">${l.nome_usuario||l.nome||'Anônimo'}</div><div class="rank-detail">1 lances • R$ ${parseFloat(l.valor).toLocaleString('pt-BR',{minimumFractionDigits:2})} investido</div></div><div class="rank-valor">R$ ${parseFloat(l.valor).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>`;
-  });
-  el.innerHTML=html;
+  if(!lances.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:12px;font-size:.85rem">Aguardando lances...</div>';return}
+  let lista=[];
+  if(rankTab==='maior'){
+    const map={};
+    lances.forEach(l=>{const k=l.usuario_id||l.nome;if(!map[k]||l.valor>map[k].valor)map[k]=l});
+    lista=Object.values(map).sort((a,b)=>b.valor-a.valor);
+  }else if(rankTab==='mais'){
+    const map={};
+    lances.forEach(l=>{const k=l.usuario_id||l.nome;map[k]=(map[k]||0)+1});
+    lista=Object.entries(map).map(([nome,qtd])=>({nome,valor:qtd})).sort((a,b)=>b.valor-a.valor);
+  }else{
+    const map={};
+    lances.forEach(l=>{const k=l.usuario_id||l.nome;map[k]=(map[k]||0)+1});
+    lista=Object.entries(map).map(([nome,qtd])=>({nome,valor:qtd})).sort((a,b)=>a.valor-b.valor);
+  }
+  el.innerHTML=lista.slice(0,10).map((l,i)=>{
+    const pos=i+1;
+    const cls=pos===1?'rank-1':pos===2?'rank-2':pos===3?'rank-3':'rank-n';
+    const medal=pos===1?'🥇':pos===2?'🥈':pos===3?'🥉':pos;
+    const val=rankTab==='maior'?'R$ '+fmt(l.valor):l.valor+' lances';
+    return `<div class="ranking-item"><div class="rank-pos ${cls}">${medal}</div><div class="rank-name">${esc(l.nome_usuario||l.nome)}</div><div class="rank-valor">${val}</div></div>`;
+  }).join('');
 }
 
 function toggleRanking(){
@@ -430,21 +479,10 @@ function toggleRanking(){
   if(showFullRanking)el.scrollIntoView({behavior:'smooth'});
 }
 
-function setRankTab(btn,tipo){
-  document.querySelectorAll('.rank-tab').forEach(t=>t.classList.remove('active'));
-  btn.classList.add('active');
-  renderRanking();
-}
-
-function checkUser(){
-  const u=localStorage.getItem('lf_user');
-  if(u){
-    usuario=JSON.parse(u);
-    document.getElementById('headerUserName').textContent=usuario.nome||usuario.email;
-    return;
-  }
-  if(campanha&&campanha.status==='ativa')setTimeout(()=>document.getElementById('modalLogin').classList.add('active'),800);
-}
+/* ===== AÇÕES ===== */
+function abrirLogin(){document.getElementById('modalLogin').classList.add('open');document.getElementById('userNome').focus()}
+function fecharModal(e,id){if(e.target.id===id)fecharModalDirect(id)}
+function fecharModalDirect(id){document.getElementById(id).classList.remove('open')}
 
 async function entrarLeilao(){
   const nome=document.getElementById('userNome').value.trim();
@@ -452,50 +490,103 @@ async function entrarLeilao(){
   if(!nome||!email){showToast('Preencha nome e email','error');return}
   try{
     const res=await fetch(`${API}/api/usuarios`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nome,email})});
-    usuario=await res.json();localStorage.setItem('lf_user',JSON.stringify(usuario));
-    document.getElementById('modalLogin').classList.remove('active');
-    document.getElementById('headerUserName').textContent=usuario.nome||usuario.email;
-    showToast('🎉 Bem-vindo, '+nome+'!');
-  }catch(e){showToast('Erro ao entrar','error')}
+    usuario=await res.json();
+    localStorage.setItem('lf_user',JSON.stringify(usuario));
+    atualizarUIUsuario();
+    fecharModalDirect('modalLogin');
+    showToast('🎉 Bem-vindo, '+nome+'!','success');
+  }catch{showToast('Erro ao entrar','error')}
+}
+
+function checkUser(){
+  const u=localStorage.getItem('lf_user');
+  if(u){try{usuario=JSON.parse(u);atualizarUIUsuario()}catch{localStorage.removeItem('lf_user')}}
+  else if(campanha&&campanha.status==='ativa')setTimeout(()=>abrirLogin(),800);
+}
+
+function atualizarUIUsuario(){
+  if(!usuario)return;
+  document.getElementById('headerUserName').textContent=usuario.nome||usuario.email;
+  document.getElementById('headerUserName').classList.remove('hidden');
+  document.getElementById('btnSair').classList.remove('hidden');
+  document.getElementById('btnEntrarHeader').classList.add('hidden');
 }
 
 function sairLeilao(){
   localStorage.removeItem('lf_user');usuario=null;
-  document.getElementById('headerUserName').textContent='';
-  if(campanha&&campanha.status==='ativa')document.getElementById('modalLogin').classList.add('active');
+  document.getElementById('headerUserName').classList.add('hidden');
+  document.getElementById('btnSair').classList.add('hidden');
+  document.getElementById('btnEntrarHeader').classList.remove('hidden');
+  showToast('Você saiu','success');
+  if(campanha&&campanha.status==='ativa')setTimeout(()=>abrirLogin(),500);
 }
 
 function abrirPix(){
-  if(!usuario){document.getElementById('modalLogin').classList.add('active');return}
-  const valor=parseFloat(campanha.valor_lance||0.01).toLocaleString('pt-BR',{minimumFractionDigits:2});
-  document.getElementById('pixValor').textContent='R$ '+valor;
-  document.getElementById('modalPix').classList.add('active');
+  if(!usuario){abrirLogin();return}
+  if(!campanha)return;
+  const valor=parseFloat(campanha.valor_lance||0.01);
+  document.getElementById('pixValor').textContent='R$ '+fmt(valor);
+  const pix='00020126580014BR.GOV.BCB.PIX0136'+(campanha.pix_chave||'leilao@facil.com')+'5204000053039865405'+String(valor.toFixed(2)).replace('.','')+'5802BR5913Leilao Facil6009SAO PAULO62070503***6304';
+  document.getElementById('pixCode').textContent=pix;
+  document.getElementById('modalPix').classList.add('open');
 }
-function closePix(){document.getElementById('modalPix').classList.remove('active')}
+
+function closePix(){fecharModalDirect('modalPix')}
+
+function copiarPix(){
+  navigator.clipboard.writeText(document.getElementById('pixCode').textContent).then(()=>showToast('PIX copiado!','success'));
+}
 
 async function confirmarPagamento(){
   if(!usuario||!campanha)return;
+  closePix();
   try{
     const res=await fetch(`${API}/api/lances`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({campanha_id:campanha.id,usuario_id:usuario.id,valor:campanha.valor_lance})});
     if(res.status===401){
       localStorage.removeItem('lf_user');usuario=null;
-      closePix();showToast('Sessão expirada. Faça login novamente.','error');
-      setTimeout(()=>document.getElementById('modalLogin').classList.add('active'),500);
-      return;
+      showToast('Sessão expirada. Faça login novamente.','error');
+      setTimeout(()=>abrirLogin(),500);return;
     }
     if(!res.ok)throw new Error('Erro ao registrar lance');
-    closePix();showToast('✅ Lance confirmado com sucesso!');loadLances();
+    const l=await res.json();
+    showToast('✅ Lance confirmado!','success');
+    adicionarLanceSocket({...l,nome_usuario:usuario.nome,nome:usuario.nome});
   }catch(e){showToast(e.message,'error')}
 }
 
-function showToast(msg,type='success'){
-  const t=document.getElementById('toast');t.textContent=msg;
-  t.style.background=type==='error'?'#dc2626':'#1e293b';
-  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3500);
+function ampliarImagem(){
+  const src=document.getElementById('premioImg').src;
+  if(!src)return;
+  document.getElementById('imgAmpliada').src=src;
+  document.getElementById('modalImg').classList.add('open');
 }
 
-socket.on('novo_lance',(data)=>{if(campanha&&data.campanha_id==campanha.id)loadLances()});
-init();
+/* ===== EFEITOS ===== */
+function efeitoFloat(texto){
+  const el=document.createElement('div');
+  el.className='float-efx';el.textContent=texto;
+  el.style.left=(window.innerWidth/2+(Math.random()*60-30))+'px';
+  el.style.top=(window.innerHeight/2)+'px';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),1000);
+}
+
+let toastTimer;
+function showToast(msg,tipo){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast '+(tipo||'');
+  clearTimeout(toastTimer);
+  requestAnimationFrame(()=>t.classList.add('show'));
+  toastTimer=setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+/* ===== UTILS ===== */
+function fmt(n){return Number(n||0).toFixed(2).replace('.',',')}
+function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+function fmtData(iso){if(!iso)return'';const d=new Date(iso);return d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}
+
+/* ===== CLEANUP ===== */
+window.addEventListener('beforeunload',()=>{clearInterval(timerInterval);if(socket)socket.disconnect()});
 </script>
 </body>
 </html>
