@@ -304,7 +304,7 @@ input{font-family:inherit;outline:none}
 <script>
 /* ===== CONFIG ===== */
 const API='';
-const slug=window.location.pathname.replace(/^\/,'').split('?')[0]||'';
+const slug=window.location.pathname.substring(1).split('?')[0]||'';
 let socket,campanha=null,usuario=null,lances=[],timerInterval=null,showFullRanking=false,rankTab='maior';
 let comboCount=0,comboTimer=null,ultimoLanceId=0;
 
