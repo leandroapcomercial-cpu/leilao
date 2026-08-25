@@ -554,12 +554,67 @@ app.post('/api/lances', async (req, res) => {
   }
 });
 
-// SPA fallback para slugs
+// SPA fallback para slugs com Open Graph dinâmico
 app.get('/:slug', async (req, res) => {
-  if (req.params.slug.startsWith('api') || req.params.slug.startsWith('socket')) {
+  const slug = req.params.slug;
+  if (slug.startsWith('api') || slug.startsWith('socket') || slug.includes('.')) {
     return res.status(404).json({ erro: 'Not found' });
   }
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+
+  try {
+    // Busca campanha
+    const campResult = await pool.query('SELECT * FROM campanhas WHERE slug = $1', [slug]);
+    if (campResult.rows.length === 0) {
+      return res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    }
+
+    const camp = campResult.rows[0];
+
+    // Busca maior lance atual
+    const lanceResult = await pool.query(
+      'SELECT valor FROM lances WHERE campanha_id = $1 ORDER BY valor DESC LIMIT 1',
+      [camp.id]
+    );
+    const maiorLance = lanceResult.rows.length > 0 ? parseFloat(lanceResult.rows[0].valor) : 0;
+    const lanceStr = maiorLance.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+
+    const titulo = (camp.premio_nome || camp.nome) + ' | Leilão Fácil';
+    const descricao = camp.premio_descricao || camp.descricao || 'Lance e ganhe prêmios incríveis via PIX!';
+    const imagem = camp.premio_imagem || 'https://leilao-facil.onrender.com/og-default.jpg';
+    const url = `https://leilao-facil.onrender.com/${slug}`;
+
+    // Lê o index.html e injeta as meta tags OG no <head>
+    const fs = require('fs');
+    let html = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
+
+    const ogTags = `
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="${url}">
+    <meta property="og:title" content="${titulo}">
+    <meta property="og:description" content="🔥 Lance atual: R$ ${lanceStr} | ${descricao}">
+    <meta property="og:image" content="${imagem}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:site_name" content="Leilão Fácil">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="${url}">
+    <meta name="twitter:title" content="${titulo}">
+    <meta name="twitter:description" content="🔥 Lance atual: R$ ${lanceStr} | ${descricao}">
+    <meta name="twitter:image" content="${imagem}">
+    <meta name="description" content="🔥 Lance atual: R$ ${lanceStr} | ${descricao}">
+    <title>${titulo}</title>`;
+
+    // Substitui o <title> existente e injeta as OG tags antes de </head>
+    html = html.replace(/<title>.*?<\/title>/, '');
+    html = html.replace('</head>', ogTags + '
+</head>');
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
+  } catch (err) {
+    console.error('[OG ERROR]', err.message);
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  }
 });
 
 // Socket.IO
