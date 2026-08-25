@@ -341,6 +341,16 @@ function conectarSocket(){
 }
 
 /* ===== CAMPANHA ===== */
+function updateProximoLance(){
+  if(!campanha)return;
+  const vlance=parseFloat(campanha.valor_lance||0.01);
+  const prox=(lances.length+1)*vlance;
+  const proxStr='R$ '+fmt(prox);
+  document.getElementById('proximoLance').textContent=proxStr;
+  const btnTxt=document.getElementById('btnLanceText');
+  if(btnTxt)btnTxt.textContent='🚀 Dar Lance ('+proxStr+')';
+}
+
 function renderCampanha(){
   if(!campanha)return;
   const c=campanha;
@@ -354,9 +364,7 @@ function renderCampanha(){
   document.getElementById('metaValor').textContent='Meta: R$ '+fmt(c.meta_valor||0);
 
   const vlance=parseFloat(c.valor_lance||0.01);
-  const proxValor=(lances.length+1)*vlance;
-  document.getElementById('proximoLance').textContent='R$ '+fmt(proxValor);
-  document.getElementById('btnLanceText').textContent='🚀 Dar Lance (R$ '+fmt(proxValor)+')';
+  updateProximoLance();
 
   const btn=document.getElementById('btnLance');
   if(encerrada){btn.disabled=true;btn.innerHTML='<span>🏁 Leilão Encerrado</span>'}
@@ -395,7 +403,7 @@ async function loadLances(){
   try{
     const res=await fetch(`${API}/api/lances/${campanha.id}`);
     lances=await res.json();
-    renderLances();renderRanking();renderWinner();
+    renderLances();renderRanking();renderWinner();updateProximoLance();
   }catch(e){}
 }
 
@@ -404,12 +412,7 @@ function adicionarLanceSocket(l){
   lances.unshift(l);
   if(lances.length>50)lances.pop();
   renderLances();renderRanking();renderWinner();
-  // Atualiza próximo lance
-  const vlance=parseFloat(campanha.valor_lance||0.01);
-  const proxValor=(lances.length+1)*vlance;
-  document.getElementById('proximoLance').textContent='R$ '+fmt(proxValor);
-  const btnTxt=document.getElementById('btnLanceText');
-  if(btnTxt)btnTxt.textContent='🚀 Dar Lance (R$ '+fmt(proxValor)+')';
+  updateProximoLance();
   efeitoFloat('+1');
   comboCount++;clearTimeout(comboTimer);
   comboTimer=setTimeout(()=>comboCount=0,3000);
@@ -558,10 +561,7 @@ async function confirmarPagamento(){
     const l=await res.json();
     showToast('✅ Lance confirmado!','success');
     adicionarLanceSocket({...l,nome_usuario:usuario.nome,nome:usuario.nome});
-    // Atualiza próximo lance manualmente
-    const vl=parseFloat(campanha.valor_lance||0.01);
-    const prox=(lances.length+1)*vl;
-    document.getElementById('proximoLance').textContent='R$ '+fmt(prox);
+    updateProximoLance();
   }catch(e){showToast(e.message,'error')}
 }
 
