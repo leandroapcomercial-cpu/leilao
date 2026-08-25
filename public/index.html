@@ -344,7 +344,8 @@ function conectarSocket(){
 function updateProximoLance(){
   if(!campanha)return;
   const vlance=parseFloat(campanha.valor_lance||0.01);
-  const prox=(lances.length+1)*vlance;
+  const maxValor=lances.length>0?Math.max(...lances.map(l=>parseFloat(l.valor||0))):0;
+  const prox=maxValor+vlance;
   const proxStr='R$ '+fmt(prox);
   document.getElementById('proximoLance').textContent=proxStr;
   const btnTxt=document.getElementById('btnLanceText');
