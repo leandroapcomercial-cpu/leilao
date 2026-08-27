@@ -412,6 +412,8 @@ function adicionarLanceSocket(l){
   if(!l)return;
   lances.unshift(l);
   if(lances.length>50)lances.pop();
+  // Garante ordenação por valor DESC (maior primeiro)
+  lances.sort((a,b)=>parseFloat(b.valor||0)-parseFloat(a.valor||0));
   renderLances();renderRanking();renderWinner();
   updateProximoLance();
   efeitoFloat('+1');
@@ -429,7 +431,8 @@ function renderWinner(){
     document.getElementById('lanceAtualValor').textContent='R$ 0,00';
     return;
   }
-  const top=lances[0];
+  // Sempre pega o maior valor do array, independente da ordem
+  const top=lances.reduce((max,item)=>parseFloat(item.valor||0)>parseFloat(max.valor||0)?item:max,lances[0]);
   document.getElementById('vencedorNome').textContent=top.nome_usuario||top.nome||'Anônimo';
   document.getElementById('vencedorValor').textContent='R$ '+fmt(top.valor);
   document.getElementById('vencedorData').textContent=fmtData(top.created_at);
@@ -463,8 +466,8 @@ function renderRanking(){
   let lista=[];
   if(rankTab==='maior'){
     const map={};
-    lances.forEach(l=>{const k=l.usuario_id||l.nome;if(!map[k]||l.valor>map[k].valor)map[k]=l});
-    lista=Object.values(map).sort((a,b)=>b.valor-a.valor);
+    lances.forEach(l=>{const k=l.usuario_id||l.nome||'Anônimo';if(!map[k]||parseFloat(l.valor||0)>parseFloat(map[k].valor||0))map[k]=l});
+    lista=Object.values(map).sort((a,b)=>parseFloat(b.valor||0)-parseFloat(a.valor||0));
   }else if(rankTab==='mais'){
     const map={};
     lances.forEach(l=>{const k=l.usuario_id||l.nome;map[k]=(map[k]||0)+1});
