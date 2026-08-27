@@ -250,8 +250,10 @@ function renderCampanhas(){
       <td>R$ ${meta}</td><td>R$ ${arrec}</td>
       <td class="actions">
         <button class="btn btn-sm btn-info" onclick="editarCampanha(${c.id})">Editar</button>
-        ${c.status!=='ativa'?`<button class="btn btn-sm btn-success" onclick="acaoCampanha(${c.id},'ativar')">Ativar</button>`:''}
+        ${c.status==='pendente'?`<button class="btn btn-sm btn-success" onclick="acaoCampanha(${c.id},'ativar')">Ativar</button>`:''}
         ${c.status==='ativa'?`<button class="btn btn-sm btn-warning" onclick="acaoCampanha(${c.id},'pausar')">Pausar</button>`:''}
+        ${c.status==='pausada'?`<button class="btn btn-sm btn-success" onclick="acaoCampanha(${c.id},'play')">▶️ Play</button>`:''}
+        ${c.status!=='pendente'?`<button class="btn btn-sm btn-secondary" onclick="acaoCampanha(${c.id},'reset')">🔄 Reset</button>`:''}
         <button class="btn btn-sm btn-danger" onclick="excluirCampanha(${c.id})">Excluir</button>
       </td></tr>`;
   });
@@ -340,9 +342,10 @@ async function editarCampanha(id){
 }
 
 async function acaoCampanha(id,acao){
+  if(acao==='reset' && !confirm('⚠️ Tem certeza? Isso apaga TODOS os lances e zera o leilão, mantendo apenas as configurações.'))return;
   try{
     const res=await fetch(`${API}/api/campanhas/${id}/${acao}`,{method:'POST',headers:{'Authorization':'Bearer '+token}});
-    if(!res.ok)throw new Error('Erro');showToast(`Campanha ${acao} com sucesso!`);loadCampanhas();
+    if(!res.ok)throw new Error('Erro');showToast(`Campanha ${acao==='play'?'retomada':acao==='reset'?'reiniciada':acao} com sucesso!`);loadCampanhas();
   }catch(err){showToast('Erro na ação','error')}
 }
 

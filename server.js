@@ -143,6 +143,7 @@ async function runMigrations() {
   await addColumnIfMissing('campanhas', 'total_lances', 'INTEGER DEFAULT 0');
   await addColumnIfMissing('campanhas', 'visualizacoes', 'INTEGER DEFAULT 0');
   await addColumnIfMissing('campanhas', 'updated_at', 'TIMESTAMP DEFAULT NOW()');
+  await addColumnIfMissing('campanhas', 'tempo_restante', 'INTEGER');
 
   // Remove constraint antiga de status
   try { await pool.query(`ALTER TABLE campanhas DROP CONSTRAINT IF EXISTS campanhas_status_check`); } catch {}
@@ -403,7 +404,47 @@ app.post('/api/campanhas/:id/ativar', authenticate, async (req, res) => {
 
 app.post('/api/campanhas/:id/pausar', authenticate, async (req, res) => {
   try {
-    const result = await pool.query(`UPDATE campanhas SET status='pausada', updated_at=NOW() WHERE id=$1 RETURNING *`, [req.params.id]);
+    // Calcula segundos restantes antes de pausar
+    const camp = await pool.query('SELECT data_fim FROM campanhas WHERE id = $1', [req.params.id]);
+    let segundos = null;
+    if (camp.rows.length > 0 && camp.rows[0].data_fim) {
+      segundos = Math.max(0, Math.floor((new Date(camp.rows[0].data_fim) - Date.now()) / 1000));
+    }
+    const result = await pool.query(
+      `UPDATE campanhas SET status='pausada', tempo_restante=$2, updated_at=NOW() WHERE id=$1 RETURNING *`,
+      [req.params.id, segundos]
+    );
+    res.json(result.rows[0]);
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
+app.post('/api/campanhas/:id/play', authenticate, async (req, res) => {
+  try {
+    const camp = await pool.query('SELECT tempo_restante, duracao_horas FROM campanhas WHERE id = $1', [req.params.id]);
+    let dataFim = null;
+    if (camp.rows.length > 0 && camp.rows[0].tempo_restante) {
+      dataFim = new Date(Date.now() + camp.rows[0].tempo_restante * 1000);
+    } else if (camp.rows.length > 0) {
+      dataFim = new Date(Date.now() + (camp.rows[0].duracao_horas || 24) * 60 * 60 * 1000);
+    }
+    const result = await pool.query(
+      `UPDATE campanhas SET status='ativa', data_fim=$2, tempo_restante=NULL, updated_at=NOW() WHERE id=$1 RETURNING *`,
+      [req.params.id, dataFim]
+    );
+    res.json(result.rows[0]);
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
+app.post('/api/campanhas/:id/reset', authenticate, async (req, res) => {
+  try {
+    const cid = req.params.id;
+    // Deleta todos os lances
+    await pool.query('DELETE FROM lances WHERE campanha_id = $1', [cid]);
+    // Reseta campanha mantendo configurações
+    const result = await pool.query(
+      `UPDATE campanhas SET status='pendente', total_lances=0, arrecadado=0, data_fim=NULL, tempo_restante=NULL, visualizacoes=0, updated_at=NOW() WHERE id=$1 RETURNING *`,
+      [cid]
+    );
     res.json(result.rows[0]);
   } catch (err) { res.status(500).json({ erro: err.message }); }
 });
@@ -496,7 +537,7 @@ app.post('/api/lances', async (req, res) => {
       return res.status(400).json({ erro: 'Dados incompletos' });
     }
 
-    // Verifica se usuário existe
+    // Verifica se usuário existe (pode ter sido perdido no reset do banco)
     const userCheck = await pool.query('SELECT * FROM usuarios WHERE id = $1', [usuario_id]);
     if (userCheck.rows.length === 0) {
       console.log('[LANCE] Usuário não encontrado no banco. ID:', usuario_id);
@@ -510,42 +551,21 @@ app.post('/api/lances', async (req, res) => {
     if (c.status !== 'ativa') return res.status(400).json({ erro: 'Campanha não está ativa' });
     if (c.data_fim && new Date(c.data_fim) < new Date()) return res.status(400).json({ erro: 'Leilão finalizado' });
 
-    // Calcula valor do lance: (total_lances + 1) * valor_lance
-    // Ex: 0 lances → 1 * 0,01 = 0,01 | 1 lance → 2 * 0,01 = 0,02
-    const totalAtual = parseInt(c.total_lances || 0);
-    const valorLance = parseFloat(c.valor_lance || 0.01);
-    const valorNum = (totalAtual + 1) * valorLance;
-
+    const valorNum = parseFloat(valor);
     const result = await pool.query(
       'INSERT INTO lances (campanha_id, usuario_id, valor) VALUES ($1,$2,$3) RETURNING *',
       [campanha_id, usuario_id, valorNum]
     );
 
-    let dataFim = c.data_fim;
-    let primeiroLance = false;
-    if (!dataFim) {
-      dataFim = new Date(Date.now() + (c.duracao_horas || 24) * 60 * 60 * 1000);
-      await pool.query('UPDATE campanhas SET data_fim = $1, total_lances = total_lances + 1, arrecadado = arrecadado + $2 WHERE id = $3', [dataFim, valorNum, campanha_id]);
-      primeiroLance = true;
-    } else {
-      await pool.query('UPDATE campanhas SET total_lances = total_lances + 1, arrecadado = arrecadado + $1 WHERE id = $2', [valorNum, campanha_id]);
+    if (!c.data_fim) {
+      const dataFim = new Date(Date.now() + (c.duracao_horas || 24) * 60 * 60 * 1000);
+      await pool.query('UPDATE campanhas SET data_fim = $1 WHERE id = $2', [dataFim, campanha_id]);
     }
+
+    await pool.query('UPDATE campanhas SET total_lances = total_lances + 1, arrecadado = arrecadado + $1 WHERE id = $2', [valorNum, campanha_id]);
 
     const lanceData = { ...result.rows[0], nome_usuario: userCheck.rows[0].nome };
-
-    // Emite o lance para todos
     io.emit('novo_lance', { campanha_id, lance: lanceData });
-
-    // Se foi o primeiro lance, emite atualização da campanha com data_fim para iniciar o timer
-    if (primeiroLance) {
-      io.emit('campanha_atualizada', { 
-        id: campanha_id, 
-        data_fim: dataFim,
-        total_lances: totalAtual + 1,
-        arrecadado: parseFloat(c.arrecadado || 0) + valorNum
-      });
-    }
-
     console.log('[LANCE] Sucesso:', lanceData);
     res.json(lanceData);
   } catch (err) { 
@@ -554,66 +574,12 @@ app.post('/api/lances', async (req, res) => {
   }
 });
 
-// SPA fallback para slugs com Open Graph dinâmico
+// SPA fallback para slugs
 app.get('/:slug', async (req, res) => {
-  const slug = req.params.slug;
-  if (slug.startsWith('api') || slug.startsWith('socket') || slug.includes('.')) {
+  if (req.params.slug.startsWith('api') || req.params.slug.startsWith('socket')) {
     return res.status(404).json({ erro: 'Not found' });
   }
-
-  try {
-    // Busca campanha
-    const campResult = await pool.query('SELECT * FROM campanhas WHERE slug = $1', [slug]);
-    if (campResult.rows.length === 0) {
-      return res.sendFile(path.join(__dirname, 'public', 'index.html'));
-    }
-
-    const camp = campResult.rows[0];
-
-    // Busca maior lance atual
-    const lanceResult = await pool.query(
-      'SELECT valor FROM lances WHERE campanha_id = $1 ORDER BY valor DESC LIMIT 1',
-      [camp.id]
-    );
-    const maiorLance = lanceResult.rows.length > 0 ? parseFloat(lanceResult.rows[0].valor) : 0;
-    const lanceStr = maiorLance.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-
-    const titulo = (camp.premio_nome || camp.nome) + ' | Leilão Fácil';
-    const descricao = camp.premio_descricao || camp.descricao || 'Lance e ganhe prêmios incríveis via PIX!';
-    const imagem = camp.premio_imagem || 'https://leilao-facil.onrender.com/og-default.jpg';
-    const url = `https://leilao-facil.onrender.com/${slug}`;
-
-    // Lê o index.html e injeta as meta tags OG no <head>
-    const fs = require('fs');
-    let html = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
-
-    const ogTags = `
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="${url}">
-    <meta property="og:title" content="${titulo}">
-    <meta property="og:description" content="🔥 Lance atual: R$ ${lanceStr} | ${descricao}">
-    <meta property="og:image" content="${imagem}">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
-    <meta property="og:site_name" content="Leilão Fácil">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:url" content="${url}">
-    <meta name="twitter:title" content="${titulo}">
-    <meta name="twitter:description" content="🔥 Lance atual: R$ ${lanceStr} | ${descricao}">
-    <meta name="twitter:image" content="${imagem}">
-    <meta name="description" content="🔥 Lance atual: R$ ${lanceStr} | ${descricao}">
-    <title>${titulo}</title>`;
-
-    // Substitui o <title> existente e injeta as OG tags antes de </head>
-    html = html.replace(/<title>.*?<\/title>/, '');
-    html = html.replace('</head>', ogTags + '\n</head>');
-
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.send(html);
-  } catch (err) {
-    console.error('[OG ERROR]', err.message);
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-  }
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Socket.IO
