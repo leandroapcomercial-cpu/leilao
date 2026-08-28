@@ -279,15 +279,17 @@ input{font-family:inherit;outline:none}
 <div id="modalPix" class="modal-overlay" onclick="fecharModal(event,'modalPix')">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-header">
-      <span class="modal-title">💳 Confirmar Lance</span>
+      <span class="modal-title">💳 Pagamento via PIX</span>
       <button class="modal-close" onclick="fecharModalDirect('modalPix')">✕</button>
     </div>
     <div class="modal-body">
-      <p style="font-size:.9rem;color:var(--muted);margin-bottom:10px">Você está dando um lance de <strong id="pixValor" style="color:var(--danger)">R$ 0,00</strong></p>
-      <p style="font-size:.85rem;color:var(--muted);margin-bottom:10px">Escaneie o QR Code ou copie a chave:</p>
-      <div id="pixQR" style="text-align:center;margin-bottom:12px"></div>
+      <p style="font-size:.9rem;color:var(--muted);margin-bottom:10px">Valor do lance: <strong id="pixValor" style="color:var(--danger);font-size:1.2rem">R$ 0,00</strong></p>
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:10px">Escaneie o QR Code com seu banco:</p>
+      <div id="pixQR" style="text-align:center;margin-bottom:12px;min-height:200px;display:flex;align-items:center;justify-content:center"></div>
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:6px">Ou copie o código PIX:</p>
       <div class="pix-code" id="pixCode" onclick="copiarPix()"></div>
-      <button class="btn-success" onclick="confirmarPagamento()">✅ Já paguei — Confirmar Lance</button>
+      <button class="btn-success" onclick="confirmarPagamento()">✅ Já paguei — Verificar</button>
+      <p style="font-size:.75rem;color:var(--muted);text-align:center;margin-top:10px">⏳ Aguardando confirmação do Mercado Pago...</p>
     </div>
   </div>
 </div>
@@ -307,6 +309,7 @@ const API='';
 const slug=window.location.pathname.substring(1).split('?')[0]||'';
 let socket,campanha=null,usuario=null,lances=[],timerInterval=null,showFullRanking=false,rankTab='maior';
 let comboCount=0,comboTimer=null,ultimoLanceId=0;
+let pixPagamentoAtual=null,pixPollingInterval=null;
 
 /* ===== INIT ===== */
 document.addEventListener('DOMContentLoaded',()=>{
@@ -345,7 +348,9 @@ function updateProximoLance(){
   if(!campanha)return;
   const vlance=parseFloat(campanha.valor_lance||0.01);
   const maxValor=lances.length>0?Math.max(...lances.map(l=>parseFloat(l.valor||0))):0;
-  const prox=maxValor+vlance;
+  // Se não há lances, próximo = valor_lance (primeiro lance)
+  // Se há lances, próximo = maior + valor_lance
+  const prox=maxValor===0?vlance:maxValor+vlance;
   const proxStr='R$ '+fmt(prox);
   document.getElementById('proximoLance').textContent=proxStr;
   const btnTxt=document.getElementById('btnLanceText');
@@ -404,6 +409,8 @@ async function loadLances(){
   try{
     const res=await fetch(`${API}/api/lances/${campanha.id}`);
     lances=await res.json();
+    // Garante ordenação por valor DESC (maior primeiro)
+    lances.sort((a,b)=>parseFloat(b.valor||0)-parseFloat(a.valor||0));
     renderLances();renderRanking();renderWinner();updateProximoLance();
   }catch(e){}
 }
@@ -412,8 +419,6 @@ function adicionarLanceSocket(l){
   if(!l)return;
   lances.unshift(l);
   if(lances.length>50)lances.pop();
-  // Garante ordenação por valor DESC (maior primeiro)
-  lances.sort((a,b)=>parseFloat(b.valor||0)-parseFloat(a.valor||0));
   renderLances();renderRanking();renderWinner();
   updateProximoLance();
   efeitoFloat('+1');
@@ -466,8 +471,8 @@ function renderRanking(){
   let lista=[];
   if(rankTab==='maior'){
     const map={};
-    lances.forEach(l=>{const k=l.usuario_id||l.nome||'Anônimo';if(!map[k]||parseFloat(l.valor||0)>parseFloat(map[k].valor||0))map[k]=l});
-    lista=Object.values(map).sort((a,b)=>parseFloat(b.valor||0)-parseFloat(a.valor||0));
+    lances.forEach(l=>{const k=l.usuario_id||l.nome;if(!map[k]||l.valor>map[k].valor)map[k]=l});
+    lista=Object.values(map).sort((a,b)=>b.valor-a.valor);
   }else if(rankTab==='mais'){
     const map={};
     lances.forEach(l=>{const k=l.usuario_id||l.nome;map[k]=(map[k]||0)+1});
@@ -496,7 +501,14 @@ function toggleRanking(){
 /* ===== AÇÕES ===== */
 function abrirLogin(){document.getElementById('modalLogin').classList.add('open');document.getElementById('userNome').focus()}
 function fecharModal(e,id){if(e.target.id===id)fecharModalDirect(id)}
-function fecharModalDirect(id){document.getElementById(id).classList.remove('open')}
+function fecharModalDirect(id){
+  document.getElementById(id).classList.remove('open');
+  // Limpa polling do PIX ao fechar modal
+  if(id==='modalPix'&&pixPollingInterval){
+    clearInterval(pixPollingInterval);
+    pixPollingInterval=null;
+  }
+}
 
 async function entrarLeilao(){
   const nome=document.getElementById('userNome').value.trim();
@@ -538,11 +550,71 @@ function sairLeilao(){
 function abrirPix(){
   if(!usuario){abrirLogin();return}
   if(!campanha)return;
-  const valor=parseFloat(campanha.valor_lance||0.01);
-  document.getElementById('pixValor').textContent='R$ '+fmt(valor);
-  const pix='00020126580014BR.GOV.BCB.PIX0136'+(campanha.pix_chave||'leilao@facil.com')+'5204000053039865405'+String(valor.toFixed(2)).replace('.','')+'5802BR5913Leilao Facil6009SAO PAULO62070503***6304';
-  document.getElementById('pixCode').textContent=pix;
-  document.getElementById('modalPix').classList.add('open');
+
+  // Calcula valor do próximo lance localmente (para mostrar no botão)
+  const vlance=parseFloat(campanha.valor_lance||0.01);
+  const maxValor=lances.length>0?Math.max(...lances.map(l=>parseFloat(l.valor||0))):0;
+  const valorProximo=maxValor===0?vlance:maxValor+vlance;
+
+  // Mostra loading no botão
+  const btn=document.getElementById('btnLance');
+  const btnTextoOriginal=btn.innerHTML;
+  btn.disabled=true;
+  btn.innerHTML='<span class="rocket">⏳</span><span>Gerando PIX...</span>';
+
+  // Chama API para gerar PIX
+  fetch(`${API}/api/pix/gerar`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      campanha_id:campanha.id,
+      usuario_id:usuario.id,
+      nome:usuario.nome,
+      email:usuario.email
+    })
+  })
+  .then(r=>r.json())
+  .then(data=>{
+    btn.disabled=false;
+    btn.innerHTML=btnTextoOriginal;
+
+    if(!data.sucesso){
+      showToast(data.erro||'Erro ao gerar PIX','error');
+      return;
+    }
+
+    // Salva ID do pagamento para polling
+    pixPagamentoAtual={
+      id:data.pagamento_id,
+      mp_id:data.mp_payment_id,
+      valor:data.valor
+    };
+
+    // Atualiza modal com dados reais do MP
+    document.getElementById('pixValor').textContent='R$ '+fmt(data.valor);
+
+    // QR Code (imagem base64)
+    const qrEl=document.getElementById('pixQR');
+    if(data.qr_code_base64){
+      qrEl.innerHTML='<img src="data:image/png;base64,'+data.qr_code_base64+'" style="max-width:200px;border-radius:8px">';
+    }else{
+      qrEl.innerHTML='<div style="padding:20px;color:var(--muted)">QR Code não disponível</div>';
+    }
+
+    // Código copia-cola
+    document.getElementById('pixCode').textContent=data.copia_cola||data.qr_code||'Código não disponível';
+
+    // Mostra modal
+    document.getElementById('modalPix').classList.add('open');
+
+    // Inicia polling para verificar pagamento
+    iniciarPollingPix(data.pagamento_id);
+  })
+  .catch(err=>{
+    btn.disabled=false;
+    btn.innerHTML=btnTextoOriginal;
+    showToast('Erro ao gerar PIX: '+err.message,'error');
+  });
 }
 
 function closePix(){fecharModalDirect('modalPix')}
@@ -551,22 +623,80 @@ function copiarPix(){
   navigator.clipboard.writeText(document.getElementById('pixCode').textContent).then(()=>showToast('PIX copiado!','success'));
 }
 
-async function confirmarPagamento(){
-  if(!usuario||!campanha)return;
-  closePix();
-  try{
-    const res=await fetch(`${API}/api/lances`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({campanha_id:campanha.id,usuario_id:usuario.id,valor:campanha.valor_lance})});
-    if(res.status===401){
-      localStorage.removeItem('lf_user');usuario=null;
-      showToast('Sessão expirada. Faça login novamente.','error');
-      setTimeout(()=>abrirLogin(),500);return;
+// Polling para verificar status do pagamento PIX
+function iniciarPollingPix(pagamentoId){
+  if(pixPollingInterval)clearInterval(pixPollingInterval);
+
+  let tentativas=0;
+  const maxTentativas=120; // 2 minutos (a cada 1 segundo)
+
+  pixPollingInterval=setInterval(async ()=>{
+    tentativas++;
+
+    if(tentativas>maxTentativas){
+      clearInterval(pixPollingInterval);
+      pixPollingInterval=null;
+      showToast('⏰ Tempo de pagamento expirado. Tente novamente.','error');
+      fecharModalDirect('modalPix');
+      return;
     }
-    if(!res.ok)throw new Error('Erro ao registrar lance');
-    const l=await res.json();
-    showToast('✅ Lance confirmado!','success');
-    adicionarLanceSocket({...l,nome_usuario:usuario.nome,nome:usuario.nome});
-    updateProximoLance();
-  }catch(e){showToast(e.message,'error')}
+
+    try{
+      const res=await fetch(`${API}/api/pix/status/${pagamentoId}`);
+      const data=await res.json();
+
+      if(data.status==='approved'||data.status==='aprovado'){
+        clearInterval(pixPollingInterval);
+        pixPollingInterval=null;
+
+        // Fecha modal
+        fecharModalDirect('modalPix');
+
+        // Mostra sucesso
+        showToast('✅ Pagamento confirmado! Lance registrado.','success');
+
+        // O lance já foi registrado pelo webhook/backend e vai chegar via socket
+        // Mas se já veio na resposta, adiciona manualmente
+        if(data.lance&&data.lance.id){
+          adicionarLanceSocket({...data.lance,nome_usuario:usuario.nome,nome:usuario.nome});
+        }
+
+        updateProximoLance();
+      }
+    }catch(e){
+      console.log('[POLLING] Erro:',e.message);
+    }
+  },1000);
+}
+
+// Botão "Já paguei" - força verificação imediata
+async function confirmarPagamento(){
+  if(!pixPagamentoAtual){
+    showToast('Nenhum pagamento pendente','error');
+    return;
+  }
+
+  showToast('🔍 Verificando pagamento...','success');
+
+  try{
+    const res=await fetch(`${API}/api/pix/status/${pixPagamentoAtual.id}`);
+    const data=await res.json();
+
+    if(data.status==='approved'||data.status==='aprovado'){
+      clearInterval(pixPollingInterval);
+      pixPollingInterval=null;
+      fecharModalDirect('modalPix');
+      showToast('✅ Pagamento confirmado!','success');
+      if(data.lance&&data.lance.id){
+        adicionarLanceSocket({...data.lance,nome_usuario:usuario.nome,nome:usuario.nome});
+      }
+      updateProximoLance();
+    }else{
+      showToast('⏳ Pagamento ainda não confirmado. Aguarde ou tente novamente.','success');
+    }
+  }catch(e){
+    showToast('Erro ao verificar: '+e.message,'error');
+  }
 }
 
 function ampliarImagem(){

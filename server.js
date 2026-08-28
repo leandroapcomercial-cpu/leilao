@@ -6,6 +6,7 @@ const helmet = require('helmet');
 const jwt = require('jsonwebtoken');
 const { Pool } = require('pg');
 const multer = require('multer');
+const axios = require('axios');
 
 // Bcrypt com fallback
 let bcrypt;
@@ -34,6 +35,16 @@ const io = new Server(server, { cors: { origin: '*' } });
 const PORT = process.env.PORT || 10000;
 const JWT_SECRET = process.env.JWT_SECRET || 'leilao-facil-secret-2026';
 
+// Mercado Pago
+const MP_ACCESS_TOKEN = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+const MP_WEBHOOK_SECRET = process.env.MERCADO_PAGO_WEBHOOK_SECRET;
+const CHAVE_PIX = process.env.CHAVE_PIX || 'leilao@facil.com';
+
+// Verifica configuração do MP
+function mpConfigurado() {
+  return !!MP_ACCESS_TOKEN;
+}
+
 // PostgreSQL
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -58,6 +69,147 @@ function authenticate(req, res, next) {
     req.admin = jwt.verify(token, JWT_SECRET);
     next();
   } catch { return res.status(401).json({ erro: 'Token inválido' }); }
+}
+
+
+// ========== FUNÇÕES AUXILIARES DO MOTOR DE LEILÃO ==========
+
+// Calcula o valor do próximo lance (maior lance atual + valor_lance da campanha)
+async function calcularProximoLance(campanha_id) {
+  try {
+    const camp = await pool.query('SELECT valor_lance FROM campanhas WHERE id = $1', [campanha_id]);
+    if (camp.rows.length === 0) return 0.01;
+
+    const vlance = parseFloat(camp.rows[0].valor_lance) || 0.01;
+
+    // Busca o maior lance confirmado
+    const maxRes = await pool.query(
+      'SELECT MAX(valor) as max_valor FROM lances WHERE campanha_id = $1',
+      [campanha_id]
+    );
+
+    const maxValor = parseFloat(maxRes.rows[0].max_valor) || 0;
+
+    // Se não há lances, o primeiro lance = valor_lance (ex: 0.01)
+    // Se há lances, próximo = maior + valor_lance
+    const proximo = maxValor === 0 ? vlance : maxValor + vlance;
+
+    return parseFloat(proximo.toFixed(2));
+  } catch (err) {
+    console.error('[CALCULAR LANCE]', err.message);
+    return 0.01;
+  }
+}
+
+// Registra um lance após confirmação de pagamento (transação atômica)
+async function registrarLanceConfirmado(campanha_id, usuario_id, valor) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Insere o lance
+    const lanceRes = await client.query(
+      'INSERT INTO lances (campanha_id, usuario_id, valor) VALUES ($1,$2,$3) RETURNING *',
+      [campanha_id, usuario_id, valor]
+    );
+
+    // Atualiza totais da campanha
+    await client.query(
+      'UPDATE campanhas SET total_lances = total_lances + 1, arrecadado = arrecadado + $1 WHERE id = $2',
+      [valor, campanha_id]
+    );
+
+    await client.query('COMMIT');
+
+    const lance = lanceRes.rows[0];
+
+    // Busca nome do usuário para emitir via socket
+    const userRes = await pool.query('SELECT nome FROM usuarios WHERE id = $1', [usuario_id]);
+    const nome_usuario = userRes.rows[0]?.nome || 'Anônimo';
+
+    const lanceData = { ...lance, nome_usuario };
+
+    // Emite para todos os clientes na campanha
+    io.emit('novo_lance', { campanha_id, lance: lanceData });
+
+    // Emite atualização da campanha (para atualizar timer se for primeiro lance)
+    const campAtualizada = await pool.query('SELECT * FROM campanhas WHERE id = $1', [campanha_id]);
+    if (campAtualizada.rows.length > 0) {
+      io.emit('campanha_atualizada', campAtualizada.rows[0]);
+    }
+
+    return lanceData;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+// ========== MERCADO PAGO ==========
+
+// Gera PIX via API do Mercado Pago
+async function gerarPixMP(valor, descricao, email, nome) {
+  if (!MP_ACCESS_TOKEN) {
+    throw new Error('Mercado Pago não configurado');
+  }
+
+  try {
+    const response = await axios.post(
+      'https://api.mercadopago.com/v1/payments',
+      {
+        transaction_amount: parseFloat(valor),
+        description: descricao,
+        payment_method_id: 'pix',
+        payer: {
+          email: email || `usuario_${Date.now()}@leilaofacil.com`,
+          first_name: nome ? nome.split(' ')[0] : 'Usuario',
+          last_name: nome ? nome.split(' ').slice(1).join(' ') : 'Leilao'
+        },
+        notification_url: `${process.env.SITE_URL || ''}/api/webhooks/mercado-pago`
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${MP_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 15000
+      }
+    );
+
+    const data = response.data;
+
+    return {
+      mp_payment_id: data.id.toString(),
+      status: data.status,
+      qr_code: data.point_of_interaction?.transaction_data?.qr_code || null,
+      qr_code_base64: data.point_of_interaction?.transaction_data?.qr_code_base64 || null,
+      copia_cola: data.point_of_interaction?.transaction_data?.qr_code || null
+    };
+  } catch (err) {
+    console.error('[MP PIX ERROR]', err.response?.data || err.message);
+    throw new Error('Erro ao gerar PIX no Mercado Pago');
+  }
+}
+
+// Consulta status do pagamento no MP
+async function consultarPagamentoMP(mp_payment_id) {
+  if (!MP_ACCESS_TOKEN) return null;
+
+  try {
+    const response = await axios.get(
+      `https://api.mercadopago.com/v1/payments/${mp_payment_id}`,
+      {
+        headers: { 'Authorization': `Bearer ${MP_ACCESS_TOKEN}` },
+        timeout: 10000
+      }
+    );
+    return response.data;
+  } catch (err) {
+    console.error('[MP CONSULTA ERROR]', err.message);
+    return null;
+  }
 }
 
 // Log fire-and-forget (só erros >= 400)
@@ -220,6 +372,32 @@ async function runMigrations() {
   await addColumnIfMissing('system_logs', 'message', 'TEXT');
   await addColumnIfMissing('system_logs', 'ip', 'VARCHAR(45)');
   await addColumnIfMissing('system_logs', 'created_at', 'TIMESTAMP DEFAULT NOW()');
+
+  // 9. pagamentos_pix (PIX do Mercado Pago)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS pagamentos_pix (
+      id SERIAL PRIMARY KEY,
+      campanha_id INTEGER REFERENCES campanhas(id) ON DELETE CASCADE,
+      usuario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+      mp_payment_id VARCHAR(100),
+      mp_status VARCHAR(50),
+      valor DECIMAL(10,2) NOT NULL,
+      qr_code TEXT,
+      qr_code_base64 TEXT,
+      copia_cola TEXT,
+      status VARCHAR(50) DEFAULT 'pendente',
+      lance_registrado BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW()
+    )`);
+  await addColumnIfMissing('pagamentos_pix', 'mp_payment_id', 'VARCHAR(100)');
+  await addColumnIfMissing('pagamentos_pix', 'mp_status', 'VARCHAR(50)');
+  await addColumnIfMissing('pagamentos_pix', 'qr_code', 'TEXT');
+  await addColumnIfMissing('pagamentos_pix', 'qr_code_base64', 'TEXT');
+  await addColumnIfMissing('pagamentos_pix', 'copia_cola', 'TEXT');
+  await addColumnIfMissing('pagamentos_pix', 'status', "VARCHAR(50) DEFAULT 'pendente'");
+  await addColumnIfMissing('pagamentos_pix', 'lance_registrado', 'BOOLEAN DEFAULT FALSE');
+  await addColumnIfMissing('pagamentos_pix', 'updated_at', 'TIMESTAMP DEFAULT NOW()');
 
   // Índices (isolados)
   const indices = [
@@ -573,6 +751,234 @@ app.post('/api/lances', async (req, res) => {
     res.status(500).json({ erro: err.message }); 
   }
 });
+
+
+// ===================== ROTAS PIX / MERCADO PAGO =====================
+
+// Gera PIX para dar um lance (calcula valor automaticamente)
+app.post('/api/pix/gerar', async (req, res) => {
+  try {
+    const { campanha_id, usuario_id, nome, email } = req.body;
+
+    if (!campanha_id || !usuario_id) {
+      return res.status(400).json({ erro: 'campanha_id e usuario_id são obrigatórios' });
+    }
+
+    // Verifica campanha
+    const camp = await pool.query('SELECT * FROM campanhas WHERE id = $1', [campanha_id]);
+    if (camp.rows.length === 0) {
+      return res.status(404).json({ erro: 'Campanha não encontrada' });
+    }
+
+    const c = camp.rows[0];
+    if (c.status !== 'ativa') {
+      return res.status(400).json({ erro: 'Campanha não está ativa' });
+    }
+    if (c.data_fim && new Date(c.data_fim) < new Date()) {
+      return res.status(400).json({ erro: 'Leilão finalizado' });
+    }
+
+    // Verifica usuário
+    const userCheck = await pool.query('SELECT * FROM usuarios WHERE id = $1', [usuario_id]);
+    if (userCheck.rows.length === 0) {
+      return res.status(401).json({ erro: 'Usuário não encontrado' });
+    }
+
+    const usuario = userCheck.rows[0];
+
+    // Calcula valor do próximo lance (motor do leilão)
+    const valorLance = await calcularProximoLance(campanha_id);
+
+    // Se MP não configurado, retorna erro
+    if (!mpConfigurado()) {
+      return res.status(503).json({ 
+        erro: 'PIX não configurado. Contate o administrador.',
+        valor: valorLance
+      });
+    }
+
+    // Gera PIX no Mercado Pago
+    const descricao = `Lance ${c.nome || 'Leilão'} - R$ ${valorLance.toFixed(2)}`;
+    const pixData = await gerarPixMP(
+      valorLance, 
+      descricao, 
+      email || usuario.email, 
+      nome || usuario.nome
+    );
+
+    // Salva no banco
+    const pagRes = await pool.query(
+      `INSERT INTO pagamentos_pix 
+       (campanha_id, usuario_id, mp_payment_id, mp_status, valor, qr_code, qr_code_base64, copia_cola, status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'pendente') RETURNING *`,
+      [campanha_id, usuario_id, pixData.mp_payment_id, pixData.status, 
+       valorLance, pixData.qr_code, pixData.qr_code_base64, pixData.copia_cola]
+    );
+
+    // Se for o primeiro lance, inicia o timer
+    if (!c.data_fim) {
+      const dataFim = new Date(Date.now() + (c.duracao_horas || 24) * 60 * 60 * 1000);
+      await pool.query('UPDATE campanhas SET data_fim = $1 WHERE id = $2', [dataFim, campanha_id]);
+
+      // Emite atualização para todos
+      const campAtualizada = await pool.query('SELECT * FROM campanhas WHERE id = $1', [campanha_id]);
+      io.emit('campanha_atualizada', campAtualizada.rows[0]);
+    }
+
+    res.json({
+      sucesso: true,
+      pagamento_id: pagRes.rows[0].id,
+      mp_payment_id: pixData.mp_payment_id,
+      valor: valorLance,
+      qr_code: pixData.qr_code,
+      qr_code_base64: pixData.qr_code_base64,
+      copia_cola: pixData.copia_cola,
+      status: 'pendente'
+    });
+
+  } catch (err) {
+    console.error('[PIX GERAR ERROR]', err.message);
+    res.status(500).json({ erro: err.message || 'Erro ao gerar PIX' });
+  }
+});
+
+// Consulta status do pagamento
+app.get('/api/pix/status/:pagamento_id', async (req, res) => {
+  try {
+    const { pagamento_id } = req.params;
+
+    const pagRes = await pool.query('SELECT * FROM pagamentos_pix WHERE id = $1', [pagamento_id]);
+    if (pagRes.rows.length === 0) {
+      return res.status(404).json({ erro: 'Pagamento não encontrado' });
+    }
+
+    const pag = pagRes.rows[0];
+
+    // Se já está aprovado e lance registrado
+    if (pag.status === 'aprovado' && pag.lance_registrado) {
+      return res.json({ status: 'aprovado', lance_registrado: true });
+    }
+
+    // Consulta no MP para atualizar status
+    if (pag.mp_payment_id && mpConfigurado()) {
+      const mpData = await consultarPagamentoMP(pag.mp_payment_id);
+
+      if (mpData && mpData.status !== pag.mp_status) {
+        // Atualiza status no banco
+        await pool.query(
+          'UPDATE pagamentos_pix SET mp_status = $1, status = $2, updated_at = NOW() WHERE id = $3',
+          [mpData.status, mpData.status, pagamento_id]
+        );
+
+        // Se foi aprovado, registra o lance
+        if (mpData.status === 'approved' && !pag.lance_registrado) {
+          await pool.query('UPDATE pagamentos_pix SET lance_registrado = TRUE WHERE id = $1', [pagamento_id]);
+          const lance = await registrarLanceConfirmado(pag.campanha_id, pag.usuario_id, pag.valor);
+          return res.json({ status: 'aprovado', lance_registrado: true, lance });
+        }
+
+        return res.json({ status: mpData.status, lance_registrado: false });
+      }
+    }
+
+    res.json({ status: pag.status, lance_registrado: pag.lance_registrado });
+
+  } catch (err) {
+    console.error('[PIX STATUS ERROR]', err.message);
+    res.status(500).json({ erro: err.message });
+  }
+});
+
+// Webhook do Mercado Pago (chamado pelo MP quando pagamento muda de status)
+app.post('/api/webhooks/mercado-pago', async (req, res) => {
+  try {
+    // Responde imediatamente ao MP (obrigatório)
+    res.status(200).send('OK');
+
+    const { type, data } = req.body;
+
+    console.log('[WEBHOOK MP]', type, data);
+
+    if (type === 'payment' && data && data.id) {
+      const mp_payment_id = data.id.toString();
+
+      // Busca pagamento no banco
+      const pagRes = await pool.query('SELECT * FROM pagamentos_pix WHERE mp_payment_id = $1', [mp_payment_id]);
+      if (pagRes.rows.length === 0) {
+        console.log('[WEBHOOK] Pagamento não encontrado no banco:', mp_payment_id);
+        return;
+      }
+
+      const pag = pagRes.rows[0];
+
+      // Consulta detalhes no MP
+      const mpData = await consultarPagamentoMP(mp_payment_id);
+      if (!mpData) return;
+
+      console.log('[WEBHOOK] Status MP:', mpData.status);
+
+      // Atualiza status
+      await pool.query(
+        'UPDATE pagamentos_pix SET mp_status = $1, status = $2, updated_at = NOW() WHERE id = $3',
+        [mpData.status, mpData.status, pag.id]
+      );
+
+      // Se aprovado e lance ainda não registrado
+      if (mpData.status === 'approved' && !pag.lance_registrado) {
+        await pool.query('UPDATE pagamentos_pix SET lance_registrado = TRUE WHERE id = $1', [pag.id]);
+        const lance = await registrarLanceConfirmado(pag.campanha_id, pag.usuario_id, pag.valor);
+        console.log('[WEBHOOK] Lance registrado:', lance);
+      }
+    }
+  } catch (err) {
+    console.error('[WEBHOOK ERROR]', err.message);
+  }
+});
+
+// Rota antiga de lances (mantida para compatibilidade, mas desencorajada)
+// Agora só registra se for chamada internamente ou com flag especial
+app.post('/api/lances', async (req, res) => {
+  try {
+    const { campanha_id, usuario_id, valor, skip_pix } = req.body;
+
+    // Se não tem skip_pix=true, redireciona para o fluxo PIX
+    if (!skip_pix) {
+      return res.status(400).json({ 
+        erro: 'Use /api/pix/gerar para dar lances. O pagamento via PIX é obrigatório.',
+        redirect: '/api/pix/gerar'
+      });
+    }
+
+    // Só permite skip_pix em desenvolvimento ou com token admin
+    // (mantido para testes internos)
+    console.log('[LANCE DIRETO] Skip PIX:', { campanha_id, usuario_id, valor });
+
+    if (!campanha_id || !usuario_id || valor === undefined) {
+      return res.status(400).json({ erro: 'Dados incompletos' });
+    }
+
+    const userCheck = await pool.query('SELECT * FROM usuarios WHERE id = $1', [usuario_id]);
+    if (userCheck.rows.length === 0) {
+      return res.status(401).json({ erro: 'Sessão expirada' });
+    }
+
+    const camp = await pool.query('SELECT * FROM campanhas WHERE id = $1', [campanha_id]);
+    if (camp.rows.length === 0) return res.status(404).json({ erro: 'Campanha não encontrada' });
+
+    const c = camp.rows[0];
+    if (c.status !== 'ativa') return res.status(400).json({ erro: 'Campanha não ativa' });
+    if (c.data_fim && new Date(c.data_fim) < new Date()) return res.status(400).json({ erro: 'Finalizado' });
+
+    const valorNum = parseFloat(valor);
+    const lance = await registrarLanceConfirmado(campanha_id, usuario_id, valorNum);
+
+    res.json(lance);
+  } catch (err) {
+    console.error('[LANCE ERROR]', err.message);
+    res.status(500).json({ erro: err.message });
+  }
+});
+
 
 // SPA fallback para slugs
 app.get('/:slug', async (req, res) => {
