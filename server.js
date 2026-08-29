@@ -197,6 +197,11 @@ async function gerarPixMP(valor, descricao, email, nome) {
 async function consultarPagamentoMP(mp_payment_id) {
   if (!MP_ACCESS_TOKEN) return null;
 
+  // Não consulta IDs estáticos no MP
+  if (mp_payment_id && mp_payment_id.startsWith('STATIC_')) {
+    return null;
+  }
+
   try {
     const response = await axios.get(
       `https://api.mercadopago.com/v1/payments/${mp_payment_id}`,
@@ -207,6 +212,10 @@ async function consultarPagamentoMP(mp_payment_id) {
     );
     return response.data;
   } catch (err) {
+    // 404 é normal para pagamentos não encontrados, não loga como erro
+    if (err.response && err.response.status === 404) {
+      return null;
+    }
     console.error('[MP CONSULTA ERROR]', err.message);
     return null;
   }
@@ -793,10 +802,20 @@ app.post('/api/pix/gerar', async (req, res) => {
     // Calcula valor do próximo lance
     console.log('[PIX/GERAR] Calculando próximo lance...');
     const vlance = parseFloat(c.valor_lance) || 0.01;
-    const maxRes = await pool.query('SELECT MAX(valor) as max_valor FROM lances WHERE campanha_id = $1', [campanha_id]);
-    const maxValor = parseFloat(maxRes.rows[0].max_valor) || 0;
+
+    // Busca o maior lance (com CAST para garantir tipo numérico)
+    const maxRes = await pool.query(
+      'SELECT MAX(CAST(valor AS NUMERIC)) as max_valor FROM lances WHERE campanha_id = $1',
+      [campanha_id]
+    );
+    const maxValorRaw = maxRes.rows[0].max_valor;
+    const maxValor = maxValorRaw ? parseFloat(maxValorRaw) : 0;
+
+    // Se não há lances, primeiro lance = vlance
+    // Se há lances, próximo = maior + vlance
     const valorLance = maxValor === 0 ? vlance : parseFloat((maxValor + vlance).toFixed(2));
-    console.log('[PIX/GERAR] Valor calculado:', valorLance, '(max:', maxValor, '+ vlance:', vlance, ')');
+    console.log('[PIX/GERAR] Valor calculado:', valorLance, '| maxValor:', maxValor, '| vlance:', vlance);
+    console.log('[PIX/GERAR] maxValorRaw do banco:', maxValorRaw, '| tipo:', typeof maxValorRaw);
 
     // Gera PIX (estático se MP não configurado, real se configurado)
     let pixData;
@@ -804,18 +823,26 @@ app.post('/api/pix/gerar', async (req, res) => {
     if (mpConfigurado()) {
       console.log('[PIX/GERAR] Gerando PIX no Mercado Pago...');
       try {
+        const mpPayload = {
+          transaction_amount: valorLance,
+          description: `Lance ${c.nome || 'Leilão'}`,
+          payment_method_id: 'pix',
+          payer: {
+            email: req.body.email || `user_${usuario_id}@leilaofacil.com`,
+            first_name: req.body.nome ? req.body.nome.split(' ')[0] : 'Usuario',
+            last_name: req.body.nome ? req.body.nome.split(' ').slice(1).join(' ') : 'Leilao'
+          }
+        };
+
+        // Só adiciona notification_url se SITE_URL estiver configurada
+        const siteUrl = process.env.SITE_URL || process.env.RENDER_EXTERNAL_URL;
+        if (siteUrl && siteUrl.startsWith('http')) {
+          mpPayload.notification_url = `${siteUrl}/api/webhooks/mercado-pago`;
+        }
+
         const mpResponse = await axios.post(
           'https://api.mercadopago.com/v1/payments',
-          {
-            transaction_amount: valorLance,
-            description: `Lance ${c.nome || 'Leilão'}`,
-            payment_method_id: 'pix',
-            payer: {
-              email: req.body.email || `user_${usuario_id}@leilaofacil.com`,
-              first_name: req.body.nome ? req.body.nome.split(' ')[0] : 'Usuario',
-              last_name: req.body.nome ? req.body.nome.split(' ').slice(1).join(' ') : 'Leilao'
-            }
-          },
+          mpPayload,
           {
             headers: {
               'Authorization': `Bearer ${MP_ACCESS_TOKEN}`,
@@ -915,18 +942,37 @@ app.get('/api/pix/status/:pagamento_id', async (req, res) => {
       return res.json({ status: 'aprovado', lance_registrado: true });
     }
 
-    // Consulta no MP para atualizar status
-    if (pag.mp_payment_id && mpConfigurado()) {
+    // Se é PIX estático (mp_payment_id começa com STATIC_)
+    // Permite confirmação manual após 10 segundos (simulação para testes)
+    if (pag.mp_payment_id && pag.mp_payment_id.startsWith('STATIC_')) {
+      const segundosDesdeCriacao = (Date.now() - new Date(pag.created_at).getTime()) / 1000;
+
+      // Para testes: auto-aprova após 15 segundos
+      if (segundosDesdeCriacao > 15 && !pag.lance_registrado) {
+        console.log('[PIX/STATUS] Auto-aprovando PIX estático após', Math.round(segundosDesdeCriacao), 's');
+        await pool.query(
+          "UPDATE pagamentos_pix SET status = 'aprovado', mp_status = 'approved', updated_at = NOW() WHERE id = $1",
+          [pagamento_id]
+        );
+        await pool.query('UPDATE pagamentos_pix SET lance_registrado = TRUE WHERE id = $1', [pagamento_id]);
+
+        const lance = await registrarLanceConfirmado(pag.campanha_id, pag.usuario_id, pag.valor);
+        return res.json({ status: 'aprovado', lance_registrado: true, lance });
+      }
+
+      return res.json({ status: 'pendente', lance_registrado: false, segundos: Math.round(segundosDesdeCriacao) });
+    }
+
+    // Consulta no MP para atualizar status (só para IDs reais do MP)
+    if (pag.mp_payment_id && !pag.mp_payment_id.startsWith('STATIC_') && mpConfigurado()) {
       const mpData = await consultarPagamentoMP(pag.mp_payment_id);
 
       if (mpData && mpData.status !== pag.mp_status) {
-        // Atualiza status no banco
         await pool.query(
           'UPDATE pagamentos_pix SET mp_status = $1, status = $2, updated_at = NOW() WHERE id = $3',
           [mpData.status, mpData.status, pagamento_id]
         );
 
-        // Se foi aprovado, registra o lance
         if (mpData.status === 'approved' && !pag.lance_registrado) {
           await pool.query('UPDATE pagamentos_pix SET lance_registrado = TRUE WHERE id = $1', [pagamento_id]);
           const lance = await registrarLanceConfirmado(pag.campanha_id, pag.usuario_id, pag.valor);
