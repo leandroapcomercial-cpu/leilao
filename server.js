@@ -757,73 +757,126 @@ app.post('/api/lances', async (req, res) => {
 
 // Gera PIX para dar um lance (calcula valor automaticamente)
 app.post('/api/pix/gerar', async (req, res) => {
+  console.log('[PIX/GERAR] ========== INÍCIO ==========');
+  console.log('[PIX/GERAR] Body:', JSON.stringify(req.body));
+
   try {
-    const { campanha_id, usuario_id, nome, email } = req.body;
+    const { campanha_id, usuario_id } = req.body;
 
     if (!campanha_id || !usuario_id) {
+      console.log('[PIX/GERAR] ERRO: campos obrigatórios faltando');
       return res.status(400).json({ erro: 'campanha_id e usuario_id são obrigatórios' });
     }
 
     // Verifica campanha
+    console.log('[PIX/GERAR] Buscando campanha:', campanha_id);
     const camp = await pool.query('SELECT * FROM campanhas WHERE id = $1', [campanha_id]);
     if (camp.rows.length === 0) {
+      console.log('[PIX/GERAR] ERRO: campanha não encontrada');
       return res.status(404).json({ erro: 'Campanha não encontrada' });
     }
 
     const c = camp.rows[0];
+    console.log('[PIX/GERAR] Campanha:', c.nome, '| Status:', c.status);
+
     if (c.status !== 'ativa') {
       return res.status(400).json({ erro: 'Campanha não está ativa' });
     }
-    if (c.data_fim && new Date(c.data_fim) < new Date()) {
-      return res.status(400).json({ erro: 'Leilão finalizado' });
-    }
 
     // Verifica usuário
+    console.log('[PIX/GERAR] Buscando usuário:', usuario_id);
     const userCheck = await pool.query('SELECT * FROM usuarios WHERE id = $1', [usuario_id]);
     if (userCheck.rows.length === 0) {
       return res.status(401).json({ erro: 'Usuário não encontrado' });
     }
 
-    const usuario = userCheck.rows[0];
+    // Calcula valor do próximo lance
+    console.log('[PIX/GERAR] Calculando próximo lance...');
+    const vlance = parseFloat(c.valor_lance) || 0.01;
+    const maxRes = await pool.query('SELECT MAX(valor) as max_valor FROM lances WHERE campanha_id = $1', [campanha_id]);
+    const maxValor = parseFloat(maxRes.rows[0].max_valor) || 0;
+    const valorLance = maxValor === 0 ? vlance : parseFloat((maxValor + vlance).toFixed(2));
+    console.log('[PIX/GERAR] Valor calculado:', valorLance, '(max:', maxValor, '+ vlance:', vlance, ')');
 
-    // Calcula valor do próximo lance (motor do leilão)
-    const valorLance = await calcularProximoLance(campanha_id);
+    // Gera PIX (estático se MP não configurado, real se configurado)
+    let pixData;
 
-    // Se MP não configurado, retorna erro
-    if (!mpConfigurado()) {
-      return res.status(503).json({ 
-        erro: 'PIX não configurado. Contate o administrador.',
-        valor: valorLance
-      });
+    if (mpConfigurado()) {
+      console.log('[PIX/GERAR] Gerando PIX no Mercado Pago...');
+      try {
+        const mpResponse = await axios.post(
+          'https://api.mercadopago.com/v1/payments',
+          {
+            transaction_amount: valorLance,
+            description: `Lance ${c.nome || 'Leilão'}`,
+            payment_method_id: 'pix',
+            payer: {
+              email: req.body.email || `user_${usuario_id}@leilaofacil.com`,
+              first_name: req.body.nome ? req.body.nome.split(' ')[0] : 'Usuario',
+              last_name: req.body.nome ? req.body.nome.split(' ').slice(1).join(' ') : 'Leilao'
+            }
+          },
+          {
+            headers: {
+              'Authorization': `Bearer ${MP_ACCESS_TOKEN}`,
+              'Content-Type': 'application/json'
+            },
+            timeout: 15000
+          }
+        );
+
+        const mpData = mpResponse.data;
+        pixData = {
+          mp_payment_id: mpData.id.toString(),
+          status: mpData.status,
+          qr_code: mpData.point_of_interaction?.transaction_data?.qr_code || null,
+          qr_code_base64: mpData.point_of_interaction?.transaction_data?.qr_code_base64 || null,
+          copia_cola: mpData.point_of_interaction?.transaction_data?.qr_code || null
+        };
+        console.log('[PIX/GERAR] PIX MP gerado:', pixData.mp_payment_id);
+      } catch (mpErr) {
+        console.error('[PIX/GERAR] Erro MP:', mpErr.message);
+        // Fallback para estático em caso de erro no MP
+        pixData = null;
+      }
     }
 
-    // Gera PIX no Mercado Pago
-    const descricao = `Lance ${c.nome || 'Leilão'} - R$ ${valorLance.toFixed(2)}`;
-    const pixData = await gerarPixMP(
-      valorLance, 
-      descricao, 
-      email || usuario.email, 
-      nome || usuario.nome
-    );
+    // Se não gerou no MP, usa estático
+    if (!pixData) {
+      console.log('[PIX/GERAR] Usando PIX estático');
+      const fakeMpId = `STATIC_${Date.now()}_${Math.random().toString(36).substr(2,9)}`;
+      const pixCode = `00020126580014BR.GOV.BCB.PIX0136${CHAVE_PIX}5204000053039865405${String(valorLance.toFixed(2)).replace('.','')}5802BR5913Leilao Facil6009SAO PAULO62070503***6304`;
+      pixData = {
+        mp_payment_id: fakeMpId,
+        status: 'pending',
+        qr_code: pixCode,
+        qr_code_base64: null,
+        copia_cola: pixCode
+      };
+    }
 
     // Salva no banco
+    console.log('[PIX/GERAR] Salvando no banco...');
     const pagRes = await pool.query(
       `INSERT INTO pagamentos_pix 
        (campanha_id, usuario_id, mp_payment_id, mp_status, valor, qr_code, qr_code_base64, copia_cola, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'pendente') RETURNING *`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
       [campanha_id, usuario_id, pixData.mp_payment_id, pixData.status, 
-       valorLance, pixData.qr_code, pixData.qr_code_base64, pixData.copia_cola]
+       valorLance, pixData.qr_code, pixData.qr_code_base64, pixData.copia_cola, 'pendente']
     );
+
+    console.log('[PIX/GERAR] Pagamento salvo ID:', pagRes.rows[0].id);
 
     // Se for o primeiro lance, inicia o timer
     if (!c.data_fim) {
+      console.log('[PIX/GERAR] Primeiro lance - iniciando timer');
       const dataFim = new Date(Date.now() + (c.duracao_horas || 24) * 60 * 60 * 1000);
       await pool.query('UPDATE campanhas SET data_fim = $1 WHERE id = $2', [dataFim, campanha_id]);
-
-      // Emite atualização para todos
       const campAtualizada = await pool.query('SELECT * FROM campanhas WHERE id = $1', [campanha_id]);
       io.emit('campanha_atualizada', campAtualizada.rows[0]);
     }
+
+    console.log('[PIX/GERAR] ========== SUCESSO ==========');
 
     res.json({
       sucesso: true,
@@ -837,12 +890,15 @@ app.post('/api/pix/gerar', async (req, res) => {
     });
 
   } catch (err) {
-    console.error('[PIX GERAR ERROR]', err.message);
-    res.status(500).json({ erro: err.message || 'Erro ao gerar PIX' });
+    console.error('[PIX/GERAR] ========== ERRO ==========');
+    console.error('[PIX/GERAR]', err.message);
+    console.error('[PIX/GERAR] Stack:', err.stack);
+    res.status(500).json({ 
+      erro: err.message || 'Erro ao gerar PIX',
+      stack: err.stack
+    });
   }
-});
-
-// Consulta status do pagamento
+});// Consulta status do pagamento
 app.get('/api/pix/status/:pagamento_id', async (req, res) => {
   try {
     const { pagamento_id } = req.params;
@@ -994,10 +1050,38 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => console.log('[SOCKET] Desconectado:', socket.id));
 });
 
+
+// Cria tabela pagamentos_pix automaticamente se não existir (garantia extra)
+async function garantirTabelaPagamentosPix() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS pagamentos_pix (
+        id SERIAL PRIMARY KEY,
+        campanha_id INTEGER REFERENCES campanhas(id) ON DELETE CASCADE,
+        usuario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+        mp_payment_id VARCHAR(100),
+        mp_status VARCHAR(50),
+        valor DECIMAL(10,2) NOT NULL,
+        qr_code TEXT,
+        qr_code_base64 TEXT,
+        copia_cola TEXT,
+        status VARCHAR(50) DEFAULT 'pendente',
+        lance_registrado BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    console.log('[DB] Tabela pagamentos_pix verificada/criada');
+  } catch (err) {
+    console.error('[DB] Erro ao criar pagamentos_pix:', err.message);
+  }
+}
+
 // Inicialização
 (async () => {
   try {
     await runMigrations();
+    await garantirTabelaPagamentosPix();
     await cleanupLogs();
     setInterval(cleanupLogs, 24 * 60 * 60 * 1000);
     server.listen(PORT, () => console.log(`[SERVER] Porta ${PORT}`));
