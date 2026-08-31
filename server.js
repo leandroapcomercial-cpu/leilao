@@ -45,6 +45,13 @@ function mpConfigurado() {
   return !!MP_ACCESS_TOKEN;
 }
 
+// Log de diagnóstico no boot (não expõe o token, só confirma se foi carregado)
+console.log('[BOOT] NODE_ENV:', process.env.NODE_ENV || '(não definido)');
+console.log('[BOOT] MERCADO_PAGO_ACCESS_TOKEN:', MP_ACCESS_TOKEN
+  ? `carregado (${MP_ACCESS_TOKEN.slice(0,8)}... , ${MP_ACCESS_TOKEN.length} caracteres)`
+  : 'AUSENTE — PIX real não vai funcionar');
+console.log('[BOOT] SITE_URL/RENDER_EXTERNAL_URL:', process.env.SITE_URL || process.env.RENDER_EXTERNAL_URL || '(não definido)');
+
 // PostgreSQL
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -715,52 +722,14 @@ app.get('/api/lances/:campanha_id', async (req, res) => {
   } catch (err) { res.status(500).json({ erro: err.message }); }
 });
 
-app.post('/api/lances', async (req, res) => {
-  try {
-    const { campanha_id, usuario_id, valor } = req.body;
-    console.log('[LANCE] Payload:', { campanha_id, usuario_id, valor });
-
-    if (!campanha_id || !usuario_id || valor === undefined || valor === null) {
-      return res.status(400).json({ erro: 'Dados incompletos' });
-    }
-
-    // Verifica se usuário existe (pode ter sido perdido no reset do banco)
-    const userCheck = await pool.query('SELECT * FROM usuarios WHERE id = $1', [usuario_id]);
-    if (userCheck.rows.length === 0) {
-      console.log('[LANCE] Usuário não encontrado no banco. ID:', usuario_id);
-      return res.status(401).json({ erro: 'Sessão expirada. Faça login novamente.' });
-    }
-
-    const camp = await pool.query('SELECT * FROM campanhas WHERE id = $1', [campanha_id]);
-    if (camp.rows.length === 0) return res.status(404).json({ erro: 'Campanha não encontrada' });
-
-    const c = camp.rows[0];
-    if (c.status !== 'ativa') return res.status(400).json({ erro: 'Campanha não está ativa' });
-    if (c.data_fim && new Date(c.data_fim) < new Date()) return res.status(400).json({ erro: 'Leilão finalizado' });
-
-    const valorNum = parseFloat(valor);
-    const result = await pool.query(
-      'INSERT INTO lances (campanha_id, usuario_id, valor) VALUES ($1,$2,$3) RETURNING *',
-      [campanha_id, usuario_id, valorNum]
-    );
-
-    if (!c.data_fim) {
-      const dataFim = new Date(Date.now() + (c.duracao_horas || 24) * 60 * 60 * 1000);
-      await pool.query('UPDATE campanhas SET data_fim = $1 WHERE id = $2', [dataFim, campanha_id]);
-    }
-
-    await pool.query('UPDATE campanhas SET total_lances = total_lances + 1, arrecadado = arrecadado + $1 WHERE id = $2', [valorNum, campanha_id]);
-
-    const lanceData = { ...result.rows[0], nome_usuario: userCheck.rows[0].nome };
-    io.emit('novo_lance', { campanha_id, lance: lanceData });
-    console.log('[LANCE] Sucesso:', lanceData);
-    res.json(lanceData);
-  } catch (err) { 
-    console.error('[LANCE ERROR]', err.message); 
-    res.status(500).json({ erro: err.message }); 
-  }
-});
-
+// NOTA (v2.8): a rota POST /api/lances insegura que existia aqui (aceitava
+// o valor do lance direto do body, sem calcular no backend e sem exigir PIX)
+// foi REMOVIDA. Ela nunca era chamada pelo frontend (index.html só usa
+// GET /api/lances/:campanha_id para listar, e /api/pix/gerar para dar lance),
+// mas ficava exposta publicamente e permitia enviar valor arbitrário via API,
+// pulando o pagamento por completo. A única rota de escrita de lance agora é
+// a versão protegida logo abaixo (exige skip_pix=true, pensada só para testes
+// internos) e o fluxo oficial via /api/pix/gerar + confirmação de pagamento.
 
 // ===================== ROTAS PIX / MERCADO PAGO =====================
 
@@ -819,6 +788,7 @@ app.post('/api/pix/gerar', async (req, res) => {
 
     // Gera PIX (estático se MP não configurado, real se configurado)
     let pixData;
+    console.log('[PIX/GERAR] mpConfigurado():', mpConfigurado());
 
     if (mpConfigurado()) {
       console.log('[PIX/GERAR] Gerando PIX no Mercado Pago...');
@@ -862,15 +832,32 @@ app.post('/api/pix/gerar', async (req, res) => {
         };
         console.log('[PIX/GERAR] PIX MP gerado:', pixData.mp_payment_id);
       } catch (mpErr) {
-        console.error('[PIX/GERAR] Erro MP:', mpErr.message);
-        // Fallback para estático em caso de erro no MP
+        console.error('[PIX/GERAR] Erro MP - status:', mpErr.response?.status);
+        console.error('[PIX/GERAR] Erro MP - corpo:', JSON.stringify(mpErr.response?.data || {}));
+        console.error('[PIX/GERAR] Erro MP - mensagem:', mpErr.message);
+        // Em produção, NÃO cai para o PIX estático (que é auto-aprovado
+        // de graça mais abaixo) — isso daria lance grátis para o usuário
+        // se o Mercado Pago falhar. Melhor avisar e deixar tentar de novo.
+        if (process.env.NODE_ENV === 'production') {
+          console.error('[PIX/GERAR] Produção: abortando sem fallback estático');
+          return res.status(502).json({
+            erro: 'Não foi possível gerar o PIX no Mercado Pago. Tente novamente em instantes.'
+          });
+        }
+        // Fallback para estático (só fora de produção, para testes)
         pixData = null;
       }
     }
 
-    // Se não gerou no MP, usa estático
+    // PIX estático só é permitido fora de produção (fluxo de teste sem MP)
+    if (!pixData && process.env.NODE_ENV === 'production') {
+      console.error('[PIX/GERAR] Produção: Mercado Pago não configurado, sem fallback estático');
+      return res.status(503).json({ erro: 'Pagamento via PIX indisponível no momento. Tente novamente em instantes.' });
+    }
+
+    // Se não gerou no MP, usa estático (apenas dev/teste)
     if (!pixData) {
-      console.log('[PIX/GERAR] Usando PIX estático');
+      console.log('[PIX/GERAR] Usando PIX estático (modo teste)');
       const fakeMpId = `STATIC_${Date.now()}_${Math.random().toString(36).substr(2,9)}`;
       const pixCode = `00020126580014BR.GOV.BCB.PIX0136${CHAVE_PIX}5204000053039865405${String(valorLance.toFixed(2)).replace('.','')}5802BR5913Leilao Facil6009SAO PAULO62070503***6304`;
       pixData = {
@@ -947,6 +934,13 @@ app.get('/api/pix/status/:pagamento_id', async (req, res) => {
     if (pag.mp_payment_id && pag.mp_payment_id.startsWith('STATIC_')) {
       const segundosDesdeCriacao = (Date.now() - new Date(pag.created_at).getTime()) / 1000;
 
+      // Auto-aprovação automática só existe fora de produção (modo teste).
+      // Em produção não geramos mais pagamentos STATIC_ novos (ver /api/pix/gerar),
+      // então isso só afeta registros antigos e nunca dá lance de graça ao vivo.
+      if (process.env.NODE_ENV === 'production') {
+        return res.json({ status: 'pendente', lance_registrado: false, aviso: 'Confirmação manual necessária' });
+      }
+
       // Para testes: auto-aprova após 15 segundos
       if (segundosDesdeCriacao > 15 && !pag.lance_registrado) {
         console.log('[PIX/STATUS] Auto-aprovando PIX estático após', Math.round(segundosDesdeCriacao), 's');
@@ -974,9 +968,18 @@ app.get('/api/pix/status/:pagamento_id', async (req, res) => {
         );
 
         if (mpData.status === 'approved' && !pag.lance_registrado) {
-          await pool.query('UPDATE pagamentos_pix SET lance_registrado = TRUE WHERE id = $1', [pagamento_id]);
-          const lance = await registrarLanceConfirmado(pag.campanha_id, pag.usuario_id, pag.valor);
-          return res.json({ status: 'aprovado', lance_registrado: true, lance });
+          // UPDATE condicional: só "ganha" quem conseguir marcar lance_registrado
+          // de FALSE para TRUE. Se o webhook já tiver feito isso entre a leitura
+          // e aqui, rowCount vem 0 e não registramos o lance de novo.
+          const claim = await pool.query(
+            "UPDATE pagamentos_pix SET lance_registrado = TRUE WHERE id = $1 AND lance_registrado = FALSE",
+            [pagamento_id]
+          );
+          if (claim.rowCount > 0) {
+            const lance = await registrarLanceConfirmado(pag.campanha_id, pag.usuario_id, pag.valor);
+            return res.json({ status: 'aprovado', lance_registrado: true, lance });
+          }
+          return res.json({ status: 'aprovado', lance_registrado: true });
         }
 
         return res.json({ status: mpData.status, lance_registrado: false });
@@ -1025,11 +1028,18 @@ app.post('/api/webhooks/mercado-pago', async (req, res) => {
         [mpData.status, mpData.status, pag.id]
       );
 
-      // Se aprovado e lance ainda não registrado
+      // Se aprovado e lance ainda não registrado (claim atômico, ver /api/pix/status)
       if (mpData.status === 'approved' && !pag.lance_registrado) {
-        await pool.query('UPDATE pagamentos_pix SET lance_registrado = TRUE WHERE id = $1', [pag.id]);
-        const lance = await registrarLanceConfirmado(pag.campanha_id, pag.usuario_id, pag.valor);
-        console.log('[WEBHOOK] Lance registrado:', lance);
+        const claim = await pool.query(
+          "UPDATE pagamentos_pix SET lance_registrado = TRUE WHERE id = $1 AND lance_registrado = FALSE",
+          [pag.id]
+        );
+        if (claim.rowCount > 0) {
+          const lance = await registrarLanceConfirmado(pag.campanha_id, pag.usuario_id, pag.valor);
+          console.log('[WEBHOOK] Lance registrado:', lance);
+        } else {
+          console.log('[WEBHOOK] Lance já havia sido registrado (polling ganhou a corrida)');
+        }
       }
     }
   } catch (err) {
