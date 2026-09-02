@@ -189,7 +189,7 @@ input{font-family:inherit;outline:none}
     </div>
     <div class="flex aic g3">
       <span id="headerUserName" class="user-info hidden"></span>
-      <button id="btnAlterarNome" class="btn-sm btn-outline hidden" onclick="alterarNome()">Alterar</button>
+      <button id="btnAlterarNome" class="btn-sm btn-outline hidden" onclick="abrirAlterarNome()">Alterar</button>
       <button id="btnSair" class="btn-sm btn-outline hidden" onclick="sairLeilao()">Sair</button>
       <button id="btnEntrarHeader" class="btn-sm" style="background:var(--primary);color:#fff" onclick="abrirLogin()">Entrar</button>
     </div>
@@ -274,13 +274,14 @@ input{font-family:inherit;outline:none}
 <div id="modalLogin" class="modal-overlay" onclick="fecharModal(event,'modalLogin')">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-header">
-      <span class="modal-title">👋 Entrar no Leilão</span>
+      <span class="modal-title" id="modalLoginTitulo">👋 Entrar no Leilão</span>
       <button class="modal-close" onclick="fecharModalDirect('modalLogin')">✕</button>
     </div>
     <div class="modal-body">
       <input type="text" id="userNome" class="input-field" placeholder="Seu nome completo" maxlength="30">
       <input type="email" id="userEmail" class="input-field" placeholder="seu@email.com" maxlength="60">
-      <button class="btn-primary" onclick="entrarLeilao()">🚀 Entrar no Leilão</button>
+      <button class="btn-primary" id="modalLoginBtn" onclick="submitModalLogin()">🚀 Entrar no Leilão</button>
+      <p style="font-size:.72rem;color:var(--muted);margin-top:10px;line-height:1.4">🔒 Seus dados (nome e e-mail) são protegidos conforme a <strong>LGPD</strong> e usados apenas para identificar seus lances neste leilão. Ao continuar, você concorda com as <strong>políticas de participação do leilão</strong>.</p>
     </div>
   </div>
 </div>
@@ -512,7 +513,40 @@ function toggleRanking(){
 }
 
 /* ===== AÇÕES ===== */
-function abrirLogin(){document.getElementById('modalLogin').classList.add('open');document.getElementById('userNome').focus()}
+let modalLoginModo='entrar'; // 'entrar' | 'alterar'
+
+function abrirLogin(){
+  modalLoginModo='entrar';
+  document.getElementById('modalLoginTitulo').textContent='👋 Entrar no Leilão';
+  document.getElementById('modalLoginBtn').textContent='🚀 Entrar no Leilão';
+  document.getElementById('userNome').value='';
+  document.getElementById('userEmail').value='';
+  document.getElementById('userEmail').removeAttribute('readonly');
+  document.getElementById('userEmail').style.opacity='';
+  document.getElementById('modalLogin').classList.add('open');
+  document.getElementById('userNome').focus();
+}
+
+function abrirAlterarNome(){
+  if(!usuario)return;
+  modalLoginModo='alterar';
+  document.getElementById('modalLoginTitulo').textContent='✏️ Alterar Nome de Usuário';
+  document.getElementById('modalLoginBtn').textContent='💾 Salvar Alteração';
+  document.getElementById('userNome').value=usuario.nome||'';
+  document.getElementById('userEmail').value=usuario.email||'';
+  // Email fica travado: é a chave de identificação do usuário, não é alterável aqui
+  document.getElementById('userEmail').setAttribute('readonly','readonly');
+  document.getElementById('userEmail').style.opacity='.65';
+  document.getElementById('modalLogin').classList.add('open');
+  document.getElementById('userNome').focus();
+  document.getElementById('userNome').select();
+}
+
+function submitModalLogin(){
+  if(modalLoginModo==='alterar')return salvarAlterarNome();
+  return entrarLeilao();
+}
+
 function fecharModal(e,id){if(e.target.id===id)fecharModalDirect(id)}
 function fecharModalDirect(id){
   document.getElementById(id).classList.remove('open');
@@ -552,13 +586,11 @@ function atualizarUIUsuario(){
   document.getElementById('btnEntrarHeader').classList.add('hidden');
 }
 
-async function alterarNome(){
+async function salvarAlterarNome(){
   if(!usuario)return;
-  const novoNome=prompt('Novo nome de exibição:',usuario.nome||'');
-  if(novoNome===null)return; // cancelou
-  const nomeLimpo=novoNome.trim();
+  const nomeLimpo=document.getElementById('userNome').value.trim();
   if(!nomeLimpo){showToast('O nome não pode ficar vazio','error');return}
-  if(nomeLimpo===usuario.nome)return;
+  if(nomeLimpo===usuario.nome){fecharModalDirect('modalLogin');return}
   try{
     const res=await fetch(`${API}/api/usuarios/${usuario.id}/nome`,{
       method:'PUT',headers:{'Content-Type':'application/json'},
@@ -569,6 +601,7 @@ async function alterarNome(){
     usuario=data.usuario;
     localStorage.setItem('lf_user',JSON.stringify(usuario));
     atualizarUIUsuario();
+    fecharModalDirect('modalLogin');
     showToast('✅ Nome atualizado! Lances antigos continuam com o nome anterior.','success');
   }catch(e){showToast('Erro ao alterar nome: '+e.message,'error')}
 }
