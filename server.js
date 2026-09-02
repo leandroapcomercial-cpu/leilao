@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const { Pool } = require('pg');
 const multer = require('multer');
 const axios = require('axios');
+const { randomUUID } = require('crypto');
 
 // Bcrypt com fallback
 let bcrypt;
@@ -179,7 +180,8 @@ async function gerarPixMP(valor, descricao, email, nome) {
       {
         headers: {
           'Authorization': `Bearer ${MP_ACCESS_TOKEN}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'X-Idempotency-Key': randomUUID()
         },
         timeout: 15000
       }
@@ -816,7 +818,8 @@ app.post('/api/pix/gerar', async (req, res) => {
           {
             headers: {
               'Authorization': `Bearer ${MP_ACCESS_TOKEN}`,
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'X-Idempotency-Key': randomUUID()
             },
             timeout: 15000
           }
