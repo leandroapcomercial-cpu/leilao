@@ -515,12 +515,12 @@ function toggleRanking(){
 /* ===== AÇÕES ===== */
 let modalLoginModo='entrar'; // 'entrar' | 'alterar'
 
-function abrirLogin(){
+function abrirLogin(prefill){
   modalLoginModo='entrar';
-  document.getElementById('modalLoginTitulo').textContent='👋 Entrar no Leilão';
+  document.getElementById('modalLoginTitulo').textContent=prefill?'👋 Bem-vindo de volta!':'👋 Entrar no Leilão';
   document.getElementById('modalLoginBtn').textContent='🚀 Entrar no Leilão';
-  document.getElementById('userNome').value='';
-  document.getElementById('userEmail').value='';
+  document.getElementById('userNome').value=prefill?(prefill.nome||''):'';
+  document.getElementById('userEmail').value=prefill?(prefill.email||''):'';
   document.getElementById('userEmail').removeAttribute('readonly');
   document.getElementById('userEmail').style.opacity='';
   document.getElementById('modalLogin').classList.add('open');
@@ -573,8 +573,17 @@ async function entrarLeilao(){
 
 function checkUser(){
   const u=localStorage.getItem('lf_user');
-  if(u){try{usuario=JSON.parse(u);atualizarUIUsuario()}catch{localStorage.removeItem('lf_user')}}
-  else if(campanha&&campanha.status==='ativa')setTimeout(()=>abrirLogin(),800);
+  let salvo=null;
+  if(u){
+    try{salvo=JSON.parse(u);usuario=salvo;atualizarUIUsuario()}
+    catch{localStorage.removeItem('lf_user')}
+  }
+  // Sempre mostra o modal em toda campanha ativa (novo acesso OU atualização
+  // da página) — se já tiver usuário salvo, vem pré-preenchido para
+  // confirmação rápida; serve também como lembrete de LGPD a cada acesso.
+  if(campanha&&campanha.status==='ativa'){
+    setTimeout(()=>abrirLogin(salvo),800);
+  }
 }
 
 function atualizarUIUsuario(){
