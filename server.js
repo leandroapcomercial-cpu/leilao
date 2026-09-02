@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
+const fs = require('fs');
 const helmet = require('helmet');
 const jwt = require('jsonwebtoken');
 const { Pool } = require('pg');
@@ -1131,12 +1132,78 @@ app.post('/api/lances', async (req, res) => {
 });
 
 
-// SPA fallback para slugs
+// Escapa texto para uso seguro dentro de atributos HTML (evita quebrar a página
+// se o nome da campanha/prêmio tiver aspas, & etc.)
+function escapeHtmlAttr(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function fmtMoeda(v) {
+  return 'R$ ' + (parseFloat(v) || 0).toFixed(2).replace('.', ',');
+}
+
+// SPA fallback para slugs — injeta meta tags Open Graph dinâmicas por campanha
+// (necessário porque WhatsApp/Facebook/Twitter não executam JavaScript: eles só
+// leem o HTML puro que o servidor devolve, então isso tem que vir pronto aqui,
+// não pode depender do fetch que o index.html faz depois no navegador).
 app.get('/:slug', async (req, res) => {
-  if (req.params.slug.startsWith('api') || req.params.slug.startsWith('socket')) {
+  const slug = req.params.slug;
+  if (slug.startsWith('api') || slug.startsWith('socket')) {
     return res.status(404).json({ erro: 'Not found' });
   }
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+
+  const indexPath = path.join(__dirname, 'public', 'index.html');
+
+  try {
+    const campResult = await pool.query('SELECT * FROM campanhas WHERE slug = $1', [slug]);
+    if (campResult.rows.length === 0) {
+      // Slug não é de campanha nenhuma (ex: rota do próprio app) — serve normal
+      return res.sendFile(indexPath);
+    }
+    const c = campResult.rows[0];
+
+    const lanceRes = await pool.query('SELECT MAX(valor) as max_valor FROM lances WHERE campanha_id = $1', [c.id]);
+    const lanceAtual = parseFloat(lanceRes.rows[0]?.max_valor) || parseFloat(c.valor_lance) || 0.01;
+
+    const siteUrl = process.env.SITE_URL || process.env.RENDER_EXTERNAL_URL || `${req.protocol}://${req.get('host')}`;
+    const urlCanonica = `${siteUrl}/${slug}`;
+
+    let imagem = c.premio_imagem || '';
+    if (imagem && !imagem.startsWith('http')) {
+      imagem = `${siteUrl}${imagem.startsWith('/') ? '' : '/'}${imagem}`;
+    }
+
+    const titulo = escapeHtmlAttr(`${c.nome || 'Leilão'} — Leilão Fácil`);
+    const descricao = escapeHtmlAttr(
+      `Lance atual: ${fmtMoeda(lanceAtual)}${c.premio_nome ? ' • Prêmio: ' + c.premio_nome : ''}. Participe agora via PIX!`
+    );
+
+    let html = await fs.promises.readFile(indexPath, 'utf8');
+    html = html
+      .replace(/<meta property="og:title" content="[^"]*">/, `<meta property="og:title" content="${titulo}">`)
+      .replace(/<meta property="og:description" content="[^"]*">/, `<meta property="og:description" content="${descricao}">`)
+      .replace(/<meta property="og:image" content="[^"]*">/, `<meta property="og:image" content="${escapeHtmlAttr(imagem)}">`)
+      .replace(/<meta property="twitter:title" content="[^"]*">/, `<meta property="twitter:title" content="${titulo}">`)
+      .replace(/<meta property="twitter:description" content="[^"]*">/, `<meta property="twitter:description" content="${descricao}">`)
+      .replace(/<meta property="twitter:image" content="[^"]*">/, `<meta property="twitter:image" content="${escapeHtmlAttr(imagem)}">`)
+      .replace(/<title>[^<]*<\/title>/, `<title>${titulo}</title>`);
+    // og:url e canonical não existiam antes — adiciona junto do og:title
+    html = html.replace(
+      `<meta property="og:title" content="${titulo}">`,
+      `<meta property="og:url" content="${escapeHtmlAttr(urlCanonica)}">\n<meta property="og:title" content="${titulo}">`
+    );
+
+    res.set('Content-Type', 'text/html');
+    res.send(html);
+  } catch (err) {
+    console.error('[SLUG/OG] Erro ao gerar preview dinâmico:', err.message);
+    // Qualquer erro aqui não pode derrubar a página — cai no arquivo estático normal
+    res.sendFile(indexPath);
+  }
 });
 
 // Socket.IO
