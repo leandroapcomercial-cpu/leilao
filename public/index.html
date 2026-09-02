@@ -180,6 +180,7 @@ input{font-family:inherit;outline:none}
     </div>
     <div class="flex aic g3">
       <span id="headerUserName" class="user-info hidden"></span>
+      <button id="btnAlterarNome" class="btn-sm btn-outline hidden" onclick="alterarNome()">Alterar</button>
       <button id="btnSair" class="btn-sm btn-outline hidden" onclick="sairLeilao()">Sair</button>
       <button id="btnEntrarHeader" class="btn-sm" style="background:var(--primary);color:#fff" onclick="abrirLogin()">Entrar</button>
     </div>
@@ -417,6 +418,9 @@ async function loadLances(){
 
 function adicionarLanceSocket(l){
   if(!l)return;
+  // Evita duplicar o mesmo lance na tela (pode chegar tanto pelo socket
+  // quanto pela verificação direta do PIX, ou se o socket reenviar)
+  if(l.id!=null&&lances.some(x=>x.id===l.id))return;
   lances.unshift(l);
   if(lances.length>50)lances.pop();
   renderLances();renderRanking();renderWinner();
@@ -534,13 +538,36 @@ function atualizarUIUsuario(){
   if(!usuario)return;
   document.getElementById('headerUserName').textContent=usuario.nome||usuario.email;
   document.getElementById('headerUserName').classList.remove('hidden');
+  document.getElementById('btnAlterarNome').classList.remove('hidden');
   document.getElementById('btnSair').classList.remove('hidden');
   document.getElementById('btnEntrarHeader').classList.add('hidden');
+}
+
+async function alterarNome(){
+  if(!usuario)return;
+  const novoNome=prompt('Novo nome de exibição:',usuario.nome||'');
+  if(novoNome===null)return; // cancelou
+  const nomeLimpo=novoNome.trim();
+  if(!nomeLimpo){showToast('O nome não pode ficar vazio','error');return}
+  if(nomeLimpo===usuario.nome)return;
+  try{
+    const res=await fetch(`${API}/api/usuarios/${usuario.id}/nome`,{
+      method:'PUT',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email:usuario.email,novo_nome:nomeLimpo})
+    });
+    const data=await res.json();
+    if(!data.sucesso){showToast(data.erro||'Erro ao alterar nome','error');return}
+    usuario=data.usuario;
+    localStorage.setItem('lf_user',JSON.stringify(usuario));
+    atualizarUIUsuario();
+    showToast('✅ Nome atualizado! Lances antigos continuam com o nome anterior.','success');
+  }catch(e){showToast('Erro ao alterar nome: '+e.message,'error')}
 }
 
 function sairLeilao(){
   localStorage.removeItem('lf_user');usuario=null;
   document.getElementById('headerUserName').classList.add('hidden');
+  document.getElementById('btnAlterarNome').classList.add('hidden');
   document.getElementById('btnSair').classList.add('hidden');
   document.getElementById('btnEntrarHeader').classList.remove('hidden');
   showToast('Você saiu','success');
@@ -658,7 +685,7 @@ function iniciarPollingPix(pagamentoId){
         // O lance já foi registrado pelo webhook/backend e vai chegar via socket
         // Mas se já veio na resposta, adiciona manualmente
         if(data.lance&&data.lance.id){
-          adicionarLanceSocket({...data.lance,nome_usuario:usuario.nome,nome:usuario.nome});
+          adicionarLanceSocket(data.lance);
         }
 
         updateProximoLance();
@@ -688,7 +715,7 @@ async function confirmarPagamento(){
       fecharModalDirect('modalPix');
       showToast('✅ Pagamento confirmado!','success');
       if(data.lance&&data.lance.id){
-        adicionarLanceSocket({...data.lance,nome_usuario:usuario.nome,nome:usuario.nome});
+        adicionarLanceSocket(data.lance);
       }
       updateProximoLance();
     }else{

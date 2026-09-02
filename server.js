@@ -115,10 +115,14 @@ async function registrarLanceConfirmado(campanha_id, usuario_id, valor) {
   try {
     await client.query('BEGIN');
 
-    // Insere o lance
+    // Nome do usuário AGORA, congelado neste lance (renomear depois não altera isto)
+    const userRes = await client.query('SELECT nome FROM usuarios WHERE id = $1', [usuario_id]);
+    const nome_usuario = userRes.rows[0]?.nome || 'Anônimo';
+
+    // Insere o lance (já com o nome gravado)
     const lanceRes = await client.query(
-      'INSERT INTO lances (campanha_id, usuario_id, valor) VALUES ($1,$2,$3) RETURNING *',
-      [campanha_id, usuario_id, valor]
+      'INSERT INTO lances (campanha_id, usuario_id, usuario_nome, valor) VALUES ($1,$2,$3,$4) RETURNING *',
+      [campanha_id, usuario_id, nome_usuario, valor]
     );
 
     // Atualiza totais da campanha
@@ -130,11 +134,6 @@ async function registrarLanceConfirmado(campanha_id, usuario_id, valor) {
     await client.query('COMMIT');
 
     const lance = lanceRes.rows[0];
-
-    // Busca nome do usuário para emitir via socket
-    const userRes = await pool.query('SELECT nome FROM usuarios WHERE id = $1', [usuario_id]);
-    const nome_usuario = userRes.rows[0]?.nome || 'Anônimo';
-
     const lanceData = { ...lance, nome_usuario };
 
     // Emite para todos os clientes na campanha
@@ -336,6 +335,14 @@ async function runMigrations() {
       valor DECIMAL(10,2) NOT NULL,
       created_at TIMESTAMP DEFAULT NOW()
     )`);
+  // Nome do usuário congelado no momento do lance (não muda se o usuário
+  // renomear depois). Lances antigos (antes desta coluna existir) são
+  // preenchidos uma única vez com o nome atual — a partir daqui ficam fixos.
+  await addColumnIfMissing('lances', 'usuario_nome', 'VARCHAR(255)');
+  await pool.query(`
+    UPDATE lances l SET usuario_nome = u.nome
+    FROM usuarios u WHERE l.usuario_id = u.id AND l.usuario_nome IS NULL
+  `);
 
   // 5. pagamentos
   await pool.query(`
@@ -714,10 +721,39 @@ app.post('/api/usuarios', async (req, res) => {
   } catch (err) { res.status(500).json({ erro: err.message }); }
 });
 
+// Altera o nome de exibição do usuário. Mantém o mesmo usuario_id (não
+// cria um novo cadastro, não fragmenta ranking/histórico). Lances já
+// registrados guardam o nome antigo congelado (coluna lances.usuario_nome)
+// e continuam mostrando o nome de quando foram dados; só os lances NOVOS,
+// a partir de agora, usam o nome atualizado.
+app.put('/api/usuarios/:id/nome', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { email, novo_nome } = req.body;
+    const nomeLimpo = (novo_nome || '').trim();
+
+    if (!email) return res.status(400).json({ erro: 'Email é obrigatório para confirmar identidade' });
+    if (!nomeLimpo) return res.status(400).json({ erro: 'Informe o novo nome' });
+    if (nomeLimpo.length > 100) return res.status(400).json({ erro: 'Nome muito longo (máximo 100 caracteres)' });
+
+    const userCheck = await pool.query('SELECT * FROM usuarios WHERE id = $1 AND email = $2', [id, email]);
+    if (userCheck.rows.length === 0) {
+      return res.status(404).json({ erro: 'Usuário não encontrado (confira o e-mail usado no cadastro)' });
+    }
+
+    const result = await pool.query('UPDATE usuarios SET nome = $1 WHERE id = $2 RETURNING *', [nomeLimpo, id]);
+    console.log(`[USUARIO/NOME] Usuário ${id} renomeado para "${nomeLimpo}"`);
+    res.json({ sucesso: true, usuario: result.rows[0] });
+  } catch (err) {
+    console.error('[USUARIO/NOME] Erro:', err.message);
+    res.status(500).json({ erro: err.message });
+  }
+});
+
 app.get('/api/lances/:campanha_id', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT l.*, u.nome as nome_usuario FROM lances l JOIN usuarios u ON l.usuario_id = u.id WHERE l.campanha_id = $1 ORDER BY l.valor DESC, l.created_at ASC`,
+      `SELECT l.*, COALESCE(l.usuario_nome, u.nome) as nome_usuario FROM lances l JOIN usuarios u ON l.usuario_id = u.id WHERE l.campanha_id = $1 ORDER BY l.valor DESC, l.created_at ASC`,
       [req.params.campanha_id]
     );
     res.json(result.rows);
