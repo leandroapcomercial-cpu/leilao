@@ -711,6 +711,23 @@ app.get('/api/campanha/:slug', async (req, res) => {
   } catch (err) { res.status(500).json({ erro: err.message }); }
 });
 
+// Lista todos os usuários reais (contas), com estatísticas agregadas de
+// lances. Protegida por login admin, pois expõe e-mails cadastrados.
+app.get('/api/usuarios', authenticate, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT u.id, u.nome, u.email, u.created_at,
+             COUNT(l.id)::int as total_lances,
+             MAX(l.valor) as maior_lance
+      FROM usuarios u
+      LEFT JOIN lances l ON l.usuario_id = u.id
+      GROUP BY u.id, u.nome, u.email, u.created_at
+      ORDER BY total_lances DESC, u.created_at DESC
+    `);
+    res.json(result.rows);
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
 app.post('/api/usuarios', async (req, res) => {
   try {
     const { nome, email } = req.body;
@@ -762,16 +779,18 @@ app.get('/api/lances/:campanha_id', async (req, res) => {
 });
 
 // Ranking calculado direto no banco, sobre TODOS os lances da campanha (sem
-// limite de janela como a lista de "últimos lances" na tela). Usa o nome
-// ATUAL do usuário (não o nome congelado por lance) porque o ranking é sobre
-// a pessoa, e deve ficar sempre coerente após uma alteração de nome.
+// limite de janela como a lista de "últimos lances" na tela).
+// Agrupa pelo NOME usado em cada lance (usuario_nome, congelado no momento
+// do lance) — não pela conta/usuario_id. Ou seja: se a mesma pessoa jogou
+// com nomes diferentes, cada nome conta separado no ranking, do jeito que
+// aparece publicamente pra quem está acompanhando o leilão.
 app.get('/api/ranking/:campanha_id', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT u.id as usuario_id, u.nome as nome, MAX(l.valor) as maior_valor, COUNT(*)::int as total_lances
+      `SELECT COALESCE(l.usuario_nome, u.nome) as nome, MAX(l.valor) as maior_valor, COUNT(*)::int as total_lances
        FROM lances l JOIN usuarios u ON l.usuario_id = u.id
        WHERE l.campanha_id = $1
-       GROUP BY u.id, u.nome`,
+       GROUP BY COALESCE(l.usuario_nome, u.nome)`,
       [req.params.campanha_id]
     );
     const base = result.rows.map(r => ({ ...r, maior_valor: parseFloat(r.maior_valor) }));
