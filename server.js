@@ -761,6 +761,27 @@ app.get('/api/lances/:campanha_id', async (req, res) => {
   } catch (err) { res.status(500).json({ erro: err.message }); }
 });
 
+// Ranking calculado direto no banco, sobre TODOS os lances da campanha (sem
+// limite de janela como a lista de "últimos lances" na tela). Usa o nome
+// ATUAL do usuário (não o nome congelado por lance) porque o ranking é sobre
+// a pessoa, e deve ficar sempre coerente após uma alteração de nome.
+app.get('/api/ranking/:campanha_id', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT u.id as usuario_id, u.nome as nome, MAX(l.valor) as maior_valor, COUNT(*)::int as total_lances
+       FROM lances l JOIN usuarios u ON l.usuario_id = u.id
+       WHERE l.campanha_id = $1
+       GROUP BY u.id, u.nome`,
+      [req.params.campanha_id]
+    );
+    const base = result.rows.map(r => ({ ...r, maior_valor: parseFloat(r.maior_valor) }));
+    const maior = [...base].sort((a, b) => b.maior_valor - a.maior_valor).slice(0, 10);
+    const mais = [...base].sort((a, b) => b.total_lances - a.total_lances).slice(0, 10);
+    const menos = [...base].sort((a, b) => a.total_lances - b.total_lances).slice(0, 10);
+    res.json({ maior, mais, menos });
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
 // NOTA (v2.8): a rota POST /api/lances insegura que existia aqui (aceitava
 // o valor do lance direto do body, sem calcular no backend e sem exigir PIX)
 // foi REMOVIDA. Ela nunca era chamada pelo frontend (index.html só usa

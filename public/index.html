@@ -422,7 +422,8 @@ async function loadLances(){
     lances=await res.json();
     // Garante ordenação por valor DESC (maior primeiro)
     lances.sort((a,b)=>parseFloat(b.valor||0)-parseFloat(a.valor||0));
-    renderLances();renderRanking();renderWinner();updateProximoLance();
+    renderLances();renderWinner();updateProximoLance();
+    loadRanking();
   }catch(e){}
 }
 
@@ -433,8 +434,9 @@ function adicionarLanceSocket(l){
   if(l.id!=null&&lances.some(x=>x.id===l.id))return;
   lances.unshift(l);
   if(lances.length>50)lances.pop();
-  renderLances();renderRanking();renderWinner();
+  renderLances();renderWinner();
   updateProximoLance();
+  loadRanking();
   efeitoFloat('+1');
   comboCount++;clearTimeout(comboTimer);
   comboTimer=setTimeout(()=>comboCount=0,3000);
@@ -473,6 +475,17 @@ function renderLances(){
 }
 
 /* ===== RANKING ===== */
+let rankingData={maior:[],mais:[],menos:[]};
+
+async function loadRanking(){
+  if(!campanha)return;
+  try{
+    const res=await fetch(`${API}/api/ranking/${campanha.id}`);
+    rankingData=await res.json();
+    renderRanking();
+  }catch(e){}
+}
+
 function setRankTab(btn,tipo){
   rankTab=tipo;
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tipo));
@@ -481,27 +494,14 @@ function setRankTab(btn,tipo){
 
 function renderRanking(){
   const el=document.getElementById('rankingList');
-  if(!lances.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:12px;font-size:.85rem">Aguardando lances...</div>';return}
-  let lista=[];
-  if(rankTab==='maior'){
-    const map={};
-    lances.forEach(l=>{const k=l.usuario_id||l.nome;if(!map[k]||l.valor>map[k].valor)map[k]=l});
-    lista=Object.values(map).sort((a,b)=>b.valor-a.valor);
-  }else if(rankTab==='mais'){
-    const map={};
-    lances.forEach(l=>{const k=l.usuario_id||l.nome;map[k]=(map[k]||0)+1});
-    lista=Object.entries(map).map(([nome,qtd])=>({nome,valor:qtd})).sort((a,b)=>b.valor-a.valor);
-  }else{
-    const map={};
-    lances.forEach(l=>{const k=l.usuario_id||l.nome;map[k]=(map[k]||0)+1});
-    lista=Object.entries(map).map(([nome,qtd])=>({nome,valor:qtd})).sort((a,b)=>a.valor-b.valor);
-  }
-  el.innerHTML=lista.slice(0,10).map((l,i)=>{
+  const lista=rankingData[rankTab]||[];
+  if(!lista.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:12px;font-size:.85rem">Aguardando lances...</div>';return}
+  el.innerHTML=lista.map((l,i)=>{
     const pos=i+1;
     const cls=pos===1?'rank-1':pos===2?'rank-2':pos===3?'rank-3':'rank-n';
     const medal=pos===1?'🥇':pos===2?'🥈':pos===3?'🥉':pos;
-    const val=rankTab==='maior'?'R$ '+fmt(l.valor):l.valor+' lances';
-    return `<div class="ranking-item"><div class="rank-pos ${cls}">${medal}</div><div class="rank-name">${esc(l.nome_usuario||l.nome)}</div><div class="rank-valor">${val}</div></div>`;
+    const val=rankTab==='maior'?'R$ '+fmt(l.maior_valor):l.total_lances+' lances';
+    return `<div class="ranking-item"><div class="rank-pos ${cls}">${medal}</div><div class="rank-name">${esc(l.nome)}</div><div class="rank-valor">${val}</div></div>`;
   }).join('');
 }
 
