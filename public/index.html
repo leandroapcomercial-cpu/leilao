@@ -294,14 +294,14 @@ input{font-family:inherit;outline:none}
 </div>
 
 <!-- MODAL LOGIN -->
-<div id="modalLogin" class="modal-overlay" onclick="fecharModal(event,'modalLogin')">
-  <div class="modal" onclick="event.stopPropagation()">
+<div id="modalLogin" class="modal-overlay">
+  <div class="modal">
     <div class="modal-header">
       <span class="modal-title" id="modalLoginTitulo">👋 Entrar no Leilão</span>
       <button class="modal-close" onclick="fecharModalDirect('modalLogin')">✕</button>
     </div>
     <div class="modal-body">
-      <input type="text" id="userNome" class="input-field" placeholder="Seu nome completo" maxlength="30">
+      <input type="text" id="userNome" class="input-field" placeholder="Como você gostaria de ser chamado?" maxlength="30">
       <input type="email" id="userEmail" class="input-field" placeholder="seu@email.com" maxlength="60">
       <button class="btn-primary" id="modalLoginBtn" onclick="submitModalLogin()">🚀 Entrar no Leilão</button>
       <p style="font-size:.72rem;color:var(--muted);margin-top:10px;line-height:1.4">🔒 Seus dados (nome e e-mail) são protegidos conforme a <strong>LGPD</strong> e usados apenas para identificar seus lances neste leilão. Ao continuar, você concorda com as <strong>políticas de participação do leilão</strong>.</p>
