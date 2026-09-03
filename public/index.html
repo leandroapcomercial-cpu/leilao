@@ -175,6 +175,29 @@ input{font-family:inherit;outline:none}
   .timer-display{font-size:2rem}
   .btn-lance{font-size:1rem;padding:16px}
   .proximo-valor{font-size:1.3rem}
+
+  /* HEADER: tudo numa linha só, sem quebrar — reduz fontes/espaçamentos
+     pra caber, mas preserva o logo completo ("🏆 Leilão Fácil") intacto */
+  .header{padding:8px 8px}
+  .header-inner{gap:5px;flex-wrap:nowrap}
+  .header-inner .g2{gap:4px;flex-shrink:0}
+  .header-inner .g3{gap:4px;flex-shrink:1;min-width:0}
+  .logo{font-size:.82rem;white-space:nowrap;flex-shrink:0}
+  .badge-live{font-size:.56rem;padding:2px 6px;gap:3px;flex-shrink:0}
+  .badge-live::before{width:5px;height:5px}
+  .user-info{font-size:.65rem;max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .header-inner .btn-sm{padding:4px 6px;font-size:.62rem;white-space:nowrap}
+}
+
+@media(max-width:360px){
+  .header-inner{gap:4px}
+  .header-inner .g2{gap:3px}
+  .header-inner .g3{gap:3px}
+  .logo{font-size:.72rem}
+  .badge-live{font-size:.5rem;padding:2px 5px;gap:2px}
+  .badge-live::before{width:4px;height:4px}
+  .user-info{max-width:34px;font-size:.62rem}
+  .header-inner .btn-sm{padding:3px 5px;font-size:.58rem}
 }
 </style>
 </head>
