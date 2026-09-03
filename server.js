@@ -732,9 +732,22 @@ app.post('/api/usuarios', async (req, res) => {
   try {
     const { nome, email } = req.body;
     if (!nome || !email) return res.status(400).json({ erro: 'Nome e email obrigatórios' });
+    const nomeLimpo = nome.trim();
+
     let result = await pool.query('SELECT * FROM usuarios WHERE email = $1', [email]);
-    if (result.rows.length > 0) return res.json(result.rows[0]);
-    result = await pool.query('INSERT INTO usuarios (nome, email) VALUES ($1,$2) RETURNING *', [nome, email]);
+    if (result.rows.length > 0) {
+      const existente = result.rows[0];
+      // Se o nome digitado agora é diferente do salvo, atualiza — o modal de
+      // "Entrar" também serve como confirmação/edição de nome a cada acesso,
+      // então o que a pessoa digitou aqui tem que ser o que fica valendo
+      // (mesma conta/usuario_id, sem fragmentar histórico de lances).
+      if (nomeLimpo && nomeLimpo !== existente.nome) {
+        const upd = await pool.query('UPDATE usuarios SET nome = $1 WHERE id = $2 RETURNING *', [nomeLimpo, existente.id]);
+        return res.json(upd.rows[0]);
+      }
+      return res.json(existente);
+    }
+    result = await pool.query('INSERT INTO usuarios (nome, email) VALUES ($1,$2) RETURNING *', [nomeLimpo, email]);
     res.json(result.rows[0]);
   } catch (err) { res.status(500).json({ erro: err.message }); }
 });
