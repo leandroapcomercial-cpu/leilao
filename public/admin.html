@@ -92,10 +92,11 @@
 <div class="app" id="app">
   <div class="sidebar">
     <h2>⚙️ Admin</h2>
-    <div class="nav-item active" onclick="showSection('dashboard')">📊 Dashboard</div>
-    <div class="nav-item" onclick="showSection('campanhas')">🎯 Campanhas</div>
-    <div class="nav-item" onclick="showSection('logs')">📋 Logs do Sistema</div>
-    <div class="nav-item" onclick="showSection('config')">🔧 Configurações</div>
+    <div class="nav-item active" onclick="showSection('dashboard',this)">📊 Dashboard</div>
+    <div class="nav-item" onclick="showSection('campanhas',this)">🎯 Campanhas</div>
+    <div class="nav-item" onclick="showSection('usuarios',this)">👤 Usuários</div>
+    <div class="nav-item" onclick="showSection('logs',this)">📋 Logs do Sistema</div>
+    <div class="nav-item" onclick="showSection('config',this)">🔧 Configurações</div>
     <div class="nav-item" style="margin-top:40px;color:#fca5a5" onclick="logout()">🚪 Sair</div>
   </div>
   <div class="main">
@@ -111,6 +112,13 @@
     <div id="section-campanhas" style="display:none">
       <div class="header"><h1>Campanhas</h1><button class="btn btn-success btn-sm" onclick="openModal()">+ Nova Campanha</button></div>
       <div class="card"><div id="campanhasList"></div></div>
+    </div>
+    <div id="section-usuarios" style="display:none">
+      <div class="header"><h1>Usuários</h1><button class="btn btn-secondary btn-sm" onclick="loadUsuarios()">🔄 Atualizar</button></div>
+      <div class="card">
+        <p style="margin-bottom:12px;color:#64748b;font-size:.85rem">Uma linha por conta real (identificada pelo e-mail). Se o usuário mudou de nome, aqui aparece o nome atual — o histórico de nomes usados fica registrado nos lances de cada campanha.</p>
+        <div id="usuariosList"></div>
+      </div>
     </div>
     <div id="section-logs" style="display:none">
       <div class="header"><h1>Logs do Sistema</h1><button class="btn btn-secondary btn-sm" onclick="loadLogs(1)">🔄 Atualizar</button></div>
@@ -180,12 +188,27 @@
 
 <script>
 const API='';
-let token=localStorage.getItem('lf_token');
+let token=null; // Sempre exige login ao carregar a página — não reaproveita token salvo automaticamente
 let campanhas=[];
 let logsPage=1;
 let logsData={logs:[],pagination:{}};
 
-if(token){try{const p=JSON.parse(atob(token.split('.')[1]));if(p.exp*1000>Date.now())initApp()}catch(e){}}
+// ===== TIMEOUT DE INATIVIDADE (5 minutos) =====
+const INATIVIDADE_LIMITE_MS = 5*60*1000;
+let inatividadeTimer=null;
+
+function resetInatividadeTimer(){
+  if(!token)return; // só conta enquanto estiver logado
+  clearTimeout(inatividadeTimer);
+  inatividadeTimer=setTimeout(()=>{
+    showToast('Sessão encerrada por inatividade (5 min)','error');
+    setTimeout(()=>logout(),1200);
+  },INATIVIDADE_LIMITE_MS);
+}
+
+['click','keydown','mousemove','scroll','touchstart'].forEach(evt=>{
+  document.addEventListener(evt,()=>resetInatividadeTimer(),{passive:true});
+});
 
 async function fazerLogin(){
   const email=document.getElementById('loginEmail').value.trim();
@@ -194,7 +217,7 @@ async function fazerLogin(){
     const res=await fetch(`${API}/api/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,senha})});
     const data=await res.json();
     if(!res.ok)throw new Error(data.erro||'Erro no login');
-    token=data.token;localStorage.setItem('lf_token',token);initApp();
+    token=data.token;resetInatividadeTimer();initApp();
   }catch(err){showToast(err.message,'error')}
 }
 
@@ -206,15 +229,22 @@ function initApp(){
   loadCampanhas();showSection('dashboard');
 }
 
-function logout(){localStorage.removeItem('lf_token');location.reload()}
+function logout(){
+  token=null;
+  localStorage.removeItem('lf_token'); // limpa qualquer token de versões anteriores
+  clearTimeout(inatividadeTimer);
+  location.reload();
+}
 
-function showSection(id){
-  ['dashboard','campanhas','logs','config'].forEach(s=>document.getElementById('section-'+s).style.display='none');
+function showSection(id, el){
+  ['dashboard','campanhas','usuarios','logs','config'].forEach(s=>document.getElementById('section-'+s).style.display='none');
   document.getElementById('section-'+id).style.display='block';
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  event.target.classList.add('active');
+  const alvo=el||(window.event&&window.event.target);
+  if(alvo)alvo.classList.add('active');
   if(id==='logs')loadLogs(1);
   if(id==='dashboard')updateDashboard();
+  if(id==='usuarios')loadUsuarios();
 }
 
 async function loadCampanhas(){
@@ -355,6 +385,25 @@ async function excluirCampanha(id){
     const res=await fetch(`${API}/api/campanhas/${id}`,{method:'DELETE',headers:{'Authorization':'Bearer '+token}});
     if(!res.ok)throw new Error('Erro');showToast('Campanha excluída');loadCampanhas();
   }catch(err){showToast('Erro ao excluir','error')}
+}
+
+async function loadUsuarios(){
+  try{
+    const res=await fetch(`${API}/api/usuarios`,{headers:{'Authorization':'Bearer '+token}});
+    const usuarios=await res.json();renderUsuarios(usuarios);
+  }catch(err){document.getElementById('usuariosList').innerHTML='<div class="empty-state">Erro ao carregar usuários</div>'}
+}
+
+function renderUsuarios(usuarios){
+  const el=document.getElementById('usuariosList');
+  if(!usuarios||!usuarios.length){el.innerHTML='<div class="empty-state">Nenhum usuário cadastrado ainda.</div>';return}
+  let html='<table><thead><tr><th>ID</th><th>Nome atual</th><th>Email</th><th>Total de lances</th><th>Maior lance</th><th>Cadastro</th></tr></thead><tbody>';
+  usuarios.forEach(u=>{
+    const data=u.created_at?new Date(u.created_at).toLocaleString('pt-BR'):'-';
+    const maior=u.maior_lance!=null?('R$ '+parseFloat(u.maior_lance).toFixed(2).replace('.',',')):'-';
+    html+=`<tr><td>#${u.id}</td><td><strong>${u.nome||'-'}</strong></td><td class="truncate">${u.email||'-'}</td><td>${u.total_lances||0}</td><td>${maior}</td><td>${data}</td></tr>`;
+  });
+  html+='</tbody></table>';el.innerHTML=html;
 }
 
 async function loadLogs(page=1){
