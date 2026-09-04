@@ -10,6 +10,85 @@ const multer = require('multer');
 const axios = require('axios');
 const { randomUUID } = require('crypto');
 
+// ===================== E-MAIL (Brevo) =====================
+// Serviço de notificação por e-mail: confirmação de lance e aviso de
+// "você foi superado". Roda por trás do motor do leilão, sem nunca travar
+// ou derrubar o fluxo de lance/pagamento caso o envio falhe — e-mail é
+// best-effort, o leilão em si nunca depende dele para funcionar.
+const BREVO_API_KEY = process.env.BREVO_API_KEY;
+const BREVO_SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL || 'nao-responda@leilaofacil.com';
+const BREVO_SENDER_NOME = 'Leilão Fácil';
+
+function emailConfigurado() {
+  return !!BREVO_API_KEY;
+}
+
+async function enviarEmail(destinatarioEmail, destinatarioNome, assunto, textoSimples) {
+  if (!emailConfigurado()) {
+    console.log('[EMAIL] BREVO_API_KEY não configurada — pulando envio (motor do leilão segue normal)');
+    return;
+  }
+  try {
+    await axios.post('https://api.brevo.com/v3/smtp/email', {
+      sender: { name: BREVO_SENDER_NOME, email: BREVO_SENDER_EMAIL },
+      to: [{ email: destinatarioEmail, name: destinatarioNome || destinatarioEmail }],
+      subject: assunto,
+      textContent: textoSimples
+    }, {
+      headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
+      timeout: 10000
+    });
+    console.log(`[EMAIL] Enviado para ${destinatarioEmail}: "${assunto}"`);
+  } catch (err) {
+    // Nunca propaga o erro — e-mail falhar não pode derrubar o registro do lance
+    console.error('[EMAIL] Falha ao enviar:', err.response?.data || err.message);
+  }
+}
+
+function fmtMoedaEmail(v) {
+  return 'R$ ' + (parseFloat(v) || 0).toFixed(2).replace('.', ',');
+}
+
+function fmtDataEmail(d) {
+  return new Date(d).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+async function enviarEmailLanceConfirmado(usuarioEmail, usuarioNome, campanhaNome, premioNome, valor, dataHora) {
+  const texto = `Olá, ${usuarioNome}!
+
+Seu lance foi confirmado com sucesso no Leilão Fácil.
+
+Leilão: ${campanhaNome}
+Prêmio: ${premioNome || campanhaNome}
+Valor do seu lance: ${fmtMoedaEmail(valor)}
+Data e hora: ${fmtDataEmail(dataHora)}
+
+Você está atualmente na liderança! Se ninguém superar seu lance até o fim do leilão, o prêmio é seu.
+
+Fique de olho no seu e-mail: se alguém der um lance maior que o seu, vamos te avisar na hora para você ter a chance de superar de novo.
+
+Boa sorte!
+Equipe Leilão Fácil`;
+  await enviarEmail(usuarioEmail, usuarioNome, `✅ Lance confirmado: ${fmtMoedaEmail(valor)} — ${campanhaNome}`, texto);
+}
+
+async function enviarEmailLanceSuperado(usuarioEmail, usuarioNome, campanhaNome, premioNome, valorAntigo, valorNovo, campanhaSlug) {
+  const link = (process.env.SITE_URL || process.env.RENDER_EXTERNAL_URL || '') + '/' + (campanhaSlug || '');
+  const texto = `Olá, ${usuarioNome}!
+
+Seu lance no Leilão Fácil acabou de ser superado.
+
+Leilão: ${campanhaNome}
+Prêmio: ${premioNome || campanhaNome}
+Seu lance anterior: ${fmtMoedaEmail(valorAntigo)}
+Novo lance líder: ${fmtMoedaEmail(valorNovo)}
+
+Você não é mais o líder deste leilão. Se quiser continuar concorrendo ao prêmio, dê um novo lance para retomar a liderança.
+${link ? '\n' + link + '\n' : ''}
+Equipe Leilão Fácil`;
+  await enviarEmail(usuarioEmail, usuarioNome, `⚠️ Seu lance foi superado — ${campanhaNome}`, texto);
+}
+
 // Bcrypt com fallback
 let bcrypt;
 try { bcrypt = require('bcryptjs'); } catch (e) {
@@ -53,6 +132,9 @@ console.log('[BOOT] MERCADO_PAGO_ACCESS_TOKEN:', MP_ACCESS_TOKEN
   ? `carregado (${MP_ACCESS_TOKEN.slice(0,8)}... , ${MP_ACCESS_TOKEN.length} caracteres)`
   : 'AUSENTE — PIX real não vai funcionar');
 console.log('[BOOT] SITE_URL/RENDER_EXTERNAL_URL:', process.env.SITE_URL || process.env.RENDER_EXTERNAL_URL || '(não definido)');
+console.log('[BOOT] BREVO_API_KEY (e-mail):', BREVO_API_KEY
+  ? `carregado (${BREVO_API_KEY.slice(0,6)}... , ${BREVO_API_KEY.length} caracteres)`
+  : 'AUSENTE — notificações por e-mail desativadas (leilão continua funcionando normal)');
 
 // PostgreSQL
 const pool = new Pool({
@@ -117,8 +199,18 @@ async function registrarLanceConfirmado(campanha_id, usuario_id, valor) {
     await client.query('BEGIN');
 
     // Nome do usuário AGORA, congelado neste lance (renomear depois não altera isto)
-    const userRes = await client.query('SELECT nome FROM usuarios WHERE id = $1', [usuario_id]);
+    const userRes = await client.query('SELECT nome, email FROM usuarios WHERE id = $1', [usuario_id]);
     const nome_usuario = userRes.rows[0]?.nome || 'Anônimo';
+    const email_usuario = userRes.rows[0]?.email || null;
+
+    // Quem era o líder ANTES deste novo lance (para avisar que foi superado).
+    // Busca dentro da mesma transação, então reflete o estado real anterior.
+    const liderAnterior = await client.query(
+      `SELECT l.usuario_id, l.valor, u.email, u.nome
+       FROM lances l JOIN usuarios u ON l.usuario_id = u.id
+       WHERE l.campanha_id = $1 ORDER BY l.valor DESC LIMIT 1`,
+      [campanha_id]
+    );
 
     // Insere o lance (já com o nome gravado)
     const lanceRes = await client.query(
@@ -157,12 +249,46 @@ async function registrarLanceConfirmado(campanha_id, usuario_id, valor) {
       io.emit('campanha_atualizada', campAtualizada.rows[0]);
     }
 
+    // Dispara os e-mails (confirmação + aviso de superado) sem esperar —
+    // best-effort, nunca atrasa nem arrisca a resposta do lance já confirmado
+    notificarLancePorEmail(
+      campanha_id, email_usuario, nome_usuario, valor, lance.created_at,
+      liderAnterior.rows[0] || null, usuario_id
+    ).catch(e => console.error('[EMAIL] Erro geral ao notificar:', e.message));
+
     return lanceData;
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
   } finally {
     client.release();
+  }
+}
+
+// Dispara os e-mails de confirmação de lance e de "superado" (best-effort,
+// nunca bloqueia nem falha o fluxo principal do leilão)
+async function notificarLancePorEmail(campanha_id, email_usuario, nome_usuario, valor, dataHora, liderAnteriorRow, usuario_id) {
+  if (!emailConfigurado()) return;
+  try {
+    const campRes = await pool.query('SELECT nome, premio_nome, slug FROM campanhas WHERE id = $1', [campanha_id]);
+    const camp = campRes.rows[0];
+    if (!camp) return;
+
+    // E-mail de confirmação para quem acabou de dar o lance
+    if (email_usuario) {
+      enviarEmailLanceConfirmado(email_usuario, nome_usuario, camp.nome, camp.premio_nome, valor, dataHora)
+        .catch(e => console.error('[EMAIL] Erro confirmação:', e.message));
+    }
+
+    // E-mail de "superado" para quem era o líder antes — só se for uma
+    // pessoa DIFERENTE de quem acabou de dar o lance agora
+    const lider = liderAnteriorRow;
+    if (lider && lider.usuario_id !== usuario_id && lider.email) {
+      enviarEmailLanceSuperado(lider.email, lider.nome, camp.nome, camp.premio_nome, lider.valor, valor, camp.slug)
+        .catch(e => console.error('[EMAIL] Erro superado:', e.message));
+    }
+  } catch (e) {
+    console.error('[EMAIL] Erro ao preparar notificações:', e.message);
   }
 }
 
