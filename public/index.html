@@ -89,6 +89,7 @@ input{font-family:inherit;outline:none}
 @keyframes disputaPulse{0%,100%{transform:scale(1);box-shadow:0 2px 10px rgba(251,191,36,.5)}50%{transform:scale(1.05);box-shadow:0 2px 16px rgba(251,191,36,.75)}}
 @keyframes fadeInUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 .timer-display{font-size:2.6rem;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:2px;line-height:1;text-shadow:0 2px 4px rgba(0,0,0,.15)}
+.timer-display.com-dias{font-size:1.6rem;letter-spacing:1px}
 .lance-atual-label{font-size:.75rem;margin-top:8px;opacity:.9}
 .lance-atual-valor{font-size:1.3rem;font-weight:800;color:var(--gold);text-shadow:0 1px 2px rgba(0,0,0,.2);transition:transform .25s ease}
 .lance-atual-valor.pulse-update{animation:pulseValor .5s ease}
@@ -180,15 +181,18 @@ input{font-family:inherit;outline:none}
   .col-side{min-width:0}
   .header-inner{padding:0 24px}
   .timer-display{font-size:3.2rem}
+  .timer-display.com-dias{font-size:1.8rem}
   .btn-lance{padding:22px;font-size:1.25rem}
   .premio-img-wrap{max-width:280px}
 }
 @media(min-width:1200px){
   .container{grid-template-columns:1fr 420px}
   .timer-display{font-size:3.6rem}
+  .timer-display.com-dias{font-size:2.2rem}
 }
 @media(max-width:480px){
   .timer-display{font-size:2rem}
+  .timer-display.com-dias{font-size:1.4rem}
   .btn-lance{font-size:1rem;padding:16px}
   .proximo-valor{font-size:1.3rem}
 
@@ -216,6 +220,7 @@ input{font-family:inherit;outline:none}
   .conn-dot{width:5px;height:5px}
   .user-info{max-width:34px;font-size:.62rem}
   .header-inner .btn-sm{padding:3px 5px;font-size:.58rem}
+  .timer-display.com-dias{font-size:1.15rem}
 }
 </style>
 </head>
@@ -492,10 +497,13 @@ function startTimer(endDate){
     const el=document.getElementById('timer');
     if(!el){clearInterval(timerInterval);return}
     if(diff<=0){el.textContent='00:00:00';clearInterval(timerInterval);document.getElementById('btnLance').disabled=true;document.getElementById('btnLance').innerHTML='<span>🏁 Leilão Encerrado</span>';return}
-    const h=String(Math.floor(diff/3600000)).padStart(2,'0');
+    const dias=Math.floor(diff/86400000);
+    const h=String(Math.floor((diff%86400000)/3600000)).padStart(2,'0');
     const m=String(Math.floor((diff%3600000)/60000)).padStart(2,'0');
     const s=String(Math.floor((diff%60000)/1000)).padStart(2,'0');
-    el.textContent=`${h}:${m}:${s}`;
+    el.classList.toggle('com-dias',dias>0);
+    const rotuloDias=dias===1?'Dia':'Dias';
+    el.textContent=dias>0?`${dias} ${rotuloDias}  ${h}:${m}:${s}`:`${h}:${m}:${s}`;
   }
   update();timerInterval=setInterval(update,1000);
 }

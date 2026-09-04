@@ -132,6 +132,17 @@ async function registrarLanceConfirmado(campanha_id, usuario_id, valor) {
       [valor, campanha_id]
     );
 
+    // Se este é o primeiro lance CONFIRMADO da campanha (ainda sem data_fim),
+    // é agora que o timer começa a contar de verdade — não quando o PIX foi
+    // gerado, não quando a campanha foi ativada pelo admin. Só quando o
+    // pagamento realmente foi aprovado.
+    const campAntes = await client.query('SELECT data_fim, duracao_horas FROM campanhas WHERE id = $1', [campanha_id]);
+    if (campAntes.rows.length > 0 && !campAntes.rows[0].data_fim) {
+      const dataFim = new Date(Date.now() + (campAntes.rows[0].duracao_horas || 24) * 60 * 60 * 1000);
+      await client.query('UPDATE campanhas SET data_fim = $1 WHERE id = $2', [dataFim, campanha_id]);
+      console.log(`[LANCE] Primeiro lance confirmado da campanha ${campanha_id} — timer iniciado agora`);
+    }
+
     await client.query('COMMIT');
 
     const lance = lanceRes.rows[0];
@@ -624,17 +635,28 @@ app.post('/api/campanhas/:id/pausar', authenticate, async (req, res) => {
 
 app.post('/api/campanhas/:id/play', authenticate, async (req, res) => {
   try {
-    const camp = await pool.query('SELECT tempo_restante, duracao_horas FROM campanhas WHERE id = $1', [req.params.id]);
-    let dataFim = null;
-    if (camp.rows.length > 0 && camp.rows[0].tempo_restante) {
+    // Se existe tempo_restante salvo, é uma RETOMADA de pausa (leilão já
+    // tinha timer rodando de verdade, com lance confirmado) — recalcula o
+    // data_fim a partir de onde parou. Se NÃO existe, é ativação inicial:
+    // não inventa nenhum data_fim aqui. O timer só passa a existir quando o
+    // PRIMEIRO LANCE FOR CONFIRMADO (pagamento aprovado), em
+    // registrarLanceConfirmado() — isso evita o relógio correr sem ninguém
+    // ter pago nada ainda.
+    const camp = await pool.query('SELECT tempo_restante FROM campanhas WHERE id = $1', [req.params.id]);
+    let dataFim = undefined; // undefined = não mexe no campo
+    if (camp.rows.length > 0 && camp.rows[0].tempo_restante != null) {
       dataFim = new Date(Date.now() + camp.rows[0].tempo_restante * 1000);
-    } else if (camp.rows.length > 0) {
-      dataFim = new Date(Date.now() + (camp.rows[0].duracao_horas || 24) * 60 * 60 * 1000);
     }
-    const result = await pool.query(
-      `UPDATE campanhas SET status='ativa', data_fim=$2, tempo_restante=NULL, updated_at=NOW() WHERE id=$1 RETURNING *`,
-      [req.params.id, dataFim]
-    );
+
+    const result = dataFim !== undefined
+      ? await pool.query(
+          `UPDATE campanhas SET status='ativa', data_fim=$2, tempo_restante=NULL, updated_at=NOW() WHERE id=$1 RETURNING *`,
+          [req.params.id, dataFim]
+        )
+      : await pool.query(
+          `UPDATE campanhas SET status='ativa', tempo_restante=NULL, updated_at=NOW() WHERE id=$1 RETURNING *`,
+          [req.params.id]
+        );
     res.json(result.rows[0]);
   } catch (err) { res.status(500).json({ erro: err.message }); }
 });
@@ -973,15 +995,12 @@ app.post('/api/pix/gerar', async (req, res) => {
     );
 
     console.log('[PIX/GERAR] Pagamento salvo ID:', pagRes.rows[0].id);
-
-    // Se for o primeiro lance, inicia o timer
-    if (!c.data_fim) {
-      console.log('[PIX/GERAR] Primeiro lance - iniciando timer');
-      const dataFim = new Date(Date.now() + (c.duracao_horas || 24) * 60 * 60 * 1000);
-      await pool.query('UPDATE campanhas SET data_fim = $1 WHERE id = $2', [dataFim, campanha_id]);
-      const campAtualizada = await pool.query('SELECT * FROM campanhas WHERE id = $1', [campanha_id]);
-      io.emit('campanha_atualizada', campAtualizada.rows[0]);
-    }
+    // NOTA: o timer NÃO é iniciado aqui. Gerar um PIX (mostrar o QR Code)
+    // não significa que o pagamento vai acontecer — se o timer começasse
+    // aqui, bastaria clicar em "Dar Lance" para o relógio já começar a
+    // correr, mesmo sem ninguém pagar nada. O início do timer no primeiro
+    // lance real foi movido para registrarLanceConfirmado() (só roda
+    // quando o pagamento é efetivamente aprovado).
 
     console.log('[PIX/GERAR] ========== SUCESSO ==========');
 
