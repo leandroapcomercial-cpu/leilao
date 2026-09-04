@@ -1072,12 +1072,22 @@ app.post('/api/pix/gerar', async (req, res) => {
     if (mpConfigurado()) {
       console.log('[PIX/GERAR] Gerando PIX no Mercado Pago...');
       try {
+        // NOTA: envia um e-mail GENÉRICO ao Mercado Pago (não o e-mail real do
+        // participante) para evitar que o MP dispare, por conta própria, um
+        // e-mail com instruções de pagamento (QR Code/copia-e-cola) direto ao
+        // usuário — redundante, já que essas informações já aparecem na tela
+        // do Leilão Fácil. O e-mail REAL do usuário segue salvo no banco
+        // normalmente (tabela usuarios) e é o que alimenta os e-mails de
+        // confirmação/superado que o próprio Leilão Fácil envia via Brevo.
+        // Isso NÃO afeta o pagamento em si: o Mercado Pago só usa o e-mail
+        // do payer para fins de identificação/notificação, não para
+        // processar a transação PIX.
         const mpPayload = {
           transaction_amount: valorLance,
           description: `Lance ${c.nome || 'Leilão'}`,
           payment_method_id: 'pix',
           payer: {
-            email: req.body.email || `user_${usuario_id}@leilaofacil.com`,
+            email: `user_${usuario_id}@leilaofacil.com`,
             first_name: req.body.nome ? req.body.nome.split(' ')[0] : 'Usuario',
             last_name: req.body.nome ? req.body.nome.split(' ').slice(1).join(' ') : 'Leilao'
           }
