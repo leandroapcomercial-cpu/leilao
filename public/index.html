@@ -150,7 +150,11 @@ input{font-family:inherit;outline:none}
 .btn-primary:active{background:var(--primary-dark);transform:scale(.98)}
 .btn-success{width:100%;padding:14px;border-radius:var(--radius-sm);background:var(--success);color:#fff;font-size:1rem;font-weight:700;margin-top:8px;transition:var(--tr);border:none}
 .btn-success:active{background:var(--success-dark);transform:scale(.98)}
-.pix-code{background:#f0fdf4;border:2px dashed var(--success);border-radius:var(--radius-sm);padding:14px;text-align:center;font-family:monospace;font-size:1rem;font-weight:700;color:var(--success-dark);word-break:break-all;margin:12px 0;user-select:all}
+.pix-code{background:#f8fafc;border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;text-align:center;font-family:monospace;font-size:.95rem;font-weight:500;color:#2563eb;text-decoration:underline;word-break:break-all;margin:12px 0;user-select:all;cursor:pointer;transition:background .15s,color .15s}
+.pix-code:hover{background:#eff6ff;color:#1d4ed8}
+.pix-code:active{transform:scale(.99)}
+.pix-code.copiado{background:#dcfce7;color:var(--success-dark);text-decoration:none}
+.pix-code-hint{font-size:.72rem;color:var(--muted);text-align:center;margin:-4px 0 12px}
 
 /* ===== TOAST ===== */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:#1e293b;color:#fff;padding:12px 20px;border-radius:var(--radius-sm);font-size:.9rem;font-weight:600;z-index:300;opacity:0;transition:all .35s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;box-shadow:var(--shadow-lg)}
@@ -351,8 +355,9 @@ input{font-family:inherit;outline:none}
       <p style="font-size:.9rem;color:var(--muted);margin-bottom:10px">Valor do lance: <strong id="pixValor" style="color:var(--danger);font-size:1.2rem">R$ 0,00</strong></p>
       <p style="font-size:.85rem;color:var(--muted);margin-bottom:10px">Escaneie o QR Code com seu banco:</p>
       <div id="pixQR" style="text-align:center;margin-bottom:12px;min-height:200px;display:flex;align-items:center;justify-content:center"></div>
-      <p style="font-size:.85rem;color:var(--muted);margin-bottom:6px">Ou copie o código PIX:</p>
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:6px">👆 Toque para copiar o código PIX:</p>
       <div class="pix-code" id="pixCode" onclick="copiarPix()"></div>
+      <p class="pix-code-hint">📋 Cole no app do seu banco para pagar</p>
       <button class="btn-success" onclick="confirmarPagamento()">✅ Já paguei — Verificar</button>
       <p style="font-size:.75rem;color:var(--muted);text-align:center;margin-top:10px">⏳ Aguardando confirmação do Mercado Pago...</p>
     </div>
@@ -823,7 +828,12 @@ function abrirPix(){
 function closePix(){fecharModalDirect('modalPix')}
 
 function copiarPix(){
-  navigator.clipboard.writeText(document.getElementById('pixCode').textContent).then(()=>showToast('PIX copiado!','success'));
+  const el=document.getElementById('pixCode');
+  navigator.clipboard.writeText(el.textContent).then(()=>{
+    showToast('✅ PIX copiado! Cole no app do seu banco.','success');
+    el.classList.add('copiado');
+    setTimeout(()=>el.classList.remove('copiado'),1200);
+  });
 }
 
 // Polling para verificar status do pagamento PIX
