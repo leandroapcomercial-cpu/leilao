@@ -60,9 +60,10 @@ input{font-family:inherit;outline:none}
 /* ===== CARD ===== */
 .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:12px;contain:layout style paint}
 .card-premio{padding:20px;text-align:center}
-.premio-img{width:100%;max-width:320px;margin:0 auto 12px;border-radius:var(--radius-sm);object-fit:cover;aspect-ratio:1/1;background:#f1f5f9;cursor:pointer;transition:transform .3s}
+.premio-img-wrap{position:relative;width:100%;max-width:320px;margin:0 auto 12px;border-radius:var(--radius-sm);overflow:hidden}
+.premio-img{width:100%;display:block;object-fit:cover;aspect-ratio:1/1;background:#f1f5f9;cursor:pointer;transition:transform .3s}
 .premio-img:active{transform:scale(.98)}
-.premio-nome{font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:4px}
+.premio-nome-overlay{position:absolute;left:0;right:0;top:0;padding:12px 14px 24px;background:linear-gradient(to bottom,rgba(0,0,0,.75),rgba(0,0,0,.35) 60%,transparent);color:#fff;font-size:1.3rem;font-weight:800;text-shadow:0 2px 6px rgba(0,0,0,.5);text-align:left;pointer-events:none}
 .premio-desc{font-size:.85rem;color:var(--muted)}
 .meta-valor{display:inline-block;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;font-size:.9rem;font-weight:700;padding:6px 16px;border-radius:20px;margin-top:10px}
 .meta-progress-track{width:100%;height:8px;background:#e2e8f0;border-radius:20px;margin-top:14px;overflow:hidden;position:relative}
@@ -99,7 +100,7 @@ input{font-family:inherit;outline:none}
 .proximo-valor{font-size:1.6rem;font-weight:800;color:var(--success);margin-top:2px}
 
 /* ===== BOTÃO LANCE ===== */
-.btn-lance{width:100%;padding:18px 24px;border-radius:var(--radius);background:linear-gradient(135deg,var(--success),var(--success-dark));color:#fff;font-size:1.15rem;font-weight:800;box-shadow:0 4px 14px rgba(34,197,94,.35);display:flex;align-items:center;justify-content:center;gap:10px;transition:transform .15s,box-shadow .15s;position:relative;overflow:hidden}
+.btn-lance{width:100%;padding:18px 24px;border-radius:var(--radius);background:linear-gradient(135deg,var(--success),var(--success-dark));color:#fff;font-size:1.15rem;font-weight:800;box-shadow:0 4px 14px rgba(34,197,94,.35);display:flex;align-items:center;justify-content:center;gap:14px;transition:transform .15s,box-shadow .15s;position:relative;overflow:hidden}
 .btn-lance::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);transform:translateX(-100%);transition:none}
 .btn-lance:active{transform:scale(.97);box-shadow:0 2px 8px rgba(34,197,94,.3)}
 .btn-lance:hover::after{transform:translateX(100%);transition:transform .6s}
@@ -180,7 +181,7 @@ input{font-family:inherit;outline:none}
   .header-inner{padding:0 24px}
   .timer-display{font-size:3.2rem}
   .btn-lance{padding:22px;font-size:1.25rem}
-  .premio-img{max-width:280px}
+  .premio-img-wrap{max-width:280px}
 }
 @media(min-width:1200px){
   .container{grid-template-columns:1fr 420px}
@@ -242,8 +243,10 @@ input{font-family:inherit;outline:none}
   <div class="col-main">
     <!-- PREMIO -->
     <div class="card card-premio">
-      <img id="premioImg" class="premio-img" src="" alt="Prêmio" loading="eager" onclick="ampliarImagem()">
-      <div class="premio-nome" id="premioNome">Carregando...</div>
+      <div class="premio-img-wrap">
+        <img id="premioImg" class="premio-img" src="" alt="Prêmio" loading="eager" onclick="ampliarImagem()">
+        <div class="premio-nome-overlay" id="premioNome">Carregando...</div>
+      </div>
       <div class="premio-desc" id="premioDesc"></div>
       <div class="meta-valor" id="metaValor">Meta: R$ 0,00</div>
       <div class="meta-progress-track" id="metaProgressTrack">
