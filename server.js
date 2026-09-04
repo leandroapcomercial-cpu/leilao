@@ -23,6 +23,20 @@ function emailConfigurado() {
   return !!BREVO_API_KEY;
 }
 
+// Erro mais comum de configuração do Brevo: colar a chave SMTP (começa com
+// "xsmtps") em vez da API Key de verdade (começa com "xkeysib"). São duas
+// credenciais diferentes, geradas em abas diferentes do painel do Brevo, e
+// só uma delas funciona nesta chamada de API HTTP.
+function validarFormatoChaveEmail() {
+  if (!BREVO_API_KEY) return;
+  if (BREVO_API_KEY.startsWith('xsmtps')) {
+    console.error('[EMAIL] ⚠️ BREVO_API_KEY parece ser uma chave SMTP (começa com "xsmtps"), não uma API Key. Gere a chave certa em Brevo → Settings → SMTP & API → aba "API Keys" (começa com "xkeysib"). E-mails vão falhar até isso ser corrigido.');
+  } else if (!BREVO_API_KEY.startsWith('xkeysib')) {
+    console.error('[EMAIL] ⚠️ BREVO_API_KEY não parece estar no formato esperado (deveria começar com "xkeysib"). Confira se copiou a chave certa.');
+  }
+}
+validarFormatoChaveEmail();
+
 async function enviarEmail(destinatarioEmail, destinatarioNome, assunto, textoSimples) {
   if (!emailConfigurado()) {
     console.log('[EMAIL] BREVO_API_KEY não configurada — pulando envio (motor do leilão segue normal)');
@@ -827,6 +841,31 @@ app.post('/api/upload', authenticate, upload.single('imagem'), async (req, res) 
 });
 
 // Logs paginados
+// Rota de teste manual do e-mail (só admin) — dispara um envio isolado e
+// devolve o erro completo na resposta, para diagnosticar configuração sem
+// precisar dar um lance de verdade no leilão.
+app.post('/api/testar-email', authenticate, async (req, res) => {
+  const destino = req.body?.email;
+  if (!destino) return res.status(400).json({ erro: 'Informe um e-mail de destino no body: {"email":"..."}' });
+  if (!emailConfigurado()) return res.status(400).json({ erro: 'BREVO_API_KEY não configurada no servidor' });
+
+  try {
+    await axios.post('https://api.brevo.com/v3/smtp/email', {
+      sender: { name: BREVO_SENDER_NOME, email: BREVO_SENDER_EMAIL },
+      to: [{ email: destino, name: destino }],
+      subject: '🧪 Teste — Leilão Fácil',
+      textContent: 'Se você recebeu este e-mail, a configuração do Brevo está funcionando corretamente.\n\nEquipe Leilão Fácil'
+    }, {
+      headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
+      timeout: 10000
+    });
+    res.json({ sucesso: true, mensagem: `E-mail de teste enviado para ${destino}` });
+  } catch (err) {
+    console.error('[EMAIL/TESTE] Falha:', err.response?.data || err.message);
+    res.status(500).json({ erro: 'Falha ao enviar', detalhe: err.response?.data || err.message });
+  }
+});
+
 app.get('/api/logs', authenticate, async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
