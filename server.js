@@ -939,31 +939,40 @@ app.post('/api/usuarios', async (req, res) => {
   } catch (err) { res.status(500).json({ erro: err.message }); }
 });
 
-// Altera o nome de exibição do usuário. Mantém o mesmo usuario_id (não
-// cria um novo cadastro, não fragmenta ranking/histórico). Lances já
-// registrados guardam o nome antigo congelado (coluna lances.usuario_nome)
-// e continuam mostrando o nome de quando foram dados; só os lances NOVOS,
-// a partir de agora, usam o nome atualizado.
-app.put('/api/usuarios/:id/nome', async (req, res) => {
+// Atualiza os dados da conta mantendo o mesmo usuario_id e histórico relacionado.
+app.put('/api/usuarios/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { email, novo_nome } = req.body;
+    const { email_atual, novo_nome, novo_email } = req.body;
     const nomeLimpo = (novo_nome || '').trim();
+    const emailAtual = (email_atual || '').trim();
+    const emailNovo = (novo_email || '').trim();
 
-    if (!email) return res.status(400).json({ erro: 'Email é obrigatório para confirmar identidade' });
-    if (!nomeLimpo) return res.status(400).json({ erro: 'Informe o novo nome' });
+    if (!emailAtual) return res.status(400).json({ erro: 'Email atual é obrigatório para confirmar identidade' });
+    if (!nomeLimpo || !emailNovo) return res.status(400).json({ erro: 'Informe nome e email' });
     if (nomeLimpo.length > 100) return res.status(400).json({ erro: 'Nome muito longo (máximo 100 caracteres)' });
 
-    const userCheck = await pool.query('SELECT * FROM usuarios WHERE id = $1 AND email = $2', [id, email]);
+    const userCheck = await pool.query('SELECT id FROM usuarios WHERE id = $1 AND email = $2', [id, emailAtual]);
     if (userCheck.rows.length === 0) {
       return res.status(404).json({ erro: 'Usuário não encontrado (confira o e-mail usado no cadastro)' });
     }
 
-    const result = await pool.query('UPDATE usuarios SET nome = $1 WHERE id = $2 RETURNING *', [nomeLimpo, id]);
-    console.log(`[USUARIO/NOME] Usuário ${id} renomeado para "${nomeLimpo}"`);
+    const emailEmUso = await pool.query('SELECT id FROM usuarios WHERE email = $1 AND id <> $2', [emailNovo, id]);
+    if (emailEmUso.rows.length > 0) {
+      return res.status(409).json({ erro: 'Este e-mail já pertence a outra conta' });
+    }
+
+    const result = await pool.query(
+      'UPDATE usuarios SET nome = $1, email = $2 WHERE id = $3 RETURNING *',
+      [nomeLimpo, emailNovo, id]
+    );
+    console.log(`[USUARIO] Dados atualizados para o usuário ${id}`);
     res.json({ sucesso: true, usuario: result.rows[0] });
   } catch (err) {
-    console.error('[USUARIO/NOME] Erro:', err.message);
+    if (err.code === '23505') {
+      return res.status(409).json({ erro: 'Este e-mail já pertence a outra conta' });
+    }
+    console.error('[USUARIO] Erro:', err.message);
     res.status(500).json({ erro: err.message });
   }
 });

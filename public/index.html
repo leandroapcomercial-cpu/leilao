@@ -337,9 +337,9 @@ input{font-family:inherit;outline:none}
     </div>
     <div class="modal-body">
       <input type="text" id="userNome" class="input-field" placeholder="Como você gostaria de ser chamado?" maxlength="30">
-      <input type="email" id="userEmail" class="input-field" placeholder="seu@email.com" maxlength="60">
+      <input type="email" id="userEmail" class="input-field" placeholder="Qual é o e-mail que você mais utiliza?" maxlength="60">
       <button class="btn-primary" id="modalLoginBtn" onclick="submitModalLogin()">🚀 Entrar no Leilão</button>
-      <p style="font-size:.72rem;color:var(--muted);margin-top:10px;line-height:1.4">🔒 Seus dados (nome e e-mail) são protegidos conforme a <strong>LGPD</strong> e usados apenas para identificar seus lances neste leilão. Ao continuar, você concorda com as <strong>políticas de participação do leilão</strong>.</p>
+      <p style="font-size:.72rem;color:var(--muted);margin-top:10px;line-height:1.4">🔒 Seus dados (nome e e-mail) são protegidos conforme a <strong>LGPD</strong> e usados apenas para identificar seus lances neste leilão. Ao continuar, você aceita os <strong>Termos de Participação</strong>. Ao informar seus dados, você afirma ser maior de 18 anos e responsável pelo uso recreativo da plataforma.</p>
     </div>
   </div>
 </div>
@@ -646,9 +646,9 @@ function toggleRanking(){
 let modalLoginModo='entrar'; // 'entrar' | 'alterar'
 
 function abrirLogin(prefill){
-  modalLoginModo='entrar';
+  modalLoginModo=prefill?'alterar':'entrar';
   document.getElementById('modalLoginTitulo').textContent=prefill?'👋 Bem-vindo de volta!':'👋 Entrar no Leilão';
-  document.getElementById('modalLoginBtn').textContent='🚀 Entrar no Leilão';
+  document.getElementById('modalLoginBtn').textContent=prefill?'💾 Atualizar Dados':'🚀 Entrar no Leilão';
   document.getElementById('userNome').value=prefill?(prefill.nome||''):'';
   document.getElementById('userEmail').value=prefill?(prefill.email||''):'';
   document.getElementById('userEmail').removeAttribute('readonly');
@@ -660,20 +660,19 @@ function abrirLogin(prefill){
 function abrirAlterarNome(){
   if(!usuario)return;
   modalLoginModo='alterar';
-  document.getElementById('modalLoginTitulo').textContent='✏️ Alterar Nome de Usuário';
-  document.getElementById('modalLoginBtn').textContent='💾 Salvar Alteração';
+  document.getElementById('modalLoginTitulo').textContent='✏️ Alterar Dados de Usuário';
+  document.getElementById('modalLoginBtn').textContent='💾 Salvar Alterações';
   document.getElementById('userNome').value=usuario.nome||'';
   document.getElementById('userEmail').value=usuario.email||'';
-  // Email fica travado: é a chave de identificação do usuário, não é alterável aqui
-  document.getElementById('userEmail').setAttribute('readonly','readonly');
-  document.getElementById('userEmail').style.opacity='.65';
+  document.getElementById('userEmail').removeAttribute('readonly');
+  document.getElementById('userEmail').style.opacity='';
   document.getElementById('modalLogin').classList.add('open');
   document.getElementById('userNome').focus();
   document.getElementById('userNome').select();
 }
 
 function submitModalLogin(){
-  if(modalLoginModo==='alterar')return salvarAlterarNome();
+  if(modalLoginModo==='alterar')return salvarAlterarDados();
   return entrarLeilao();
 }
 
@@ -725,24 +724,25 @@ function atualizarUIUsuario(){
   document.getElementById('btnEntrarHeader').classList.add('hidden');
 }
 
-async function salvarAlterarNome(){
+async function salvarAlterarDados(){
   if(!usuario)return;
   const nomeLimpo=document.getElementById('userNome').value.trim();
-  if(!nomeLimpo){showToast('O nome não pode ficar vazio','error');return}
-  if(nomeLimpo===usuario.nome){fecharModalDirect('modalLogin');return}
+  const emailLimpo=document.getElementById('userEmail').value.trim();
+  if(!nomeLimpo||!emailLimpo){showToast('Preencha nome e email','error');return}
+  if(nomeLimpo===usuario.nome&&emailLimpo===usuario.email){fecharModalDirect('modalLogin');return}
   try{
-    const res=await fetch(`${API}/api/usuarios/${usuario.id}/nome`,{
+    const res=await fetch(`${API}/api/usuarios/${usuario.id}`,{
       method:'PUT',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({email:usuario.email,novo_nome:nomeLimpo})
+      body:JSON.stringify({email_atual:usuario.email,novo_nome:nomeLimpo,novo_email:emailLimpo})
     });
     const data=await res.json();
-    if(!data.sucesso){showToast(data.erro||'Erro ao alterar nome','error');return}
+    if(!res.ok||!data.sucesso){showToast(data.erro||'Erro ao atualizar dados','error');return}
     usuario=data.usuario;
     localStorage.setItem('lf_user',JSON.stringify(usuario));
     atualizarUIUsuario();
     fecharModalDirect('modalLogin');
-    showToast('✅ Nome atualizado! Lances antigos continuam com o nome anterior.','success');
-  }catch(e){showToast('Erro ao alterar nome: '+e.message,'error')}
+    showToast('✅ Dados atualizados! Lances antigos continuam com o nome anterior.','success');
+  }catch(e){showToast('Erro ao atualizar dados: '+e.message,'error')}
 }
 
 function sairLeilao(){
