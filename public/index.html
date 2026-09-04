@@ -44,6 +44,10 @@ input{font-family:inherit;outline:none}
 .logo{font-size:1.15rem;font-weight:800;color:var(--primary);letter-spacing:-.5px}
 .badge-live{display:inline-flex;align-items:center;gap:6px;background:#fee2e2;color:#dc2626;font-size:.7rem;font-weight:700;padding:4px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px}
 .badge-live::before{content:'';width:7px;height:7px;background:#dc2626;border-radius:50%;animation:pulse-live 1.5s infinite}
+.conn-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;transition:background .3s}
+.conn-dot.conn-ok{background:#22c55e}
+.conn-dot.conn-reconnecting{background:#f59e0b;animation:pulse-live 1s infinite}
+.conn-dot.conn-offline{background:#94a3b8}
 @keyframes pulse-live{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.85)}}
 .user-info{font-size:.8rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
 .btn-sm{padding:6px 12px;border-radius:var(--radius-sm);font-size:.8rem;font-weight:600;transition:var(--tr)}
@@ -61,6 +65,11 @@ input{font-family:inherit;outline:none}
 .premio-nome{font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:4px}
 .premio-desc{font-size:.85rem;color:var(--muted)}
 .meta-valor{display:inline-block;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;font-size:.9rem;font-weight:700;padding:6px 16px;border-radius:20px;margin-top:10px}
+.meta-progress-track{width:100%;height:8px;background:#e2e8f0;border-radius:20px;margin-top:14px;overflow:hidden;position:relative}
+.meta-progress-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,var(--primary),#22c55e);transition:width .6s cubic-bezier(.22,1,.36,1);position:relative;overflow:hidden}
+.meta-progress-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);animation:shine 2.4s ease-in-out infinite}
+@keyframes shine{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.meta-progress-label{font-size:.72rem;color:var(--muted);margin-top:6px;font-weight:600}
 
 /* ===== VENCEDOR ===== */
 .vencedor-box{background:linear-gradient(135deg,#fef3c7,#fde68a);border-radius:var(--radius-sm);padding:14px;margin:12px 0;display:flex;align-items:center;gap:12px}
@@ -74,9 +83,15 @@ input{font-family:inherit;outline:none}
 .timer-box{background:linear-gradient(135deg,var(--primary),var(--primary-dark));border-radius:var(--radius);padding:18px 16px;text-align:center;color:#fff;margin-bottom:12px;position:relative;overflow:hidden}
 .timer-box::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.15),transparent 60%);pointer-events:none}
 .timer-label{font-size:.7rem;text-transform:uppercase;letter-spacing:1.5px;opacity:.85;margin-bottom:6px}
+.disputa-badge{margin-top:10px;display:inline-flex;align-items:center;gap:6px;background:#fbbf24;color:#78350f;font-size:.72rem;font-weight:800;padding:5px 14px;border-radius:20px;text-transform:uppercase;letter-spacing:.4px;box-shadow:0 2px 10px rgba(251,191,36,.5);animation:fadeInUp .35s ease,disputaPulse 1.4s ease-in-out infinite}
+.disputa-badge.hidden{display:none}
+@keyframes disputaPulse{0%,100%{transform:scale(1);box-shadow:0 2px 10px rgba(251,191,36,.5)}50%{transform:scale(1.05);box-shadow:0 2px 16px rgba(251,191,36,.75)}}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 .timer-display{font-size:2.6rem;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:2px;line-height:1;text-shadow:0 2px 4px rgba(0,0,0,.15)}
 .lance-atual-label{font-size:.75rem;margin-top:8px;opacity:.9}
-.lance-atual-valor{font-size:1.3rem;font-weight:800;color:var(--gold);text-shadow:0 1px 2px rgba(0,0,0,.2)}
+.lance-atual-valor{font-size:1.3rem;font-weight:800;color:var(--gold);text-shadow:0 1px 2px rgba(0,0,0,.2);transition:transform .25s ease}
+.lance-atual-valor.pulse-update{animation:pulseValor .5s ease}
+@keyframes pulseValor{0%{transform:scale(1)}35%{transform:scale(1.18)}100%{transform:scale(1)}}
 
 /* ===== PROXIMO LANCE ===== */
 .proximo-box{background:#f0fdf4;border:2px dashed var(--success);border-radius:var(--radius-sm);padding:14px;text-align:center;margin-bottom:12px}
@@ -185,6 +200,7 @@ input{font-family:inherit;outline:none}
   .logo{font-size:.82rem;white-space:nowrap;flex-shrink:0}
   .badge-live{font-size:.56rem;padding:2px 6px;gap:3px;flex-shrink:0}
   .badge-live::before{width:5px;height:5px}
+  .conn-dot{width:6px;height:6px;flex-shrink:0}
   .user-info{font-size:.65rem;max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .header-inner .btn-sm{padding:4px 6px;font-size:.62rem;white-space:nowrap}
 }
@@ -196,6 +212,7 @@ input{font-family:inherit;outline:none}
   .logo{font-size:.72rem}
   .badge-live{font-size:.5rem;padding:2px 5px;gap:2px}
   .badge-live::before{width:4px;height:4px}
+  .conn-dot{width:5px;height:5px}
   .user-info{max-width:34px;font-size:.62rem}
   .header-inner .btn-sm{padding:3px 5px;font-size:.58rem}
 }
@@ -209,6 +226,7 @@ input{font-family:inherit;outline:none}
     <div class="flex aic g2">
       <span class="logo">🏆 Leilão Fácil</span>
       <span class="badge-live">Ao Vivo</span>
+      <span id="connDot" class="conn-dot conn-ok" title="Sincronizado"></span>
     </div>
     <div class="flex aic g3">
       <span id="headerUserName" class="user-info hidden"></span>
@@ -228,6 +246,10 @@ input{font-family:inherit;outline:none}
       <div class="premio-nome" id="premioNome">Carregando...</div>
       <div class="premio-desc" id="premioDesc"></div>
       <div class="meta-valor" id="metaValor">Meta: R$ 0,00</div>
+      <div class="meta-progress-track" id="metaProgressTrack">
+        <div class="meta-progress-fill" id="metaProgressFill" style="width:0%"></div>
+      </div>
+      <div class="meta-progress-label" id="metaProgressLabel">0% da meta atingida</div>
     </div>
 
     <!-- VENCEDOR -->
@@ -246,6 +268,7 @@ input{font-family:inherit;outline:none}
       <div class="timer-display" id="timer">00:00:00</div>
       <div class="lance-atual-label">💰 Lance Atual</div>
       <div class="lance-atual-valor" id="lanceAtualValor">R$ 0,00</div>
+      <div class="disputa-badge hidden" id="disputaBadge">⚡ Vários lances agora</div>
     </div>
 
     <!-- PROXIMO LANCE -->
@@ -351,7 +374,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   init();
 });
 
-async function init(){
+async function init(tentativa=1){
   try{
     const res=await fetch(`${API}/api/campanha/${slug}`);
     if(!res.ok)throw new Error('Campanha não encontrada');
@@ -361,7 +384,17 @@ async function init(){
     renderCampanha();
     loadLances();
     checkUser();
-  }catch(err){mostrarErro(err.message)}
+  }catch(err){
+    // Rede instável (comum em 5G com sinal fraco): tenta de novo automaticamente
+    // antes de desistir e mostrar erro. "Campanha não encontrada" é definitivo,
+    // não adianta tentar de novo.
+    const definitivo=err.message==='Campanha não encontrada';
+    if(!definitivo&&tentativa<3){
+      setTimeout(()=>init(tentativa+1),1000*tentativa);
+      return;
+    }
+    mostrarErro(err.message);
+  }
 }
 
 function mostrarErro(msg){
@@ -372,9 +405,25 @@ function mostrarErro(msg){
 function conectarSocket(){
   if(socket){socket.disconnect();socket=null}
   socket=io({transports:['websocket','polling'],reconnection:true,reconnectionDelay:2000});
-  socket.on('connect',()=>{if(campanha)socket.emit('join',campanha.id)});
+  socket.on('connect',()=>{if(campanha)socket.emit('join',campanha.id);setConnStatus('ok')});
   socket.on('novo_lance',data=>{if(campanha&&data.campanha_id==campanha.id){adicionarLanceSocket(data.lance)}});
   socket.on('campanha_atualizada',data=>{if(data.id==campanha?.id){Object.assign(campanha,data);renderCampanha()}});
+  socket.on('disconnect',()=>setConnStatus('reconnecting'));
+  socket.on('reconnect_attempt',()=>setConnStatus('reconnecting'));
+  socket.on('reconnect',()=>setConnStatus('ok'));
+  socket.on('reconnect_failed',()=>setConnStatus('offline'));
+}
+
+// Indicador discreto de sincronismo (pontinho ao lado de "AO VIVO").
+// Não interfere na lógica real de reconexão do socket.io — só reflete o
+// estado atual pro usuário, sem popup nem alarde.
+function setConnStatus(estado){
+  const el=document.getElementById('connDot');
+  if(!el)return;
+  el.classList.remove('conn-ok','conn-reconnecting','conn-offline');
+  const labels={ok:'Sincronizado',reconnecting:'Reconectando...',offline:'Sem conexão'};
+  el.classList.add('conn-'+estado);
+  el.title=labels[estado]||'';
 }
 
 /* ===== CAMPANHA ===== */
@@ -391,6 +440,16 @@ function updateProximoLance(){
   if(btnTxt)btnTxt.textContent='🚀 Dar Lance ('+proxStr+')';
 }
 
+function atualizarProgressoMeta(c){
+  const meta=parseFloat(c.meta_valor||0);
+  const arrecadado=parseFloat(c.arrecadado||0);
+  const pct=meta>0?Math.min(100,(arrecadado/meta)*100):0;
+  const fill=document.getElementById('metaProgressFill');
+  const label=document.getElementById('metaProgressLabel');
+  if(fill)fill.style.width=pct+'%';
+  if(label)label.textContent=pct.toFixed(0)+'% da meta atingida';
+}
+
 function renderCampanha(){
   if(!campanha)return;
   const c=campanha;
@@ -402,6 +461,7 @@ function renderCampanha(){
   document.getElementById('premioDesc').textContent=c.premio_descricao||c.descricao||'';
   document.getElementById('premioImg').src=c.premio_imagem||'https://via.placeholder.com/400?text=Prêmio';
   document.getElementById('metaValor').textContent='Meta: R$ '+fmt(c.meta_valor||0);
+  atualizarProgressoMeta(c);
 
   const vlance=parseFloat(c.valor_lance||0.01);
   updateProximoLance();
@@ -438,16 +498,22 @@ function startTimer(endDate){
 }
 
 /* ===== LANCES ===== */
-async function loadLances(){
+async function loadLances(_retry){
   if(!campanha)return;
   try{
     const res=await fetch(`${API}/api/lances/${campanha.id}`);
+    if(!res.ok)throw new Error('falha');
     lances=await res.json();
     // Garante ordenação por valor DESC (maior primeiro)
     lances.sort((a,b)=>parseFloat(b.valor||0)-parseFloat(a.valor||0));
     renderLances();renderWinner();updateProximoLance();
     loadRanking();
-  }catch(e){}
+  }catch(e){
+    // Engasgo de rede (comum em 5G instável): tenta mais uma vez em silêncio
+    // antes de só sinalizar no pontinho discreto de conexão
+    if(!_retry){setTimeout(()=>loadLances(true),2000);return}
+    setConnStatus('reconnecting');
+  }
 }
 
 function adicionarLanceSocket(l){
@@ -460,10 +526,27 @@ function adicionarLanceSocket(l){
   renderLances();renderWinner();
   updateProximoLance();
   loadRanking();
+  atualizarDisputaBadge();
   efeitoFloat('+1');
   comboCount++;clearTimeout(comboTimer);
   comboTimer=setTimeout(()=>comboCount=0,3000);
   if(comboCount>=3)showToast('🔥 Combo x'+comboCount+'!','success');
+}
+
+let disputaBadgeTimer=null;
+function atualizarDisputaBadge(){
+  const agora=Date.now();
+  const recentes=lances.filter(l=>{
+    const t=new Date(l.created_at||l.data_hora||0).getTime();
+    return t&&(agora-t)<15000;
+  });
+  const badge=document.getElementById('disputaBadge');
+  if(!badge)return;
+  if(recentes.length>=2){
+    badge.classList.remove('hidden');
+    clearTimeout(disputaBadgeTimer);
+    disputaBadgeTimer=setTimeout(()=>badge.classList.add('hidden'),6000);
+  }
 }
 
 function renderWinner(){
@@ -480,7 +563,15 @@ function renderWinner(){
   document.getElementById('vencedorNome').textContent=top.nome_usuario||top.nome||'Anônimo';
   document.getElementById('vencedorValor').textContent='R$ '+fmt(top.valor);
   document.getElementById('vencedorData').textContent=fmtData(top.created_at);
-  document.getElementById('lanceAtualValor').textContent='R$ '+fmt(top.valor);
+
+  const lanceEl=document.getElementById('lanceAtualValor');
+  const novoValor='R$ '+fmt(top.valor);
+  if(lanceEl.textContent!==novoValor){
+    lanceEl.textContent=novoValor;
+    lanceEl.classList.remove('pulse-update');
+    void lanceEl.offsetWidth; // força reinício da animação mesmo se já rodou antes
+    lanceEl.classList.add('pulse-update');
+  }
 }
 
 function renderLances(){
@@ -575,7 +666,7 @@ function fecharModalDirect(id){
   document.getElementById(id).classList.remove('open');
   // Limpa polling do PIX ao fechar modal
   if(id==='modalPix'&&pixPollingInterval){
-    clearInterval(pixPollingInterval);
+    clearTimeout(pixPollingInterval);
     pixPollingInterval=null;
   }
 }
@@ -726,16 +817,15 @@ function copiarPix(){
 
 // Polling para verificar status do pagamento PIX
 function iniciarPollingPix(pagamentoId){
-  if(pixPollingInterval)clearInterval(pixPollingInterval);
+  if(pixPollingInterval){clearTimeout(pixPollingInterval);pixPollingInterval=null}
 
   let tentativas=0;
-  const maxTentativas=120; // 2 minutos (a cada 1 segundo)
+  const maxTentativas=120; // 2 minutos (a cada ~1 segundo)
 
-  pixPollingInterval=setInterval(async ()=>{
+  async function tick(){
     tentativas++;
 
     if(tentativas>maxTentativas){
-      clearInterval(pixPollingInterval);
       pixPollingInterval=null;
       showToast('⏰ Tempo de pagamento expirado. Tente novamente.','error');
       fecharModalDirect('modalPix');
@@ -743,11 +833,16 @@ function iniciarPollingPix(pagamentoId){
     }
 
     try{
-      const res=await fetch(`${API}/api/pix/status/${pagamentoId}`);
+      // Timeout de segurança: em rede ruim, uma requisição pendurada não pode
+      // travar a próxima tentativa — sem isso, cada tick esperaria
+      // indefinidamente e o polling praticamente pararia de avançar
+      const ctrl=new AbortController();
+      const to=setTimeout(()=>ctrl.abort(),8000);
+      const res=await fetch(`${API}/api/pix/status/${pagamentoId}`,{signal:ctrl.signal});
+      clearTimeout(to);
       const data=await res.json();
 
       if(data.status==='approved'||data.status==='aprovado'){
-        clearInterval(pixPollingInterval);
         pixPollingInterval=null;
 
         // Fecha modal
@@ -763,11 +858,16 @@ function iniciarPollingPix(pagamentoId){
         }
 
         updateProximoLance();
+        return; // não reagenda — pagamento já confirmado
       }
     }catch(e){
       console.log('[POLLING] Erro:',e.message);
     }
-  },1000);
+
+    pixPollingInterval=setTimeout(tick,1000);
+  }
+
+  tick();
 }
 
 // Botão "Já paguei" - força verificação imediata
@@ -784,7 +884,7 @@ async function confirmarPagamento(){
     const data=await res.json();
 
     if(data.status==='approved'||data.status==='aprovado'){
-      clearInterval(pixPollingInterval);
+      clearTimeout(pixPollingInterval);
       pixPollingInterval=null;
       fecharModalDirect('modalPix');
       showToast('✅ Pagamento confirmado!','success');
