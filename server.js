@@ -972,39 +972,53 @@ app.post('/api/usuarios', async (req, res) => {
 
 // Atualiza os dados da conta mantendo o mesmo usuario_id e histórico relacionado.
 app.put('/api/usuarios/:id', async (req, res) => {
+  const client = await pool.connect();
   try {
     const { id } = req.params;
-    const { email_atual, novo_nome, novo_email } = req.body;
+    const { novo_nome, novo_email } = req.body;
     const nomeLimpo = (novo_nome || '').trim();
-    const emailAtual = (email_atual || '').trim();
-    const emailNovo = (novo_email || '').trim();
+    const emailNovo = (novo_email || '').trim().toLowerCase();
 
-    if (!emailAtual) return res.status(400).json({ erro: 'Email atual é obrigatório para confirmar identidade' });
     if (!nomeLimpo || !emailNovo) return res.status(400).json({ erro: 'Informe nome e email' });
     if (nomeLimpo.length > 100) return res.status(400).json({ erro: 'Nome muito longo (máximo 100 caracteres)' });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNovo)) return res.status(400).json({ erro: 'E-mail inválido' });
 
-    const userCheck = await pool.query('SELECT id FROM usuarios WHERE id = $1 AND email = $2', [id, emailAtual]);
+    await client.query('BEGIN');
+
+    const userCheck = await client.query('SELECT id FROM usuarios WHERE id = $1', [id]);
     if (userCheck.rows.length === 0) {
-      return res.status(404).json({ erro: 'Usuário não encontrado (confira o e-mail usado no cadastro)' });
+      await client.query('ROLLBACK');
+      return res.status(404).json({ erro: 'Usuário não encontrado' });
     }
 
-    const emailEmUso = await pool.query('SELECT id FROM usuarios WHERE email = $1 AND id <> $2', [emailNovo, id]);
-    if (emailEmUso.rows.length > 0) {
-      return res.status(409).json({ erro: 'Este e-mail já pertence a outra conta' });
+    // Conta "fresh account": o e-mail digitado sempre sobrepõe qualquer
+    // cadastro anterior que já o utilizava. Se outra conta já tinha esse
+    // e-mail, ela é "liberada" (recebe um e-mail placeholder único, nunca
+    // colide) para o banco aceitar a troca — o histórico de lances dessa
+    // conta antiga permanece intacto, só o e-mail dela muda para um valor
+    // inofensivo que não identifica mais ninguém real.
+    const conflito = await client.query('SELECT id FROM usuarios WHERE email = $1 AND id <> $2', [emailNovo, id]);
+    if (conflito.rows.length > 0) {
+      const idConflito = conflito.rows[0].id;
+      const emailLiberado = `liberado_${Date.now()}_${idConflito}@leilaofacil.local`;
+      await client.query('UPDATE usuarios SET email = $1 WHERE id = $2', [emailLiberado, idConflito]);
+      console.log(`[USUARIO] E-mail ${emailNovo} liberado da conta ${idConflito} para a conta ${id}`);
     }
 
-    const result = await pool.query(
+    const result = await client.query(
       'UPDATE usuarios SET nome = $1, email = $2 WHERE id = $3 RETURNING *',
       [nomeLimpo, emailNovo, id]
     );
-    console.log(`[USUARIO] Dados atualizados para o usuário ${id}`);
+
+    await client.query('COMMIT');
+    console.log(`[USUARIO] Dados atualizados para o usuário ${id}: nome="${nomeLimpo}", email="${emailNovo}"`);
     res.json({ sucesso: true, usuario: result.rows[0] });
   } catch (err) {
-    if (err.code === '23505') {
-      return res.status(409).json({ erro: 'Este e-mail já pertence a outra conta' });
-    }
+    await client.query('ROLLBACK');
     console.error('[USUARIO] Erro:', err.message);
     res.status(500).json({ erro: err.message });
+  } finally {
+    client.release();
   }
 });
 

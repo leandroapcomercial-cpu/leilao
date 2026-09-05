@@ -746,7 +746,7 @@ async function salvarAlterarDados(){
   try{
     const res=await fetch(`${API}/api/usuarios/${usuario.id}`,{
       method:'PUT',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({email_atual:usuario.email,novo_nome:nomeLimpo,novo_email:emailLimpo})
+      body:JSON.stringify({novo_nome:nomeLimpo,novo_email:emailLimpo})
     });
     const data=await res.json();
     if(!res.ok||!data.sucesso){showToast(data.erro||'Erro ao atualizar dados','error');return}
