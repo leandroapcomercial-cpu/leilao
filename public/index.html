@@ -137,20 +137,22 @@ input{font-family:inherit;outline:none}
 /* ===== MODAIS ===== */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .25s}
 .modal-overlay.open{opacity:1;pointer-events:auto}
-.modal{background:#fff;border-radius:var(--radius);width:100%;max-width:420px;max-height:90dvh;overflow-y:auto;transform:scale(.92) translateY(10px);transition:transform .25s;box-shadow:var(--shadow-lg)}
+.modal{background:#fff;border-radius:var(--radius);width:100%;max-width:420px;max-height:96dvh;overflow-y:auto;transform:scale(.92) translateY(10px);transition:transform .25s;box-shadow:var(--shadow-lg);scrollbar-width:thin}
+.modal::-webkit-scrollbar{width:5px}
+.modal::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px}
 .modal-overlay.open .modal{transform:scale(1) translateY(0)}
-.modal-header{padding:18px 20px 0;display:flex;justify-content:space-between;align-items:center}
+.modal-header{padding:clamp(10px,3vh,18px) 20px 0;display:flex;justify-content:space-between;align-items:center}
 .modal-title{font-size:1.15rem;font-weight:800}
 .modal-close{width:32px;height:32px;border-radius:50%;background:#f1f5f9;color:var(--muted);display:grid;place-items:center;font-size:1.1rem;border:none}
 .modal-close:active{background:#e2e8f0}
-.modal-body{padding:16px 20px 20px}
+.modal-body{padding:clamp(8px,2vh,16px) 20px clamp(10px,3vh,20px)}
 .input-field{width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:1rem;transition:border-color .2s;margin-bottom:10px}
 .input-field:focus{border-color:var(--primary)}
 .btn-primary{width:100%;padding:14px;border-radius:var(--radius-sm);background:var(--primary);color:#fff;font-size:1rem;font-weight:700;margin-top:6px;transition:var(--tr);border:none}
 .btn-primary:active{background:var(--primary-dark);transform:scale(.98)}
-.btn-success{width:100%;padding:14px;border-radius:var(--radius-sm);background:var(--success);color:#fff;font-size:1rem;font-weight:700;margin-top:8px;transition:var(--tr);border:none}
+.btn-success{width:100%;padding:clamp(10px,2.5vh,14px) 14px;border-radius:var(--radius-sm);background:var(--success);color:#fff;font-size:1rem;font-weight:700;margin-top:8px;transition:var(--tr);border:none}
 .btn-success:active{background:var(--success-dark);transform:scale(.98)}
-.pix-code{background:#f8fafc;border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;text-align:center;font-family:monospace;font-size:.95rem;font-weight:500;color:#2563eb;text-decoration:underline;word-break:break-all;margin:12px 0;user-select:all;cursor:pointer;transition:background .15s,color .15s}
+.pix-code{background:#f8fafc;border:1px solid var(--border);border-radius:var(--radius-sm);padding:clamp(8px,2vh,14px);text-align:center;font-family:monospace;font-size:clamp(.78rem,2vh,.95rem);font-weight:500;color:#2563eb;text-decoration:underline;word-break:break-all;margin:clamp(6px,1.5vh,12px) 0;user-select:all;cursor:pointer;transition:background .15s,color .15s;line-height:1.4}
 .pix-code:hover{background:#eff6ff;color:#1d4ed8}
 .pix-code:active{transform:scale(.99)}
 .pix-code.copiado{background:#dcfce7;color:var(--success-dark);text-decoration:none}
@@ -337,9 +339,9 @@ input{font-family:inherit;outline:none}
     </div>
     <div class="modal-body">
       <input type="text" id="userNome" class="input-field" placeholder="Como você gostaria de ser chamado?" maxlength="30">
-      <input type="email" id="userEmail" class="input-field" placeholder="seu@email.com" maxlength="60">
+      <input type="email" id="userEmail" class="input-field" placeholder="Qual é o e-mail que você mais utiliza?" maxlength="60">
       <button class="btn-primary" id="modalLoginBtn" onclick="submitModalLogin()">🚀 Entrar no Leilão</button>
-      <p style="font-size:.72rem;color:var(--muted);margin-top:10px;line-height:1.4">🔒 Seus dados (nome e e-mail) são protegidos conforme a <strong>LGPD</strong> e usados apenas para identificar seus lances neste leilão. Ao continuar, você concorda com as <strong>políticas de participação do leilão</strong>.</p>
+      <p style="font-size:.72rem;color:var(--muted);margin-top:10px;line-height:1.4">🔒 Seus dados (nome e e-mail) são protegidos conforme a <strong>LGPD</strong> e usados apenas para identificar seus lances neste leilão. Ao continuar, você declara ser <strong>maior de 18 anos</strong>, responsável pelo uso recreativo da plataforma, e concorda com as <strong>políticas de participação do leilão</strong>.</p>
     </div>
   </div>
 </div>
@@ -352,14 +354,14 @@ input{font-family:inherit;outline:none}
       <button class="modal-close" onclick="fecharModalDirect('modalPix')">✕</button>
     </div>
     <div class="modal-body">
-      <p style="font-size:.9rem;color:var(--muted);margin-bottom:10px">Valor do lance: <strong id="pixValor" style="color:var(--danger);font-size:1.2rem">R$ 0,00</strong></p>
-      <p style="font-size:.85rem;color:var(--muted);margin-bottom:10px">Escaneie o QR Code com seu banco:</p>
-      <div id="pixQR" style="text-align:center;margin-bottom:12px;min-height:200px;display:flex;align-items:center;justify-content:center"></div>
+      <p style="font-size:.9rem;color:var(--muted);margin-bottom:clamp(4px,1.2vh,10px)">Valor do lance: <strong id="pixValor" style="color:var(--danger);font-size:1.2rem">R$ 0,00</strong></p>
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:clamp(4px,1.2vh,10px)">Escaneie o QR Code com seu banco:</p>
+      <div id="pixQR" style="text-align:center;margin-bottom:clamp(6px,1.5vh,12px);min-height:min(200px,28vh);display:flex;align-items:center;justify-content:center"></div>
       <p style="font-size:.85rem;color:var(--muted);margin-bottom:6px">👆 Toque para copiar o código PIX:</p>
       <div class="pix-code" id="pixCode" onclick="copiarPix()"></div>
       <p class="pix-code-hint">📋 Cole no app do seu banco para pagar</p>
       <button class="btn-success" onclick="confirmarPagamento()">✅ Já paguei — Verificar</button>
-      <p style="font-size:.75rem;color:var(--muted);text-align:center;margin-top:10px">⏳ Aguardando confirmação do Mercado Pago...</p>
+      <p style="font-size:.75rem;color:var(--muted);text-align:center;margin-top:clamp(4px,1.2vh,10px)">⏳ Aguardando confirmação do Mercado Pago...</p>
     </div>
   </div>
 </div>
@@ -660,13 +662,12 @@ function abrirLogin(prefill){
 function abrirAlterarNome(){
   if(!usuario)return;
   modalLoginModo='alterar';
-  document.getElementById('modalLoginTitulo').textContent='✏️ Alterar Nome de Usuário';
+  document.getElementById('modalLoginTitulo').textContent='✏️ Alterar Dados';
   document.getElementById('modalLoginBtn').textContent='💾 Salvar Alteração';
   document.getElementById('userNome').value=usuario.nome||'';
   document.getElementById('userEmail').value=usuario.email||'';
-  // Email fica travado: é a chave de identificação do usuário, não é alterável aqui
-  document.getElementById('userEmail').setAttribute('readonly','readonly');
-  document.getElementById('userEmail').style.opacity='.65';
+  document.getElementById('userEmail').removeAttribute('readonly');
+  document.getElementById('userEmail').style.opacity='';
   document.getElementById('modalLogin').classList.add('open');
   document.getElementById('userNome').focus();
   document.getElementById('userNome').select();
@@ -728,21 +729,24 @@ function atualizarUIUsuario(){
 async function salvarAlterarNome(){
   if(!usuario)return;
   const nomeLimpo=document.getElementById('userNome').value.trim();
+  const emailLimpo=document.getElementById('userEmail').value.trim();
   if(!nomeLimpo){showToast('O nome não pode ficar vazio','error');return}
-  if(nomeLimpo===usuario.nome){fecharModalDirect('modalLogin');return}
+  if(!emailLimpo){showToast('O e-mail não pode ficar vazio','error');return}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLimpo)){showToast('Digite um e-mail válido','error');return}
+  if(nomeLimpo===usuario.nome&&emailLimpo===usuario.email){fecharModalDirect('modalLogin');return}
   try{
     const res=await fetch(`${API}/api/usuarios/${usuario.id}/nome`,{
       method:'PUT',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({email:usuario.email,novo_nome:nomeLimpo})
+      body:JSON.stringify({novo_nome:nomeLimpo,novo_email:emailLimpo})
     });
     const data=await res.json();
-    if(!data.sucesso){showToast(data.erro||'Erro ao alterar nome','error');return}
+    if(!data.sucesso){showToast(data.erro||'Erro ao salvar alteração','error');return}
     usuario=data.usuario;
     localStorage.setItem('lf_user',JSON.stringify(usuario));
     atualizarUIUsuario();
     fecharModalDirect('modalLogin');
-    showToast('✅ Nome atualizado! Lances antigos continuam com o nome anterior.','success');
-  }catch(e){showToast('Erro ao alterar nome: '+e.message,'error')}
+    showToast('✅ Dados atualizados! Lances antigos continuam com o nome anterior.','success');
+  }catch(e){showToast('Erro ao salvar alteração: '+e.message,'error')}
 }
 
 function sairLeilao(){
@@ -804,7 +808,7 @@ function abrirPix(){
     // QR Code (imagem base64)
     const qrEl=document.getElementById('pixQR');
     if(data.qr_code_base64){
-      qrEl.innerHTML='<img src="data:image/png;base64,'+data.qr_code_base64+'" style="max-width:200px;border-radius:8px">';
+      qrEl.innerHTML='<img src="data:image/png;base64,'+data.qr_code_base64+'" style="width:min(200px,45vh,50vw);height:auto;border-radius:8px">';
     }else{
       qrEl.innerHTML='<div style="padding:20px;color:var(--muted)">QR Code não disponível</div>';
     }
