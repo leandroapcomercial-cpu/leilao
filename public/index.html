@@ -648,9 +648,9 @@ function toggleRanking(){
 let modalLoginModo='entrar'; // 'entrar' | 'alterar'
 
 function abrirLogin(prefill){
-  modalLoginModo='entrar';
+  modalLoginModo=prefill?'alterar':'entrar';
   document.getElementById('modalLoginTitulo').textContent=prefill?'👋 Bem-vindo de volta!':'👋 Entrar no Leilão';
-  document.getElementById('modalLoginBtn').textContent='🚀 Entrar no Leilão';
+  document.getElementById('modalLoginBtn').textContent=prefill?'💾 Atualizar Dados':'🚀 Entrar no Leilão';
   document.getElementById('userNome').value=prefill?(prefill.nome||''):'';
   document.getElementById('userEmail').value=prefill?(prefill.email||''):'';
   document.getElementById('userEmail').removeAttribute('readonly');
@@ -662,8 +662,8 @@ function abrirLogin(prefill){
 function abrirAlterarNome(){
   if(!usuario)return;
   modalLoginModo='alterar';
-  document.getElementById('modalLoginTitulo').textContent='✏️ Alterar Dados';
-  document.getElementById('modalLoginBtn').textContent='💾 Salvar Alteração';
+  document.getElementById('modalLoginTitulo').textContent='✏️ Alterar Dados de Usuário';
+  document.getElementById('modalLoginBtn').textContent='💾 Salvar Alterações';
   document.getElementById('userNome').value=usuario.nome||'';
   document.getElementById('userEmail').value=usuario.email||'';
   document.getElementById('userEmail').removeAttribute('readonly');
@@ -674,7 +674,7 @@ function abrirAlterarNome(){
 }
 
 function submitModalLogin(){
-  if(modalLoginModo==='alterar')return salvarAlterarNome();
+  if(modalLoginModo==='alterar')return salvarAlterarDados();
   return entrarLeilao();
 }
 
@@ -726,27 +726,25 @@ function atualizarUIUsuario(){
   document.getElementById('btnEntrarHeader').classList.add('hidden');
 }
 
-async function salvarAlterarNome(){
+async function salvarAlterarDados(){
   if(!usuario)return;
   const nomeLimpo=document.getElementById('userNome').value.trim();
   const emailLimpo=document.getElementById('userEmail').value.trim();
-  if(!nomeLimpo){showToast('O nome não pode ficar vazio','error');return}
-  if(!emailLimpo){showToast('O e-mail não pode ficar vazio','error');return}
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLimpo)){showToast('Digite um e-mail válido','error');return}
+  if(!nomeLimpo||!emailLimpo){showToast('Preencha nome e email','error');return}
   if(nomeLimpo===usuario.nome&&emailLimpo===usuario.email){fecharModalDirect('modalLogin');return}
   try{
-    const res=await fetch(`${API}/api/usuarios/${usuario.id}/nome`,{
+    const res=await fetch(`${API}/api/usuarios/${usuario.id}`,{
       method:'PUT',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({novo_nome:nomeLimpo,novo_email:emailLimpo})
+      body:JSON.stringify({email_atual:usuario.email,novo_nome:nomeLimpo,novo_email:emailLimpo})
     });
     const data=await res.json();
-    if(!data.sucesso){showToast(data.erro||'Erro ao salvar alteração','error');return}
+    if(!res.ok||!data.sucesso){showToast(data.erro||'Erro ao atualizar dados','error');return}
     usuario=data.usuario;
     localStorage.setItem('lf_user',JSON.stringify(usuario));
     atualizarUIUsuario();
     fecharModalDirect('modalLogin');
     showToast('✅ Dados atualizados! Lances antigos continuam com o nome anterior.','success');
-  }catch(e){showToast('Erro ao salvar alteração: '+e.message,'error')}
+  }catch(e){showToast('Erro ao atualizar dados: '+e.message,'error')}
 }
 
 function sairLeilao(){
