@@ -179,6 +179,24 @@ function authenticate(req, res, next) {
 
 // ========== FUNÇÕES AUXILIARES DO MOTOR DE LEILÃO ==========
 
+// Garante que o slug gerado a partir do nome é único no banco. Se já existir
+// (de OUTRA campanha, não da que está sendo editada), adiciona um sufixo
+// numérico (-2, -3...) até achar um livre.
+async function gerarSlugUnico(nomeBase, campanhaIdAtual) {
+  const base = slugify(nomeBase) || 'leilao';
+  let candidato = base;
+  let sufixo = 2;
+  while (true) {
+    const existe = await pool.query(
+      'SELECT id FROM campanhas WHERE slug = $1 AND id IS DISTINCT FROM $2',
+      [candidato, campanhaIdAtual || null]
+    );
+    if (existe.rows.length === 0) return candidato;
+    candidato = `${base}-${sufixo}`;
+    sufixo++;
+  }
+}
+
 // Calcula o valor do próximo lance (maior lance atual + valor_lance da campanha)
 async function calcularProximoLance(campanha_id) {
   try {
@@ -719,7 +737,10 @@ app.put('/api/campanhas/:id', authenticate, async (req, res) => {
     const c = atual.rows[0];
     const b = req.body;
     const nome = b.nome !== undefined ? b.nome : c.nome;
-    const slug = b.slug !== undefined ? b.slug : c.slug;
+    // Slug é regerado automaticamente a partir do nome sempre que o nome mudar
+    // (o admin não precisa mais informar slug manualmente). Se o nome não
+    // mudou, mantém o slug atual sem recalcular à toa.
+    const slug = (nome !== c.nome) ? await gerarSlugUnico(nome, id) : c.slug;
     const descricao = b.descricao !== undefined ? b.descricao : c.descricao;
     const status = b.status !== undefined ? b.status : c.status;
     const data_inicio = b.data_inicio !== undefined ? b.data_inicio : c.data_inicio;
@@ -739,7 +760,17 @@ app.put('/api/campanhas/:id', authenticate, async (req, res) => {
       [nome, slug, descricao, validStatus, data_inicio, data_fim, duracao_horas, valor_lance, meta_valor,
        premio_imagem, premio_nome, premio_descricao, influencer_id, id]
     );
-    res.json(result.rows[0]);
+    const campAtualizada = result.rows[0];
+
+    // Propaga em tempo real para quem já está com a página aberta. Se o
+    // slug mudou, o frontend precisa redirecionar (não só atualizar texto),
+    // senão quem está na URL antiga fica numa página que vai virar 404.
+    io.emit('campanha_atualizada', campAtualizada);
+    if (slug !== c.slug) {
+      io.emit('campanha_slug_alterado', { campanha_id: id, slug_antigo: c.slug, slug_novo: slug });
+    }
+
+    res.json(campAtualizada);
   } catch (err) { console.error('[CAMPANHA UPDATE]', err); res.status(500).json({ erro: err.message }); }
 });
 
@@ -939,40 +970,49 @@ app.post('/api/usuarios', async (req, res) => {
   } catch (err) { res.status(500).json({ erro: err.message }); }
 });
 
-// Atualiza os dados da conta mantendo o mesmo usuario_id e histórico relacionado.
-app.put('/api/usuarios/:id', async (req, res) => {
+// Altera o nome de exibição do usuário. Mantém o mesmo usuario_id (não
+// cria um novo cadastro, não fragmenta ranking/histórico). Lances já
+// registrados guardam o nome antigo congelado (coluna lances.usuario_nome)
+// e continuam mostrando o nome de quando foram dados; só os lances NOVOS,
+// a partir de agora, usam o nome atualizado.
+// Altera nome e/ou e-mail de exibição do usuário. Mantém o mesmo usuario_id
+// (não cria novo cadastro, não fragmenta ranking/histórico). A identidade é
+// confirmada pelo próprio :id da URL (vem do localStorage do navegador, não
+// é algo que a pessoa digita) — por isso o e-mail pode ser editado aqui sem
+// enfraquecer a segurança. Lances já registrados guardam o nome antigo
+// congelado (coluna lances.usuario_nome) e continuam mostrando o nome de
+// quando foram dados; só os lances NOVOS, a partir de agora, usam os dados
+// atualizados.
+app.put('/api/usuarios/:id/nome', async (req, res) => {
   try {
     const { id } = req.params;
-    const { email_atual, novo_nome, novo_email } = req.body;
+    const { novo_nome, novo_email } = req.body;
     const nomeLimpo = (novo_nome || '').trim();
-    const emailAtual = (email_atual || '').trim();
-    const emailNovo = (novo_email || '').trim();
+    const emailLimpo = (novo_email || '').trim().toLowerCase();
 
-    if (!emailAtual) return res.status(400).json({ erro: 'Email atual é obrigatório para confirmar identidade' });
-    if (!nomeLimpo || !emailNovo) return res.status(400).json({ erro: 'Informe nome e email' });
+    if (!nomeLimpo) return res.status(400).json({ erro: 'Informe o novo nome' });
     if (nomeLimpo.length > 100) return res.status(400).json({ erro: 'Nome muito longo (máximo 100 caracteres)' });
+    if (!emailLimpo) return res.status(400).json({ erro: 'Informe o e-mail' });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLimpo)) return res.status(400).json({ erro: 'E-mail inválido' });
 
-    const userCheck = await pool.query('SELECT id FROM usuarios WHERE id = $1 AND email = $2', [id, emailAtual]);
+    const userCheck = await pool.query('SELECT * FROM usuarios WHERE id = $1', [id]);
     if (userCheck.rows.length === 0) {
-      return res.status(404).json({ erro: 'Usuário não encontrado (confira o e-mail usado no cadastro)' });
-    }
-
-    const emailEmUso = await pool.query('SELECT id FROM usuarios WHERE email = $1 AND id <> $2', [emailNovo, id]);
-    if (emailEmUso.rows.length > 0) {
-      return res.status(409).json({ erro: 'Este e-mail já pertence a outra conta' });
+      return res.status(404).json({ erro: 'Usuário não encontrado' });
     }
 
     const result = await pool.query(
       'UPDATE usuarios SET nome = $1, email = $2 WHERE id = $3 RETURNING *',
-      [nomeLimpo, emailNovo, id]
+      [nomeLimpo, emailLimpo, id]
     );
-    console.log(`[USUARIO] Dados atualizados para o usuário ${id}`);
+    console.log(`[USUARIO/NOME] Usuário ${id} atualizado: nome="${nomeLimpo}", email="${emailLimpo}"`);
     res.json({ sucesso: true, usuario: result.rows[0] });
   } catch (err) {
+    // Constraint UNIQUE do e-mail: alguém tentou trocar para um e-mail que
+    // já é de outra conta cadastrada
     if (err.code === '23505') {
-      return res.status(409).json({ erro: 'Este e-mail já pertence a outra conta' });
+      return res.status(409).json({ erro: 'Este e-mail já está sendo usado por outra conta. Use outro e-mail.' });
     }
-    console.error('[USUARIO] Erro:', err.message);
+    console.error('[USUARIO/NOME] Erro:', err.message);
     res.status(500).json({ erro: err.message });
   }
 });

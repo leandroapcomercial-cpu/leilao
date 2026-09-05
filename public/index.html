@@ -59,6 +59,7 @@ input{font-family:inherit;outline:none}
 
 /* ===== CARD ===== */
 .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:12px;contain:layout style paint}
+.campanha-titulo{font-size:1.4rem;font-weight:800;color:var(--text);margin:0 0 14px;text-align:center;line-height:1.25}
 .card-premio{padding:20px;text-align:center}
 .premio-img-wrap{position:relative;width:100%;max-width:320px;margin:0 auto 12px;border-radius:var(--radius-sm);overflow:hidden}
 .premio-img{width:100%;display:block;object-fit:cover;aspect-ratio:1/1;background:#f1f5f9;cursor:pointer;transition:transform .3s}
@@ -252,6 +253,9 @@ input{font-family:inherit;outline:none}
 <!-- MAIN -->
 <div class="container" id="mainContainer" style="display:none">
   <div class="col-main">
+    <!-- TÍTULO DA CAMPANHA -->
+    <h1 class="campanha-titulo" id="campanhaTitulo"></h1>
+
     <!-- PREMIO -->
     <div class="card card-premio">
       <div class="premio-img-wrap">
@@ -423,6 +427,12 @@ function conectarSocket(){
   socket.on('connect',()=>{if(campanha)socket.emit('join',campanha.id);setConnStatus('ok')});
   socket.on('novo_lance',data=>{if(campanha&&data.campanha_id==campanha.id){adicionarLanceSocket(data.lance)}});
   socket.on('campanha_atualizada',data=>{if(data.id==campanha?.id){Object.assign(campanha,data);renderCampanha()}});
+  socket.on('campanha_slug_alterado',data=>{
+    if(campanha&&data.campanha_id==campanha.id&&data.slug_novo!==slug){
+      showToast('🔄 O link deste leilão mudou! Redirecionando...','success');
+      setTimeout(()=>{window.location.href='/'+data.slug_novo;},1500);
+    }
+  });
   socket.on('disconnect',()=>setConnStatus('reconnecting'));
   socket.on('reconnect_attempt',()=>setConnStatus('reconnecting'));
   socket.on('reconnect',()=>setConnStatus('ok'));
@@ -472,6 +482,7 @@ function renderCampanha(){
   const encerrada=c.status==='finalizada'||(c.data_fim&&new Date(c.data_fim)<new Date());
   const pausada=c.status==='pausada';
 
+  document.getElementById('campanhaTitulo').textContent=c.nome||'Leilão';
   document.getElementById('premioNome').textContent=c.premio_nome||c.nome||'Prêmio';
   document.getElementById('premioDesc').textContent=c.premio_descricao||c.descricao||'';
   document.getElementById('premioImg').src=c.premio_imagem||'https://via.placeholder.com/400?text=Prêmio';
