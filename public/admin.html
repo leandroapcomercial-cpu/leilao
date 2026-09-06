@@ -38,7 +38,8 @@
   .stat-card h3{font-size:12px;text-transform:uppercase;color:#6b7280;margin-bottom:8px}
   .stat-card .value{font-size:28px;font-weight:700;color:#1f2937}
   table{width:100%;border-collapse:collapse;font-size:13px}
-  th,td{padding:12px;text-align:left;border-bottom:1px solid #e5e7eb}
+  th,td{padding:14px 12px;text-align:left;border-bottom:1px solid #e5e7eb;vertical-align:middle}
+  tbody tr:last-child td{border-bottom:none}
   th{background:#f9fafb;font-weight:600;color:#374151;font-size:12px;text-transform:uppercase}
   .badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600}
   .badge-pendente{background:#fef3c7;color:#92400e}
@@ -46,6 +47,10 @@
   .badge-pausada{background:#fee2e2;color:#991b1b}
   .badge-finalizada{background:#e5e7eb;color:#374151}
   .actions{display:flex;gap:6px;flex-wrap:wrap}
+  .arrec-progress-wrap{min-width:120px}
+  .arrec-progress-valores{display:flex;justify-content:space-between;font-size:11px;color:#6b7280;margin-bottom:4px}
+  .arrec-progress-track{width:100%;height:6px;background:#e5e7eb;border-radius:10px;overflow:hidden}
+  .arrec-progress-fill{height:100%;border-radius:10px;background:linear-gradient(90deg,#2563eb,#22c55e);transition:width .4s ease}
   .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
   .modal-overlay.active{display:flex}
   .modal{background:#fff;border-radius:16px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:0 25px 50px rgba(0,0,0,.25)}
@@ -272,12 +277,21 @@ function renderCampanhas(){
   let html='<table><thead><tr><th>Nome</th><th>Slug</th><th>Status</th><th>Meta</th><th>Arrecadado</th><th>Ações</th></tr></thead><tbody>';
   campanhas.forEach(c=>{
     const statusClass='badge-'+c.status;
-    const arrec=parseFloat(c.arrecadado||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
-    const meta=parseFloat(c.meta_valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+    const arrecNum=parseFloat(c.arrecadado||0);
+    const metaNum=parseFloat(c.meta_valor||0);
+    const arrec=arrecNum.toLocaleString('pt-BR',{minimumFractionDigits:2});
+    const meta=metaNum.toLocaleString('pt-BR',{minimumFractionDigits:2});
+    const pct=metaNum>0?Math.min(100,(arrecNum/metaNum)*100):0;
     html+=`<tr><td><strong>${c.nome}</strong><br><small style="color:#6b7280">${c.premio_nome||''}</small></td>
       <td><a href="/${c.slug}" target="_blank" style="color:#2563eb">/${c.slug}</a></td>
       <td><span class="badge ${statusClass}">${c.status}</span></td>
-      <td>R$ ${meta}</td><td>R$ ${arrec}</td>
+      <td>R$ ${meta}</td>
+      <td>
+        <div class="arrec-progress-wrap">
+          <div class="arrec-progress-valores"><span>R$ ${arrec}</span><span>${pct.toFixed(0)}%</span></div>
+          <div class="arrec-progress-track"><div class="arrec-progress-fill" style="width:${pct}%"></div></div>
+        </div>
+      </td>
       <td class="actions">
         <button class="btn btn-sm btn-info" onclick="editarCampanha(${c.id})">Editar</button>
         ${c.status==='pendente'?`<button class="btn btn-sm btn-success" onclick="acaoCampanha(${c.id},'ativar')">Ativar</button>`:''}
