@@ -412,6 +412,19 @@ function conectarSocketAdmin(){
         renderCampanhas();
         updateDashboard();
       }
+
+      // Propaga também para o(s) influencer(es) vinculados a essa campanha,
+      // sem precisar trocar de aba ou clicar em Atualizar
+      if(influencers && influencers.length && dados.lance){
+        let houveMudanca=false;
+        influencers.forEach(inf=>{
+          if(inf.campanha_id===dados.campanha_id){
+            inf.campanha_arrecadado=(parseFloat(inf.campanha_arrecadado)||0)+parseFloat(dados.lance.valor||0);
+            houveMudanca=true;
+          }
+        });
+        if(houveMudanca)renderInfluencers(influencers);
+      }
     });
   }catch(e){console.error('[SOCKET ADMIN]',e);}
 }
