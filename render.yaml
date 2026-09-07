@@ -10,17 +10,25 @@ services:
         value: production
       - key: PORT
         value: 10000
-      - key: DB_PATH
-        value: /var/lib/data/database.sqlite
+      - key: DATABASE_URL
+        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: CHAVE_PIX
         sync: false
       - key: MERCADO_PAGO_ACCESS_TOKEN
         sync: false
+      - key: MERCADO_PAGO_WEBHOOK_SECRET
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_SENDER_EMAIL
+        sync: false
+      - key: SITE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
       - key: CORS_ORIGINS
         value: https://leilao-facil.onrender.com
-    disk:
-      name: sqlite-data
-      mountPath: /var/lib/data
-      sizeGB: 1
