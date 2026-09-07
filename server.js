@@ -536,6 +536,15 @@ async function runMigrations() {
       comissao DECIMAL(5,2) DEFAULT 0,
       created_at TIMESTAMP DEFAULT NOW()
     )`);
+  await addColumnIfMissing('influencers', 'campanha_id', 'INTEGER');
+  await addColumnIfMissing('influencers', 'meta_valor', 'DECIMAL(10,2) DEFAULT 0');
+  await addColumnIfMissing('influencers', 'premiacao', 'TEXT');
+  await addColumnIfMissing('influencers', 'premio_25', 'TEXT');
+  await addColumnIfMissing('influencers', 'premio_50', 'TEXT');
+  await addColumnIfMissing('influencers', 'premio_75', 'TEXT');
+  await addColumnIfMissing('influencers', 'premio_100', 'TEXT');
+  await addColumnIfMissing('influencers', 'codigo', 'VARCHAR(100)');
+  await addColumnIfMissing('influencers', 'ativo', 'INTEGER DEFAULT 1');
 
   // 7. configuracoes
   await pool.query(`
@@ -919,6 +928,106 @@ app.get('/api/logs', authenticate, async (req, res) => {
   } catch (err) { res.status(500).json({ erro: err.message }); }
 });
 
+// ===================== INFLUENCERS (ADMIN) =====================
+
+app.get('/api/influencers', authenticate, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT i.*,
+             c.nome AS campanha_nome,
+             c.slug AS campanha_slug,
+             c.status AS campanha_status,
+             COALESCE(c.arrecadado, 0) AS campanha_arrecadado,
+             COALESCE(c.meta_valor, 0) AS campanha_meta_valor
+      FROM influencers i
+      LEFT JOIN campanhas c ON i.campanha_id = c.id
+      ORDER BY i.id DESC
+    `);
+    res.json(result.rows);
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
+app.post('/api/influencers', authenticate, async (req, res) => {
+  try {
+    const {
+      nome, email, telefone, codigo, comissao,
+      campanha_id, meta_valor, premiacao,
+      premio_25, premio_50, premio_75, premio_100
+    } = req.body;
+    if (!nome || !nome.trim()) return res.status(400).json({ erro: 'Nome é obrigatório' });
+
+    const sql = `
+      INSERT INTO influencers 
+        (nome, email, telefone, codigo, comissao, campanha_id, meta_valor, premiacao, premio_25, premio_50, premio_75, premio_100)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      RETURNING *
+    `;
+    const params = [
+      nome.trim(), email || null, telefone || null, codigo || null,
+      parseFloat(comissao) || 0,
+      campanha_id ? parseInt(campanha_id) : null,
+      parseFloat(meta_valor) || 0,
+      premiacao || '',
+      premio_25 || '', premio_50 || '', premio_75 || '', premio_100 || ''
+    ];
+    const result = await pool.query(sql, params);
+    res.json(result.rows[0]);
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
+app.put('/api/influencers/:id', authenticate, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const {
+      nome, email, telefone, codigo, comissao,
+      campanha_id, meta_valor, premiacao,
+      premio_25, premio_50, premio_75, premio_100
+    } = req.body;
+
+    const sql = `
+      UPDATE influencers SET
+        nome = COALESCE($1, nome),
+        email = $2,
+        telefone = $3,
+        codigo = $4,
+        comissao = COALESCE($5, comissao),
+        campanha_id = $6,
+        meta_valor = COALESCE($7, meta_valor),
+        premiacao = $8,
+        premio_25 = $9,
+        premio_50 = $10,
+        premio_75 = $11,
+        premio_100 = $12
+      WHERE id = $13
+      RETURNING *
+    `;
+    const params = [
+      nome ? nome.trim() : null,
+      email || null, telefone || null, codigo || null,
+      comissao !== undefined ? parseFloat(comissao) : null,
+      campanha_id ? parseInt(campanha_id) : null,
+      meta_valor !== undefined ? parseFloat(meta_valor) : null,
+      premiacao !== undefined ? premiacao : '',
+      premio_25 !== undefined ? premio_25 : '',
+      premio_50 !== undefined ? premio_50 : '',
+      premio_75 !== undefined ? premio_75 : '',
+      premio_100 !== undefined ? premio_100 : '',
+      id
+    ];
+    const result = await pool.query(sql, params);
+    if (result.rows.length === 0) return res.status(404).json({ erro: 'Influencer não encontrado' });
+    res.json(result.rows[0]);
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
+app.delete('/api/influencers/:id', authenticate, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await pool.query('DELETE FROM influencers WHERE id = $1', [id]);
+    res.json({ sucesso: true });
+  } catch (err) { res.status(500).json({ erro: err.message }); }
+});
+
 // ===================== ROTAS PÚBLICAS =====================
 
 app.get('/api/campanha/:slug', async (req, res) => {
@@ -936,11 +1045,12 @@ app.get('/api/usuarios', authenticate, async (req, res) => {
     const result = await pool.query(`
       SELECT u.id, u.nome, u.email, u.created_at,
              COUNT(l.id)::int as total_lances,
+             COALESCE(SUM(l.valor), 0)::numeric(10,2) as total_investido,
              MAX(l.valor) as maior_lance
       FROM usuarios u
       LEFT JOIN lances l ON l.usuario_id = u.id
       GROUP BY u.id, u.nome, u.email, u.created_at
-      ORDER BY total_lances DESC, u.created_at DESC
+      ORDER BY total_investido DESC, total_lances DESC, u.created_at DESC
     `);
     res.json(result.rows);
   } catch (err) { res.status(500).json({ erro: err.message }); }

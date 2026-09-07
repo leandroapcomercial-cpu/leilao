@@ -79,6 +79,13 @@
   .log-INFO{color:#2563eb}
   .log-DEBUG{color:#6b7280}
   .truncate{max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .inf-milestones{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-top:10px}
+  .inf-milestone-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px;text-align:center;font-size:11px;transition:all .2s ease}
+  .inf-milestone-box.atingido{background:#ecfdf5;border-color:#10b981;color:#065f46;box-shadow:0 1px 3px rgba(16,185,129,.15)}
+  .inf-milestone-box .pct{font-weight:700;font-size:12px;margin-bottom:2px}
+  .inf-milestone-box .val{color:#64748b;font-weight:600}
+  .inf-milestone-box .premio{font-size:10px;margin-top:4px;color:#2563eb;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .inf-milestone-box.atingido .premio{color:#059669;font-weight:600}
   @media(max-width:768px){.sidebar{width:100%;position:relative;height:auto}.main{margin-left:0}}
 </style>
 </head>
@@ -99,6 +106,7 @@
     <h2>⚙️ Admin</h2>
     <div class="nav-item active" onclick="showSection('dashboard',this)">📊 Dashboard</div>
     <div class="nav-item" onclick="showSection('campanhas',this)">🎯 Campanhas</div>
+    <div class="nav-item" onclick="showSection('influencers',this)">👥 Influencers</div>
     <div class="nav-item" onclick="showSection('usuarios',this)">👤 Usuários</div>
     <div class="nav-item" onclick="showSection('logs',this)">📋 Logs do Sistema</div>
     <div class="nav-item" onclick="showSection('config',this)">🔧 Configurações</div>
@@ -118,8 +126,27 @@
       <div class="header"><h1>Campanhas</h1><button class="btn btn-success btn-sm" onclick="openModal()">+ Nova Campanha</button></div>
       <div class="card"><div id="campanhasList"></div></div>
     </div>
+    <div id="section-influencers" style="display:none">
+      <div class="header">
+        <h1>Influencers</h1>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-success btn-sm" onclick="openInfluencerModal()">+ Novo Influencer</button>
+          <button class="btn btn-secondary btn-sm" onclick="loadInfluencers()">🔄 Atualizar</button>
+        </div>
+      </div>
+      <div class="card">
+        <p style="margin-bottom:14px;color:#64748b;font-size:.85rem">Controle interno de influencers vinculados a leilões ativos, com acompanhamento de metas, progresso e premiações em tempo real.</p>
+        <div id="influencersList"></div>
+      </div>
+    </div>
     <div id="section-usuarios" style="display:none">
-      <div class="header"><h1>Usuários</h1><button class="btn btn-secondary btn-sm" onclick="loadUsuarios()">🔄 Atualizar</button></div>
+      <div class="header">
+        <h1>Usuários</h1>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-success btn-sm" onclick="exportarUsuariosCSV()">📥 Exportar Planilha</button>
+          <button class="btn btn-secondary btn-sm" onclick="loadUsuarios()">🔄 Atualizar</button>
+        </div>
+      </div>
       <div class="card">
         <p style="margin-bottom:12px;color:#64748b;font-size:.85rem">Uma linha por conta real (identificada pelo e-mail). Se o usuário mudou de nome, aqui aparece o nome atual — o histórico de nomes usados fica registrado nos lances de cada campanha.</p>
         <div id="usuariosList"></div>
@@ -189,12 +216,101 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="influencerModalOverlay">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-header">
+      <h3 id="influencerModalTitle">Novo Influencer</h3>
+      <button class="btn btn-sm btn-secondary" onclick="closeInfluencerModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="infId">
+      <div class="form-group">
+        <label>Nome do Influencer *</label>
+        <input type="text" id="infNome" placeholder="Ex: João da Silva">
+      </div>
+      <div class="form-group">
+        <label>Sincronizar a um Leilão (Ativo ou Pendente)</label>
+        <select id="infCampanhaId" onchange="aoSelecionarCampanhaInfluencer(this.value)">
+          <option value="">-- Nenhum leilão vinculado --</option>
+        </select>
+        <small style="color:#64748b;font-size:12px;display:block;margin-top:4px">Ao selecionar o leilão, o sistema adapta a meta e sincroniza o arrecadado em tempo real.</small>
+      </div>
+      <div class="form-group">
+        <label>Meta do Influencer / Leilão (R$)</label>
+        <input type="number" step="0.01" id="infMetaValor" placeholder="Ex: 5000.00" oninput="atualizarPreviewMarcosInfluencer()">
+      </div>
+      <div class="form-group">
+        <label>Premiação Principal / Geral</label>
+        <input type="text" id="infPremiacao" placeholder="Ex: R$ 1.000,00 no PIX ou iPhone 15">
+      </div>
+
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-top:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h4 style="font-size:13px;color:#334151;margin:0">🎯 Metas de Atingimento e Premiações por Marco</h4>
+          <span style="font-size:11px;color:#64748b">Calculado sobre a Meta</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:110px 1fr;gap:10px;align-items:center;margin-bottom:10px">
+          <div>
+            <strong style="font-size:12px;color:#2563eb">Marco 25%:</strong>
+            <div id="valorMarco25" style="font-size:11px;color:#64748b;font-weight:600">R$ 0,00</div>
+          </div>
+          <input type="text" id="infPremio25" placeholder="Premiação aos 25% (ex: R$ 150 no PIX)" style="padding:8px 10px;font-size:12px;border:1px solid #d1d5db;border-radius:6px;width:100%">
+        </div>
+
+        <div style="display:grid;grid-template-columns:110px 1fr;gap:10px;align-items:center;margin-bottom:10px">
+          <div>
+            <strong style="font-size:12px;color:#2563eb">Marco 50%:</strong>
+            <div id="valorMarco50" style="font-size:11px;color:#64748b;font-weight:600">R$ 0,00</div>
+          </div>
+          <input type="text" id="infPremio50" placeholder="Premiação aos 50% (ex: R$ 350 no PIX)" style="padding:8px 10px;font-size:12px;border:1px solid #d1d5db;border-radius:6px;width:100%">
+        </div>
+
+        <div style="display:grid;grid-template-columns:110px 1fr;gap:10px;align-items:center;margin-bottom:10px">
+          <div>
+            <strong style="font-size:12px;color:#2563eb">Marco 75%:</strong>
+            <div id="valorMarco75" style="font-size:11px;color:#64748b;font-weight:600">R$ 0,00</div>
+          </div>
+          <input type="text" id="infPremio75" placeholder="Premiação aos 75% (ex: Smartwatch ou R$ 600)" style="padding:8px 10px;font-size:12px;border:1px solid #d1d5db;border-radius:6px;width:100%">
+        </div>
+
+        <div style="display:grid;grid-template-columns:110px 1fr;gap:10px;align-items:center">
+          <div>
+            <strong style="font-size:12px;color:#10b981">Meta 100%:</strong>
+            <div id="valorMarco100" style="font-size:11px;color:#64748b;font-weight:600">R$ 0,00</div>
+          </div>
+          <input type="text" id="infPremio100" placeholder="Premiação aos 100% (ex: iPhone 15 ou R$ 1.500)" style="padding:8px 10px;font-size:12px;border:1px solid #d1d5db;border-radius:6px;width:100%">
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px">
+        <div class="form-group" style="margin-bottom:0">
+          <label>Código de Referência (Opcional)</label>
+          <input type="text" id="infCodigo" placeholder="Ex: joao2026">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Telefone / WhatsApp (Opcional)</label>
+          <input type="text" id="infTelefone" placeholder="(11) 99999-9999">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeInfluencerModal()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="salvarInfluencer()">Salvar Influencer</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
+<script src="/socket.io/socket.io.js"></script>
 <script>
 const API='';
 let token=null; // Sempre exige login ao carregar a página — não reaproveita token salvo automaticamente
 let campanhas=[];
+let influencers=[];
+let usuariosCache=[];
+let socketAdmin=null;
 let logsPage=1;
 let logsData={logs:[],pagination:{}};
 
@@ -231,25 +347,73 @@ function initApp(){
   document.getElementById('app').style.display='block';
   const p=JSON.parse(atob(token.split('.')[1]));
   document.getElementById('adminName').textContent=p.email;
-  loadCampanhas();showSection('dashboard');
+  loadCampanhas();
+  conectarSocketAdmin();
+  showSection('dashboard');
 }
 
 function logout(){
   token=null;
+  if(socketAdmin){socketAdmin.disconnect();socketAdmin=null;}
   localStorage.removeItem('lf_token'); // limpa qualquer token de versões anteriores
   clearTimeout(inatividadeTimer);
   location.reload();
 }
 
 function showSection(id, el){
-  ['dashboard','campanhas','usuarios','logs','config'].forEach(s=>document.getElementById('section-'+s).style.display='none');
-  document.getElementById('section-'+id).style.display='block';
+  ['dashboard','campanhas','influencers','usuarios','logs','config'].forEach(s=>{
+    const sec=document.getElementById('section-'+s);
+    if(sec)sec.style.display='none';
+  });
+  const alvoSec=document.getElementById('section-'+id);
+  if(alvoSec)alvoSec.style.display='block';
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const alvo=el||(window.event&&window.event.target);
   if(alvo)alvo.classList.add('active');
   if(id==='logs')loadLogs(1);
   if(id==='dashboard')updateDashboard();
   if(id==='usuarios')loadUsuarios();
+  if(id==='influencers')loadInfluencers();
+}
+
+function conectarSocketAdmin(){
+  if(socketAdmin || typeof io === 'undefined')return;
+  try{
+    socketAdmin=io();
+    socketAdmin.on('campanha_atualizada', (campAtualizada)=>{
+      const idx=campanhas.findIndex(c=>c.id===campAtualizada.id);
+      if(idx!==-1)campanhas[idx]=campAtualizada;
+      else campanhas.unshift(campAtualizada);
+      renderCampanhas();
+      updateDashboard();
+
+      // Atualiza os influencers vinculados em tempo real
+      if(influencers && influencers.length){
+        let houveMudanca=false;
+        influencers.forEach(inf=>{
+          if(inf.campanha_id===campAtualizada.id){
+            inf.campanha_arrecadado=campAtualizada.arrecadado;
+            inf.campanha_meta_valor=campAtualizada.meta_valor;
+            inf.campanha_status=campAtualizada.status;
+            inf.campanha_nome=campAtualizada.nome;
+            houveMudanca=true;
+          }
+        });
+        if(houveMudanca)renderInfluencers(influencers);
+      }
+    });
+
+    socketAdmin.on('novo_lance', (dados)=>{
+      // Atualiza contador de lances e arrecadado em tempo real se a tela estiver aberta
+      const c=campanhas.find(x=>x.id===dados.campanha_id);
+      if(c && dados.lance){
+        c.total_lances=(parseInt(c.total_lances)||0)+1;
+        c.arrecadado=(parseFloat(c.arrecadado)||0)+parseFloat(dados.lance.valor||0);
+        renderCampanhas();
+        updateDashboard();
+      }
+    });
+  }catch(e){console.error('[SOCKET ADMIN]',e);}
 }
 
 async function loadCampanhas(){
@@ -292,13 +456,15 @@ function renderCampanhas(){
           <div class="arrec-progress-track"><div class="arrec-progress-fill" style="width:${pct}%"></div></div>
         </div>
       </td>
-      <td class="actions">
-        <button class="btn btn-sm btn-info" onclick="editarCampanha(${c.id})">Editar</button>
-        ${c.status==='pendente'?`<button class="btn btn-sm btn-success" onclick="acaoCampanha(${c.id},'ativar')">Ativar</button>`:''}
-        ${c.status==='ativa'?`<button class="btn btn-sm btn-warning" onclick="acaoCampanha(${c.id},'pausar')">Pausar</button>`:''}
-        ${c.status==='pausada'?`<button class="btn btn-sm btn-success" onclick="acaoCampanha(${c.id},'play')">▶️ Play</button>`:''}
-        ${c.status!=='pendente'?`<button class="btn btn-sm btn-secondary" onclick="acaoCampanha(${c.id},'reset')">🔄 Reset</button>`:''}
-        <button class="btn btn-sm btn-danger" onclick="excluirCampanha(${c.id})">Excluir</button>
+      <td>
+        <div class="actions">
+          <button class="btn btn-sm btn-info" onclick="editarCampanha(${c.id})">Editar</button>
+          ${c.status==='pendente'?`<button class="btn btn-sm btn-success" onclick="acaoCampanha(${c.id},'ativar')">Ativar</button>`:''}
+          ${c.status==='ativa'?`<button class="btn btn-sm btn-warning" onclick="acaoCampanha(${c.id},'pausar')">Pausar</button>`:''}
+          ${c.status==='pausada'?`<button class="btn btn-sm btn-success" onclick="acaoCampanha(${c.id},'play')">▶️ Play</button>`:''}
+          ${c.status!=='pendente'?`<button class="btn btn-sm btn-secondary" onclick="acaoCampanha(${c.id},'reset')">🔄 Reset</button>`:''}
+          <button class="btn btn-sm btn-danger" onclick="excluirCampanha(${c.id})">Excluir</button>
+        </div>
       </td></tr>`;
   });
   html+='</tbody></table>';el.innerHTML=html;
@@ -404,20 +570,260 @@ async function excluirCampanha(id){
 async function loadUsuarios(){
   try{
     const res=await fetch(`${API}/api/usuarios`,{headers:{'Authorization':'Bearer '+token}});
-    const usuarios=await res.json();renderUsuarios(usuarios);
+    const usuarios=await res.json();
+    usuariosCache=usuarios;
+    renderUsuarios(usuarios);
   }catch(err){document.getElementById('usuariosList').innerHTML='<div class="empty-state">Erro ao carregar usuários</div>'}
 }
 
 function renderUsuarios(usuarios){
   const el=document.getElementById('usuariosList');
   if(!usuarios||!usuarios.length){el.innerHTML='<div class="empty-state">Nenhum usuário cadastrado ainda.</div>';return}
-  let html='<table><thead><tr><th>ID</th><th>Nome atual</th><th>Email</th><th>Total de lances</th><th>Maior lance</th><th>Cadastro</th></tr></thead><tbody>';
+  let html='<table><thead><tr><th>ID</th><th>Nome atual</th><th>Email</th><th>Total de lances</th><th>Investido</th><th>Maior lance</th><th>Cadastro</th></tr></thead><tbody>';
   usuarios.forEach(u=>{
     const data=u.created_at?new Date(u.created_at).toLocaleString('pt-BR'):'-';
     const maior=u.maior_lance!=null?('R$ '+parseFloat(u.maior_lance).toFixed(2).replace('.',',')):'-';
-    html+=`<tr><td>#${u.id}</td><td><strong>${u.nome||'-'}</strong></td><td class="truncate">${u.email||'-'}</td><td>${u.total_lances||0}</td><td>${maior}</td><td>${data}</td></tr>`;
+    const investido=u.total_investido!=null?('R$ '+parseFloat(u.total_investido).toFixed(2).replace('.',',')):'R$ 0,00';
+    html+=`<tr><td>#${u.id}</td><td><strong>${u.nome||'-'}</strong></td><td class="truncate">${u.email||'-'}</td><td>${u.total_lances||0}</td><td><strong style="color:#059669">${investido}</strong></td><td>${maior}</td><td>${data}</td></tr>`;
   });
   html+='</tbody></table>';el.innerHTML=html;
+}
+
+function exportarUsuariosCSV(){
+  if(!usuariosCache||!usuariosCache.length){
+    showToast('Nenhum usuário para exportar','error');
+    return;
+  }
+  const cabecalhos=['ID','Nome','Email','Total de Lances','Total Investido (R$)','Maior Lance (R$)','Data de Cadastro'];
+  const linhas=usuariosCache.map(u=>{
+    const id=u.id||'';
+    const nome=(u.nome||'').replace(/"/g,'""');
+    const email=(u.email||'').replace(/"/g,'""');
+    const totalLances=u.total_lances||0;
+    const investido=parseFloat(u.total_investido||0).toFixed(2).replace('.',',');
+    const maior=u.maior_lance!=null?parseFloat(u.maior_lance).toFixed(2).replace('.',','):'0,00';
+    const cadastro=u.created_at?new Date(u.created_at).toLocaleString('pt-BR'):'';
+    return [id,`"${nome}"`,`"${email}"`,totalLances,`"${investido}"`,`"${maior}"`,`"${cadastro}"`].join(';');
+  });
+  const conteudoCsv='\uFEFF'+[cabecalhos.join(';'),...linhas].join('\r\n');
+  const blob=new Blob([conteudoCsv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement('a');
+  const hoje=new Date().toISOString().split('T')[0];
+  link.setAttribute('href',url);
+  link.setAttribute('download',`usuarios_leilao_facil_${hoje}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  showToast('Planilha exportada com sucesso!');
+}
+
+// ========== GERENCIAMENTO DE INFLUENCERS ==========
+
+async function loadInfluencers(){
+  try{
+    const res=await fetch(`${API}/api/influencers`,{headers:{'Authorization':'Bearer '+token}});
+    influencers=await res.json();
+    renderInfluencers(influencers);
+  }catch(err){
+    document.getElementById('influencersList').innerHTML='<div class="empty-state">Erro ao carregar influencers</div>';
+  }
+}
+
+function renderInfluencers(lista){
+  const el=document.getElementById('influencersList');
+  if(!lista||!lista.length){
+    el.innerHTML='<div class="empty-state">Nenhum influencer cadastrado ainda. Clique em "+ Novo Influencer" para começar.</div>';
+    return;
+  }
+
+  let html='<table><thead><tr><th>Influencer</th><th>Leilão Vinculado</th><th>Meta / Arrecadado</th><th style="min-width:320px">Atingimento da Meta</th><th>Premiação</th><th>Ações</th></tr></thead><tbody>';
+
+  lista.forEach(inf=>{
+    const metaNum=parseFloat(inf.meta_valor||0);
+    const arrecNum=parseFloat(inf.campanha_arrecadado||0);
+    const pct=metaNum>0?Math.min(100,(arrecNum/metaNum)*100):0;
+    const metaFmt=metaNum.toLocaleString('pt-BR',{minimumFractionDigits:2});
+    const arrecFmt=arrecNum.toLocaleString('pt-BR',{minimumFractionDigits:2});
+
+    let leilaoHtml='<span style="color:#94a3b8;font-style:italic">Nenhum vínculo</span>';
+    if(inf.campanha_id){
+      const stClass='badge-'+(inf.campanha_status||'pendente');
+      leilaoHtml=`<div><strong>${inf.campanha_nome||'Leilão #'+inf.campanha_id}</strong><br><a href="/${inf.campanha_slug}" target="_blank" style="color:#2563eb;font-size:11px">/${inf.campanha_slug}</a> <span class="badge ${stClass}" style="font-size:10px">${inf.campanha_status||'pendente'}</span></div>`;
+    }
+
+    const pct25=metaNum*0.25;
+    const pct50=metaNum*0.50;
+    const pct75=metaNum*0.75;
+
+    html+=`<tr>
+      <td>
+        <strong>${inf.nome}</strong>
+        ${inf.codigo?`<br><small style="color:#64748b">Ref: <code>${inf.codigo}</code></small>`:''}
+        ${inf.telefone?`<br><small style="color:#64748b">${inf.telefone}</small>`:''}
+      </td>
+      <td>${leilaoHtml}</td>
+      <td>
+        <div style="font-size:12px">Meta: <strong>R$ ${metaFmt}</strong></div>
+        <div style="font-size:12px;color:#059669">Arrecadado: <strong>R$ ${arrecFmt}</strong></div>
+      </td>
+      <td>
+        <div class="arrec-progress-wrap" style="min-width:280px">
+          <div class="arrec-progress-valores">
+            <span>R$ ${arrecFmt} de R$ ${metaFmt}</span>
+            <strong style="color:${pct>=100?'#10b981':'#2563eb'}">${pct.toFixed(0)}%</strong>
+          </div>
+          <div class="arrec-progress-track" style="height:8px">
+            <div class="arrec-progress-fill" style="width:${pct}%;background:${pct>=100?'linear-gradient(90deg,#10b981,#059669)':'linear-gradient(90deg,#2563eb,#10b981)'}"></div>
+          </div>
+          <div class="inf-milestones">
+            <div class="inf-milestone-box ${pct>=25?'atingido':''}">
+              <div class="pct">25% ${pct>=25?'✅':''}</div>
+              <div class="val">R$ ${pct25.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+              ${inf.premio_25?`<div class="premio" title="${inf.premio_25}">🎁 ${inf.premio_25}</div>`:''}
+            </div>
+            <div class="inf-milestone-box ${pct>=50?'atingido':''}">
+              <div class="pct">50% ${pct>=50?'✅':''}</div>
+              <div class="val">R$ ${pct50.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+              ${inf.premio_50?`<div class="premio" title="${inf.premio_50}">🎁 ${inf.premio_50}</div>`:''}
+            </div>
+            <div class="inf-milestone-box ${pct>=75?'atingido':''}">
+              <div class="pct">75% ${pct>=75?'✅':''}</div>
+              <div class="val">R$ ${pct75.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+              ${inf.premio_75?`<div class="premio" title="${inf.premio_75}">🎁 ${inf.premio_75}</div>`:''}
+            </div>
+            <div class="inf-milestone-box ${pct>=100?'atingido':''}">
+              <div class="pct">100% ${pct>=100?'🏆':''}</div>
+              <div class="val">R$ ${metaFmt}</div>
+              ${inf.premio_100?`<div class="premio" title="${inf.premio_100}">🏆 ${inf.premio_100}</div>`:''}
+            </div>
+          </div>
+        </div>
+      </td>
+      <td>
+        ${inf.premiacao?`<strong>${inf.premiacao}</strong>`:''}
+        ${(!inf.premiacao&&!inf.premio_25&&!inf.premio_50&&!inf.premio_75&&!inf.premio_100)?'<span style="color:#94a3b8;font-style:italic">Não definida</span>':''}
+      </td>
+      <td>
+        <div class="actions">
+          <button class="btn btn-sm btn-info" onclick="openInfluencerModal(${inf.id})">Editar</button>
+          <button class="btn btn-sm btn-danger" onclick="excluirInfluencer(${inf.id})">Excluir</button>
+        </div>
+      </td>
+    </tr>`;
+  });
+
+  html+='</tbody></table>';
+  el.innerHTML=html;
+}
+
+function openInfluencerModal(id=null){
+  const select=document.getElementById('infCampanhaId');
+  select.innerHTML='<option value="">-- Nenhum leilão vinculado --</option>';
+  campanhas.forEach(c=>{
+    const stLabel=c.status==='ativa'?'[Ativo]':c.status==='pausada'?'[Pausado]':'[Pendente]';
+    select.innerHTML+=`<option value="${c.id}">${stLabel} ${c.nome} (Meta: R$ ${parseFloat(c.meta_valor||0).toFixed(2)})</option>`;
+  });
+
+  if(id){
+    document.getElementById('influencerModalTitle').textContent='Editar Influencer';
+    const inf=influencers.find(x=>x.id===id);
+    if(inf){
+      document.getElementById('infId').value=inf.id;
+      document.getElementById('infNome').value=inf.nome||'';
+      document.getElementById('infCampanhaId').value=inf.campanha_id||'';
+      document.getElementById('infMetaValor').value=inf.meta_valor||'';
+      document.getElementById('infPremiacao').value=inf.premiacao||'';
+      document.getElementById('infPremio25').value=inf.premio_25||'';
+      document.getElementById('infPremio50').value=inf.premio_50||'';
+      document.getElementById('infPremio75').value=inf.premio_75||'';
+      document.getElementById('infPremio100').value=inf.premio_100||'';
+      document.getElementById('infCodigo').value=inf.codigo||'';
+      document.getElementById('infTelefone').value=inf.telefone||'';
+    }
+  }else{
+    document.getElementById('influencerModalTitle').textContent='Novo Influencer';
+    document.getElementById('infId').value='';
+    ['infNome','infMetaValor','infPremiacao','infPremio25','infPremio50','infPremio75','infPremio100','infCodigo','infTelefone'].forEach(k=>{
+      document.getElementById(k).value='';
+    });
+    document.getElementById('infCampanhaId').value='';
+  }
+
+  atualizarPreviewMarcosInfluencer();
+  document.getElementById('influencerModalOverlay').classList.add('active');
+}
+
+function closeInfluencerModal(){
+  document.getElementById('influencerModalOverlay').classList.remove('active');
+}
+
+function aoSelecionarCampanhaInfluencer(campId){
+  if(!campId)return;
+  const c=campanhas.find(x=>x.id===parseInt(campId));
+  if(c){
+    const inputMeta=document.getElementById('infMetaValor');
+    if(!inputMeta.value||parseFloat(inputMeta.value)===0){
+      inputMeta.value=c.meta_valor||0;
+      atualizarPreviewMarcosInfluencer();
+    }
+  }
+}
+
+function atualizarPreviewMarcosInfluencer(){
+  const meta=parseFloat(document.getElementById('infMetaValor').value)||0;
+  document.getElementById('valorMarco25').textContent='R$ '+(meta*0.25).toLocaleString('pt-BR',{minimumFractionDigits:2});
+  document.getElementById('valorMarco50').textContent='R$ '+(meta*0.50).toLocaleString('pt-BR',{minimumFractionDigits:2});
+  document.getElementById('valorMarco75').textContent='R$ '+(meta*0.75).toLocaleString('pt-BR',{minimumFractionDigits:2});
+  document.getElementById('valorMarco100').textContent='R$ '+meta.toLocaleString('pt-BR',{minimumFractionDigits:2});
+}
+
+async function salvarInfluencer(){
+  const id=document.getElementById('infId').value;
+  const nome=document.getElementById('infNome').value.trim();
+  if(!nome){showToast('Nome do influencer é obrigatório','error');return}
+
+  const payload={
+    nome,
+    campanha_id:document.getElementById('infCampanhaId').value||null,
+    meta_valor:parseFloat(document.getElementById('infMetaValor').value)||0,
+    premiacao:document.getElementById('infPremiacao').value.trim(),
+    premio_25:document.getElementById('infPremio25').value.trim(),
+    premio_50:document.getElementById('infPremio50').value.trim(),
+    premio_75:document.getElementById('infPremio75').value.trim(),
+    premio_100:document.getElementById('infPremio100').value.trim(),
+    codigo:document.getElementById('infCodigo').value.trim(),
+    telefone:document.getElementById('infTelefone').value.trim()
+  };
+
+  try{
+    const url=id?`${API}/api/influencers/${id}`:`${API}/api/influencers`;
+    const method=id?'PUT':'POST';
+    const res=await fetch(url,{
+      method,
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify(payload)
+    });
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.erro||'Erro ao salvar');
+    showToast(id?'Influencer atualizado com sucesso!':'Influencer cadastrado com sucesso!');
+    closeInfluencerModal();
+    loadInfluencers();
+  }catch(err){showToast(err.message,'error')}
+}
+
+async function excluirInfluencer(id){
+  if(!confirm('Deseja realmente excluir este influencer?'))return;
+  try{
+    const res=await fetch(`${API}/api/influencers/${id}`,{
+      method:'DELETE',
+      headers:{'Authorization':'Bearer '+token}
+    });
+    if(!res.ok)throw new Error('Erro ao excluir');
+    showToast('Influencer excluído com sucesso!');
+    loadInfluencers();
+  }catch(err){showToast(err.message,'error')}
 }
 
 async function loadLogs(page=1){
