@@ -74,12 +74,177 @@ input{font-family:inherit;outline:none}
 .meta-progress-label{font-size:.72rem;color:var(--muted);margin-top:6px;font-weight:600}
 
 /* ===== VENCEDOR ===== */
-.vencedor-box{background:linear-gradient(135deg,#fef3c7,#fde68a);border-radius:var(--radius-sm);padding:14px;margin:12px 0;display:flex;align-items:center;gap:12px}
+.vencedor-box{background:linear-gradient(135deg,#fef3c7,#fde68a);border-radius:var(--radius-sm);padding:14px;margin:12px 0;display:flex;align-items:center;gap:12px;transition:all .3s ease}
 .vencedor-avatar{width:44px;height:44px;border-radius:50%;background:var(--primary);color:#fff;display:grid;place-items:center;font-size:1.2rem;font-weight:700;flex-shrink:0}
 .vencedor-info{flex:1;min-width:0}
 .vencedor-nome{font-weight:700;font-size:.95rem;color:#92400e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .vencedor-valor{font-size:1.1rem;font-weight:800;color:#b45309}
 .vencedor-data{font-size:.75rem;color:#a16207}
+
+/* ===== VENCEDOR DESTACADO / CAMPEÃO (LEILÃO ENCERRADO) ===== */
+.vencedor-box-campeao{
+  display: block !important;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 45%, #fde68a 100%) !important;
+  border: 2px solid #f59e0b !important;
+  border-radius: var(--radius) !important;
+  padding: 20px 16px !important;
+  margin: 16px 0 !important;
+  position: relative !important;
+  overflow: hidden !important;
+  box-shadow: 0 10px 28px rgba(245, 158, 11, 0.28), 0 2px 6px rgba(0,0,0,.06) !important;
+  animation: scaleInWinner .6s cubic-bezier(.16,1,.3,1) forwards;
+}
+.vencedor-box-campeao::before{
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.45) 0%, transparent 70%);
+  pointer-events: none;
+  animation: shineWinner 6s infinite linear;
+}
+@keyframes shineWinner{
+  0%{transform:rotate(0deg)}
+  100%{transform:rotate(360deg)}
+}
+@keyframes scaleInWinner{
+  0%{opacity:0;transform:scale(0.94)}
+  100%{opacity:1;transform:scale(1)}
+}
+.campeao-header-badge{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #d97706, #b45309);
+  color: #fff;
+  font-size: .75rem;
+  font-weight: 800;
+  padding: 5px 14px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  box-shadow: 0 3px 8px rgba(180, 83, 9, 0.35);
+  margin-bottom: 12px;
+}
+.coroa-pulse{
+  animation: coroaBounce 1.2s infinite ease-in-out;
+  display: inline-block;
+}
+@keyframes coroaBounce{
+  0%,100%{transform:translateY(0) scale(1)}
+  50%{transform:translateY(-3px) scale(1.18)}
+}
+.campeao-inner{
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+  z-index: 2;
+}
+.campeao-avatar-wrap{
+  position: relative;
+  flex-shrink: 0;
+}
+.campeao-avatar{
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  border: 3px solid #fff;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.45);
+  display: grid;
+  place-items: center;
+  font-size: 1.8rem;
+  animation: pulseGold 2s infinite ease-in-out;
+}
+@keyframes pulseGold{
+  0%,100%{box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.55)}
+  50%{box-shadow: 0 0 0 10px rgba(245, 158, 11, 0)}
+}
+.campeao-medalha{
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  font-size: 1.2rem;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.25));
+}
+.campeao-nome{
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #78350f;
+  line-height: 1.2;
+}
+.campeao-sub{
+  font-size: .82rem;
+  color: #92400e;
+  margin-top: 3px;
+  font-weight: 600;
+}
+.campeao-valor-tag{
+  display: inline-block;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #047857;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  padding: 2px 10px;
+  border-radius: 8px;
+  margin-top: 4px;
+}
+.campeao-footer{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(180, 83, 9, 0.25);
+  font-size: .78rem;
+  color: #a16207;
+  position: relative;
+  z-index: 2;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.btn-comemorar{
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  font-weight: 700;
+  font-size: .78rem;
+  padding: 6px 14px;
+  border-radius: 20px;
+  box-shadow: 0 2px 6px rgba(217, 119, 6, 0.35);
+  transition: all .2s;
+  cursor: pointer;
+  border: none;
+}
+.btn-comemorar:active{
+  transform: scale(0.95);
+}
+.badge-encerrado{
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+  border: 1px solid #cbd5e1 !important;
+}
+.badge-encerrado::before{
+  background: #94a3b8 !important;
+  animation: none !important;
+}
+.timer-box.encerrado{
+  background: linear-gradient(135deg, #1e293b, #0f172a) !important;
+}
+.timer-box.encerrado .timer-display{
+  font-size: 1.8rem !important;
+  color: #fbbf24 !important;
+  letter-spacing: 1px;
+}
+.btn-lance-encerrado{
+  background: linear-gradient(135deg, #64748b, #475569) !important;
+  box-shadow: none !important;
+  opacity: .9 !important;
+  cursor: default !important;
+}
 
 /* ===== TIMER ===== */
 .timer-box{background:linear-gradient(135deg,var(--primary),var(--primary-dark));border-radius:var(--radius);padding:18px 16px;text-align:center;color:#fff;margin-bottom:12px;position:relative;overflow:hidden}
@@ -238,7 +403,7 @@ input{font-family:inherit;outline:none}
   <div class="header-inner">
     <div class="flex aic g2">
       <span class="logo">🏆 Leilão Fácil</span>
-      <span class="badge-live">Ao Vivo</span>
+      <span class="badge-live" id="badgeLive">Ao Vivo</span>
       <span id="connDot" class="conn-dot conn-ok" title="Sincronizado"></span>
     </div>
     <div class="flex aic g3">
@@ -300,7 +465,7 @@ input{font-family:inherit;outline:none}
       <span class="rocket">🚀</span>
       <span id="btnLanceText">Dar Lance</span>
     </button>
-    <div class="tc" style="font-size:.8rem;color:var(--muted);margin-top:6px">ℹ️ Cada lance aumenta o valor</div>
+    <div class="tc" id="cadaLanceInfo" style="font-size:.8rem;color:var(--muted);margin-top:6px">ℹ️ Cada lance aumenta o valor</div>
   </div>
 
   <div class="col-side">
@@ -384,6 +549,33 @@ input{font-family:inherit;outline:none}
 const API='';
 const slug=window.location.pathname.substring(1).split('?')[0]||'';
 let socket,campanha=null,usuario=null,lances=[],timerInterval=null,showFullRanking=false,rankTab='maior';
+
+/* ===== AJUSTE DE MODAL COM TECLADO VIRTUAL (mobile) =====
+   Quando o teclado abre no celular, a área visível da tela (visualViewport)
+   encolhe, mas o CSS "align-items:center" continua centralizando o modal
+   como se a tela toda estivesse disponível — empurrando a parte de baixo
+   (botão) pra trás do teclado. Aqui a gente desloca o modal levemente pra
+   cima, só o suficiente pra caber no espaço realmente visível.
+   Em desktop isso não faz nada: sem teclado virtual, visualViewport.height
+   é igual à altura da tela, então o ajuste calculado é sempre zero. */
+function ajustarModalParaTeclado(){
+  const isMobile=window.matchMedia('(max-width:768px)').matches;
+  const overlayAberto=document.querySelector('.modal-overlay.open');
+  if(!isMobile||!overlayAberto||!window.visualViewport)return;
+
+  const vv=window.visualViewport;
+  const alturaEscondida=window.innerHeight-vv.height-vv.offsetTop;
+  // Só desloca pra cima quando o teclado realmente reduz espaço visível
+  const deslocamento=alturaEscondida>80?Math.min(alturaEscondida*0.55,160):0;
+  overlayAberto.style.paddingBottom=deslocamento>0?deslocamento+'px':'';
+  overlayAberto.style.alignItems=deslocamento>0?'flex-start':'';
+  overlayAberto.style.paddingTop=deslocamento>0?'24px':'';
+}
+
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize',ajustarModalParaTeclado);
+  window.visualViewport.addEventListener('scroll',ajustarModalParaTeclado);
+}
 let comboCount=0,comboTimer=null,ultimoLanceId=0;
 let pixPagamentoAtual=null,pixPollingInterval=null;
 
@@ -492,18 +684,43 @@ function renderCampanha(){
   updateProximoLance();
 
   const btn=document.getElementById('btnLance');
-  if(encerrada){btn.disabled=true;btn.innerHTML='<span>🏁 Leilão Encerrado</span>'}
-  else if(pausada){btn.disabled=true;btn.innerHTML='<span>⏸️ Leilão Pausado</span>'}
-  else if(!ativa){btn.disabled=true;btn.innerHTML='<span>⏳ Leilão não iniciado</span>'}
-  else{btn.disabled=false;btn.innerHTML='<span class="rocket">🚀</span><span id="btnLanceText">Dar Lance (R$ '+fmt(vlance)+')</span>'}
+  const badgeLive=document.getElementById('badgeLive');
+  const proxBox=document.querySelector('.proximo-box');
+  const cadaLanceInfo=document.getElementById('cadaLanceInfo');
+  const timerBox=document.querySelector('.timer-box');
+  const timerLabel=document.querySelector('.timer-label');
+  const lanceAtualLabel=document.querySelector('.lance-atual-label');
+
+  if(encerrada){
+    if(badgeLive){badgeLive.textContent='🏁 Encerrado';badgeLive.classList.add('badge-encerrado');}
+    if(proxBox)proxBox.style.display='none';
+    if(cadaLanceInfo)cadaLanceInfo.style.display='none';
+    if(timerBox)timerBox.classList.add('encerrado');
+    if(timerLabel)timerLabel.textContent='🏁 LEILÃO ENCERRADO';
+    if(lanceAtualLabel)lanceAtualLabel.textContent='🏆 Lance Vencedor';
+    btn.disabled=true;
+    btn.className='btn-lance btn-lance-encerrado';
+    btn.innerHTML='<span>🏆 Prêmio Arrematado • Leilão Encerrado</span>';
+    document.getElementById('timer').textContent='FINALIZADO';
+  } else {
+    if(badgeLive){badgeLive.textContent='Ao Vivo';badgeLive.classList.remove('badge-encerrado');}
+    if(proxBox)proxBox.style.display='';
+    if(cadaLanceInfo)cadaLanceInfo.style.display='';
+    if(timerBox)timerBox.classList.remove('encerrado');
+    if(timerLabel)timerLabel.textContent='⏱️ Tempo Restante';
+    if(lanceAtualLabel)lanceAtualLabel.textContent='💰 Lance Atual';
+    btn.className='btn-lance';
+    if(pausada){btn.disabled=true;btn.innerHTML='<span>⏸️ Leilão Pausado</span>'}
+    else if(!ativa){btn.disabled=true;btn.innerHTML='<span>⏳ Leilão não iniciado</span>'}
+    else{btn.disabled=false;btn.innerHTML='<span class="rocket">🚀</span><span id="btnLanceText">Dar Lance (R$ '+fmt(vlance)+')</span>'}
+  }
 
   document.getElementById('content').style.display='none';
   document.getElementById('topbar').style.display='block';
   document.getElementById('mainContainer').style.display='';
   document.getElementById('footer').style.display='block';
 
-  if(ativa&&c.data_fim){startTimer(new Date(c.data_fim))}
-  else if(encerrada){document.getElementById('timer').textContent='ENCERRADO'}
+  if(ativa&&c.data_fim&&!encerrada){startTimer(new Date(c.data_fim))}
 }
 
 /* ===== TIMER ===== */
@@ -513,7 +730,15 @@ function startTimer(endDate){
     const diff=endDate-Date.now();
     const el=document.getElementById('timer');
     if(!el){clearInterval(timerInterval);return}
-    if(diff<=0){el.textContent='00:00:00';clearInterval(timerInterval);document.getElementById('btnLance').disabled=true;document.getElementById('btnLance').innerHTML='<span>🏁 Leilão Encerrado</span>';return}
+    if(diff<=0){
+      el.textContent='FINALIZADO';
+      clearInterval(timerInterval);
+      if(campanha)campanha.status='finalizada';
+      renderCampanha();
+      renderWinner();
+      dispararConfetes(5500);
+      return;
+    }
     const dias=Math.floor(diff/86400000);
     const h=String(Math.floor((diff%86400000)/3600000)).padStart(2,'0');
     const m=String(Math.floor((diff%3600000)/60000)).padStart(2,'0');
@@ -579,31 +804,80 @@ function atualizarDisputaBadge(){
 
 function renderWinner(){
   const el=document.getElementById('winnerBox');
+  if(!el)return;
+  const c=campanha;
+  const encerrada=c&&(c.status==='finalizada'||(c.data_fim&&new Date(c.data_fim)<new Date()));
+
   if(!lances.length){
-    document.getElementById('vencedorNome').textContent='Nenhum lance ainda';
-    document.getElementById('vencedorValor').textContent='R$ 0,00';
-    document.getElementById('vencedorData').textContent='Seja o primeiro!';
-    document.getElementById('lanceAtualValor').textContent='R$ 0,00';
+    el.className='vencedor-box';
+    el.innerHTML=`
+      <div class="vencedor-avatar">🏆</div>
+      <div class="vencedor-info">
+        <div class="vencedor-nome" id="vencedorNome">Nenhum lance ainda</div>
+        <div class="vencedor-valor" id="vencedorValor">R$ 0,00</div>
+        <div class="vencedor-data" id="vencedorData">Seja o primeiro!</div>
+      </div>
+    `;
+    const lanceEl=document.getElementById('lanceAtualValor');
+    if(lanceEl)lanceEl.textContent='R$ 0,00';
     atualizarProgressoMeta(0);
     return;
   }
+
   // Sempre pega o maior valor do array, independente da ordem
   const top=lances.reduce((max,item)=>parseFloat(item.valor||0)>parseFloat(max.valor||0)?item:max,lances[0]);
-  document.getElementById('vencedorNome').textContent=top.nome_usuario||top.nome||'Anônimo';
-  document.getElementById('vencedorValor').textContent='R$ '+fmt(top.valor);
-  document.getElementById('vencedorData').textContent=fmtData(top.created_at);
+  const nomeGanhador=top.nome_usuario||top.nome||'Anônimo';
+  const valorFinal='R$ '+fmt(top.valor);
+  const dataFinal=fmtData(top.created_at);
+
+  if(encerrada){
+    el.className='vencedor-box vencedor-box-campeao';
+    el.innerHTML=`
+      <div class="campeao-header-badge">
+        <span class="coroa-pulse">👑</span> GANHADOR OFICIAL DO LEILÃO
+      </div>
+      <div class="campeao-inner">
+        <div class="campeao-avatar-wrap">
+          <div class="campeao-avatar">🏆</div>
+          <span class="campeao-medalha">🥇</span>
+        </div>
+        <div class="vencedor-info">
+          <div class="campeao-nome" id="vencedorNome">👑 ${nomeGanhador}</div>
+          <div class="campeao-sub">Parabéns! Arrematou o prêmio oficial por:</div>
+          <div class="campeao-valor-tag" id="vencedorValor">${valorFinal}</div>
+        </div>
+      </div>
+      <div class="campeao-footer">
+        <span id="vencedorData">🏁 Arrematado em ${dataFinal}</span>
+        <button type="button" class="btn-comemorar" onclick="dispararConfetes(3500)">🎉 Celebrar vitória!</button>
+      </div>
+    `;
+
+    // Dispara comemoração com confetes ao carregar a tela de um leilão encerrado
+    if(!window.__confettiCelebrado){
+      window.__confettiCelebrado=true;
+      setTimeout(()=>dispararConfetes(4500),500);
+    }
+  } else {
+    el.className='vencedor-box';
+    el.innerHTML=`
+      <div class="vencedor-avatar">🏆</div>
+      <div class="vencedor-info">
+        <div class="vencedor-nome" id="vencedorNome">${nomeGanhador}</div>
+        <div class="vencedor-valor" id="vencedorValor">${valorFinal}</div>
+        <div class="vencedor-data" id="vencedorData">${dataFinal}</div>
+      </div>
+    `;
+  }
 
   const lanceEl=document.getElementById('lanceAtualValor');
-  const novoValor='R$ '+fmt(top.valor);
-  if(lanceEl.textContent!==novoValor){
-    lanceEl.textContent=novoValor;
+  if(lanceEl && lanceEl.textContent!==valorFinal){
+    lanceEl.textContent=valorFinal;
     lanceEl.classList.remove('pulse-update');
-    void lanceEl.offsetWidth; // força reinício da animação mesmo se já rodou antes
+    void lanceEl.offsetWidth; // força reinício da animação
     lanceEl.classList.add('pulse-update');
   }
 
-  // Barra de progresso reflete o LANCE ATUAL em relação à meta (não a soma
-  // arrecadada) — ex: lance de R$0,12 numa meta de R$1,00 = 12% da barra.
   atualizarProgressoMeta(parseFloat(top.valor)||0);
 }
 
@@ -672,6 +946,7 @@ function abrirLogin(prefill){
   document.getElementById('userEmail').style.opacity='';
   document.getElementById('modalLogin').classList.add('open');
   document.getElementById('userNome').focus();
+  setTimeout(ajustarModalParaTeclado,350);
 }
 
 function abrirAlterarNome(){
@@ -686,6 +961,7 @@ function abrirAlterarNome(){
   document.getElementById('modalLogin').classList.add('open');
   document.getElementById('userNome').focus();
   document.getElementById('userNome').select();
+  setTimeout(ajustarModalParaTeclado,350);
 }
 
 function submitModalLogin(){
@@ -695,7 +971,11 @@ function submitModalLogin(){
 
 function fecharModal(e,id){if(e.target.id===id)fecharModalDirect(id)}
 function fecharModalDirect(id){
-  document.getElementById(id).classList.remove('open');
+  const el=document.getElementById(id);
+  el.classList.remove('open');
+  el.style.paddingBottom='';
+  el.style.paddingTop='';
+  el.style.alignItems='';
   // Limpa polling do PIX ao fechar modal
   if(id==='modalPix'&&pixPollingInterval){
     clearTimeout(pixPollingInterval);
