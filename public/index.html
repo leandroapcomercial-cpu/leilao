@@ -579,6 +579,92 @@ if(window.visualViewport){
 let comboCount=0,comboTimer=null,ultimoLanceId=0;
 let pixPagamentoAtual=null,pixPollingInterval=null;
 
+/* ===== CONFETES DE CELEBRAÇÃO =====
+   Canvas full-screen com física simples de queda (gravidade + resistência do
+   ar + rotação), usado ao carregar a tela de um leilão encerrado e no botão
+   "Celebrar vitória!". Se auto-limpa ao final, não deixa nenhum canvas extra
+   no DOM depois de terminar. */
+function dispararConfetes(duracaoMs){
+  duracaoMs=duracaoMs||3500;
+  let canvas=document.getElementById('confettiCanvas');
+  if(!canvas){
+    canvas=document.createElement('canvas');
+    canvas.id='confettiCanvas';
+    canvas.style.cssText='position:fixed;inset:0;z-index:9999;pointer-events:none;width:100vw;height:100vh';
+    document.body.appendChild(canvas);
+  }
+  const ctx=canvas.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  function ajustarTamanho(){
+    canvas.width=window.innerWidth*dpr;
+    canvas.height=window.innerHeight*dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  ajustarTamanho();
+
+  const cores=['#f59e0b','#ef4444','#22c55e','#3b82f6','#a855f7','#ec4899','#facc15'];
+  const qtdParticulas=140;
+  const particulas=[];
+  for(let i=0;i<qtdParticulas;i++){
+    particulas.push({
+      x:Math.random()*window.innerWidth,
+      y:-20-Math.random()*window.innerHeight*0.3, // começa acima da tela, em cascata
+      largura:6+Math.random()*6,
+      altura:8+Math.random()*8,
+      cor:cores[Math.floor(Math.random()*cores.length)],
+      velocidadeY:2+Math.random()*3,
+      velocidadeX:(Math.random()-0.5)*2.5,
+      angulo:Math.random()*360,
+      velocidadeAngulo:(Math.random()-0.5)*12,
+      formaCirculo:Math.random()<0.35,
+      balancoFase:Math.random()*Math.PI*2
+    });
+  }
+
+  const inicio=performance.now();
+  let animId=null;
+
+  function animar(agora){
+    const decorrido=agora-inicio;
+    ctx.clearRect(0,0,window.innerWidth,window.innerHeight);
+
+    particulas.forEach(p=>{
+      p.balancoFase+=0.05;
+      p.x+=p.velocidadeX+Math.sin(p.balancoFase)*0.8;
+      p.y+=p.velocidadeY;
+      p.velocidadeY+=0.03; // gravidade leve
+      p.angulo+=p.velocidadeAngulo;
+
+      ctx.save();
+      ctx.translate(p.x,p.y);
+      ctx.rotate(p.angulo*Math.PI/180);
+      ctx.fillStyle=p.cor;
+      if(p.formaCirculo){
+        ctx.beginPath();
+        ctx.arc(0,0,p.largura/2,0,Math.PI*2);
+        ctx.fill();
+      }else{
+        ctx.fillRect(-p.largura/2,-p.altura/2,p.largura,p.altura);
+      }
+      ctx.restore();
+    });
+
+    // Fade-out suave nos últimos 600ms
+    if(decorrido>duracaoMs-600){
+      canvas.style.opacity=Math.max(0,(duracaoMs-decorrido)/600);
+    }
+
+    if(decorrido<duracaoMs){
+      animId=requestAnimationFrame(animar);
+    }else{
+      cancelAnimationFrame(animId);
+      canvas.remove();
+    }
+  }
+  canvas.style.opacity='1';
+  animId=requestAnimationFrame(animar);
+}
+
 /* ===== INIT ===== */
 document.addEventListener('DOMContentLoaded',()=>{
   if(!slug){mostrarErro('Nenhuma campanha encontrada');return}
@@ -849,7 +935,7 @@ function renderWinner(){
       </div>
       <div class="campeao-footer">
         <span id="vencedorData">🏁 Arrematado em ${dataFinal}</span>
-        <button type="button" class="btn-comemorar" onclick="dispararConfetes(3500)">🎉 Celebrar vitória!</button>
+        <button type="button" class="btn-comemorar" onclick="dispararConfetes(3500);showToast('🏆 Parabéns pela vitória!','success')">🎉 Celebrar vitória!</button>
       </div>
     `;
 
