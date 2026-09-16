@@ -10,6 +10,7 @@ const multer = require('multer');
 const axios = require('axios');
 const { randomUUID } = require('crypto');
 const rateLimit = require('express-rate-limit');
+const cors = require('cors');
 
 // ===================== E-MAIL (Brevo) =====================
 // Serviço de notificação por e-mail: confirmação de lance e aviso de
@@ -126,7 +127,20 @@ function getSupabase() {
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' } });
+
+// Origens permitidas: lê CORS_ORIGINS (separado por vírgula) do ambiente.
+// Fallback pra SITE_URL se CORS_ORIGINS faltar, e por último localhost (dev).
+// Nunca usa '*' — origin aberta permite que qualquer site externo leia
+// eventos do socket (dados de lances/campanhas) ou chame a API via browser
+// de um usuário autenticado sem que ele perceba.
+const origensPermitidas = (process.env.CORS_ORIGINS || process.env.SITE_URL || 'http://localhost:3000')
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean);
+
+console.log('[BOOT] CORS - origens permitidas:', origensPermitidas);
+
+const io = new Server(server, { cors: { origin: origensPermitidas, credentials: true } });
 
 const PORT = process.env.PORT || 10000;
 // Segredo do JWT: NUNCA usa valor fixo/previsível como fallback (um segredo
@@ -654,6 +668,18 @@ async function runMigrations() {
 }
 
 // Middlewares
+app.use(cors({
+  origin: (origin, callback) => {
+    // Sem header Origin = requisição servidor-a-servidor (webhook do MP, curl,
+    // Postman) — nunca vem de um navegador de terceiro, então não há risco
+    // de CORS aqui. Libera sempre.
+    if (!origin) return callback(null, true);
+    if (origensPermitidas.includes(origin)) return callback(null, true);
+    console.warn('[CORS] Origem bloqueada:', origin);
+    return callback(new Error('Não permitido pelo CORS'));
+  },
+  credentials: true
+}));
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
