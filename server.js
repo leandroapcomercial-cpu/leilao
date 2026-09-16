@@ -9,6 +9,7 @@ const { Pool } = require('pg');
 const multer = require('multer');
 const axios = require('axios');
 const { randomUUID } = require('crypto');
+const rateLimit = require('express-rate-limit');
 
 // ===================== E-MAIL (Brevo) =====================
 // Serviço de notificação por e-mail: confirmação de lance e aviso de
@@ -128,7 +129,20 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 
 const PORT = process.env.PORT || 10000;
-const JWT_SECRET = process.env.JWT_SECRET || 'leilao-facil-secret-2026';
+// Segredo do JWT: NUNCA usa valor fixo/previsível como fallback (um segredo
+// hardcoded no código-fonte permite forjar tokens de admin válidos). Se a
+// variável de ambiente JWT_SECRET não estiver configurada, gera uma aleatória
+// forte em memória — o site continua funcionando, mas com aviso alto no log
+// pra configurar de verdade (sem isso, logins expiram a cada restart do servidor).
+let JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  JWT_SECRET = randomUUID() + randomUUID() + randomUUID();
+  console.error('╔══════════════════════════════════════════════════════════════╗');
+  console.error('║ ⚠️  JWT_SECRET NÃO CONFIGURADO — usando segredo temporário!    ║');
+  console.error('║ Configure a variável JWT_SECRET no Render AGORA.               ║');
+  console.error('║ Sem isso, todo login expira a cada restart do servidor.         ║');
+  console.error('╚══════════════════════════════════════════════════════════════╝');
+}
 
 // Mercado Pago
 const MP_ACCESS_TOKEN = process.env.MERCADO_PAGO_ACCESS_TOKEN;
@@ -440,6 +454,7 @@ async function runMigrations() {
       nome VARCHAR(255) NOT NULL DEFAULT 'Admin',
       email VARCHAR(255) UNIQUE NOT NULL,
       senha VARCHAR(255) NOT NULL,
+      deve_trocar_senha BOOLEAN DEFAULT FALSE,
       created_at TIMESTAMP DEFAULT NOW()
     )`);
 
@@ -468,6 +483,7 @@ async function runMigrations() {
     )`);
   // Colunas extras campanhas
   await addColumnIfMissing('campanhas', 'descricao', 'TEXT');
+  await addColumnIfMissing('administradores', 'deve_trocar_senha', 'BOOLEAN DEFAULT FALSE');
   await addColumnIfMissing('campanhas', 'status', "VARCHAR(50) DEFAULT 'pendente'");
   await addColumnIfMissing('campanhas', 'data_inicio', 'TIMESTAMP');
   await addColumnIfMissing('campanhas', 'data_fim', 'TIMESTAMP');
@@ -624,9 +640,14 @@ async function runMigrations() {
   if (adm.rows.length === 0) {
     let hash = 'admin123';
     if (bcrypt) hash = await bcrypt.hash('admin123', 10);
-    await pool.query(`INSERT INTO administradores (nome, email, senha) VALUES ($1,$2,$3)`,
-      ['Administrador', 'admin@leilao.com', hash]);
-    console.log('[MIGRATION] Admin padrão criado: admin@leilao.com / admin123');
+    await pool.query(`INSERT INTO administradores (nome, email, senha, deve_trocar_senha) VALUES ($1,$2,$3,$4)`,
+      ['Administrador', 'admin@leilao.com', hash, true]);
+    console.log('[MIGRATION] Admin padrão criado: admin@leilao.com / admin123 — troca de senha OBRIGATÓRIA no próximo login');
+  } else if (bcrypt && adm.rows[0].senha && await bcrypt.compare('admin123', adm.rows[0].senha).catch(() => false)) {
+    // Admin já existia com a senha padrão nunca trocada — força a troca agora,
+    // já que essa senha é publicamente conhecida (documentada no projeto original)
+    await pool.query(`UPDATE administradores SET deve_trocar_senha = TRUE WHERE id = $1`, [adm.rows[0].id]);
+    console.log('[MIGRATION] Admin com senha padrão detectado — troca de senha OBRIGATÓRIA no próximo login');
   }
 
   console.log('[MIGRATION] OK');
@@ -648,6 +669,27 @@ app.use(helmet({
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Rate limiting: protege contra força bruta de senha e flood de requisições.
+// trustProxy é necessário no Render (está atrás de um proxy reverso), senão
+// o rate limit conta errado (trata todo mundo como o mesmo IP).
+app.set('trust proxy', 1);
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 10, // no máximo 10 tentativas de login por IP a cada 15 min
+  message: { erro: 'Muitas tentativas de login. Tente novamente em alguns minutos.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const pixLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutos
+  max: 30, // até 30 gerações de PIX por IP a cada 5 min — cobre uso legítimo intenso sem abrir brecha pra flood
+  message: { erro: 'Muitas tentativas seguidas. Aguarde alguns minutos e tente novamente.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Request logger leve (só erros)
 app.use((req, res, next) => {
@@ -680,7 +722,7 @@ app.get('/api/health', async (req, res) => {
 });
 
 // Login admin
-app.post('/api/login', async (req, res) => {
+app.post('/api/login', loginLimiter, async (req, res) => {
   try {
     const { email, senha } = req.body;
     console.log('[LOGIN] Tentativa:', email);
@@ -701,7 +743,11 @@ app.post('/api/login', async (req, res) => {
     console.log('[LOGIN] bcrypt:', !!bcrypt, '| válido:', valid);
     if (!valid) return res.status(401).json({ erro: 'Credenciais inválidas' });
     const token = jwt.sign({ id: admin.id, email: admin.email }, JWT_SECRET, { expiresIn: '24h' });
-    res.json({ token, admin: { id: admin.id, nome: admin.nome, email: admin.email } });
+    res.json({
+      token,
+      admin: { id: admin.id, nome: admin.nome, email: admin.email },
+      deve_trocar_senha: !!admin.deve_trocar_senha
+    });
   } catch (err) {
     console.error('[LOGIN ERROR]', err);
     res.status(500).json({ erro: 'Erro no servidor' });
@@ -903,6 +949,38 @@ app.post('/api/testar-email', authenticate, async (req, res) => {
   } catch (err) {
     console.error('[EMAIL/TESTE] Falha:', err.response?.data || err.message);
     res.status(500).json({ erro: 'Falha ao enviar', detalhe: err.response?.data || err.message });
+  }
+});
+
+// Troca a senha do admin logado — exige autenticação e a senha atual
+// correta. Usada tanto para troca voluntária quanto para a obrigatória
+// (quando deve_trocar_senha=true, detectada pelo frontend após o login).
+app.post('/api/admin/trocar-senha', authenticate, async (req, res) => {
+  try {
+    const { senha_atual, nova_senha } = req.body;
+    if (!senha_atual || !nova_senha) return res.status(400).json({ erro: 'Informe a senha atual e a nova senha' });
+    if (nova_senha.length < 8) return res.status(400).json({ erro: 'A nova senha precisa ter pelo menos 8 caracteres' });
+    if (nova_senha === 'admin123') return res.status(400).json({ erro: 'Escolha uma senha diferente da padrão' });
+
+    const result = await pool.query('SELECT * FROM administradores WHERE id = $1', [req.admin.id]);
+    if (result.rows.length === 0) return res.status(404).json({ erro: 'Admin não encontrado' });
+    const admin = result.rows[0];
+
+    let valid = false;
+    if (bcrypt && admin.senha && admin.senha.startsWith('$2')) {
+      valid = await bcrypt.compare(senha_atual, admin.senha);
+    } else {
+      valid = senha_atual === admin.senha;
+    }
+    if (!valid) return res.status(401).json({ erro: 'Senha atual incorreta' });
+
+    const novoHash = bcrypt ? await bcrypt.hash(nova_senha, 10) : nova_senha;
+    await pool.query('UPDATE administradores SET senha = $1, deve_trocar_senha = FALSE WHERE id = $2', [novoHash, req.admin.id]);
+    console.log(`[ADMIN] Senha trocada com sucesso para admin ${req.admin.id}`);
+    res.json({ sucesso: true });
+  } catch (err) {
+    console.error('[ADMIN/TROCAR-SENHA] Erro:', err.message);
+    res.status(500).json({ erro: err.message });
   }
 });
 
@@ -1177,7 +1255,7 @@ app.get('/api/ranking/:campanha_id', async (req, res) => {
 // ===================== ROTAS PIX / MERCADO PAGO =====================
 
 // Gera PIX para dar um lance (calcula valor automaticamente)
-app.post('/api/pix/gerar', async (req, res) => {
+app.post('/api/pix/gerar', pixLimiter, async (req, res) => {
   console.log('[PIX/GERAR] ========== INÍCIO ==========');
   console.log('[PIX/GERAR] Body:', JSON.stringify(req.body));
 
@@ -1506,15 +1584,28 @@ app.post('/api/lances', async (req, res) => {
 
     // Se não tem skip_pix=true, redireciona para o fluxo PIX
     if (!skip_pix) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         erro: 'Use /api/pix/gerar para dar lances. O pagamento via PIX é obrigatório.',
         redirect: '/api/pix/gerar'
       });
     }
 
-    // Só permite skip_pix em desenvolvimento ou com token admin
-    // (mantido para testes internos)
-    console.log('[LANCE DIRETO] Skip PIX:', { campanha_id, usuario_id, valor });
+    // CRÍTICO: skip_pix só é permitido com token de admin válido. Sem essa
+    // checagem, qualquer pessoa poderia registrar um "lance confirmado" sem
+    // pagar nada, bastando conhecer este endpoint. O comentário antigo dizia
+    // que isso já era assim, mas o código nunca verificava de fato — só
+    // aceitava skip_pix de qualquer requisição, sem exigir nada.
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    let ehAdminValido = false;
+    if (token) {
+      try { jwt.verify(token, JWT_SECRET); ehAdminValido = true; } catch { ehAdminValido = false; }
+    }
+    if (!ehAdminValido) {
+      console.warn('[LANCE DIRETO] Tentativa de skip_pix SEM token admin válido, bloqueada. IP:', req.ip);
+      return res.status(403).json({ erro: 'skip_pix requer autenticação de administrador' });
+    }
+
+    console.log('[LANCE DIRETO] Skip PIX (admin autenticado):', { campanha_id, usuario_id, valor });
 
     if (!campanha_id || !usuario_id || valor === undefined) {
       return res.status(400).json({ erro: 'Dados incompletos' });

@@ -95,9 +95,20 @@
   <div class="login-box">
     <h1>🔨 Leilão Fácil</h1>
     <p>Painel Administrativo v2.5</p>
-    <div class="form-group"><label>Email</label><input type="email" id="loginEmail" value="admin@leilao.com"></div>
-    <div class="form-group"><label>Senha</label><input type="password" id="loginSenha" value="admin123"></div>
+    <div class="form-group"><label>Email</label><input type="email" id="loginEmail" placeholder="seu@email.com"></div>
+    <div class="form-group"><label>Senha</label><input type="password" id="loginSenha" placeholder="Sua senha"></div>
     <button class="btn btn-primary" onclick="fazerLogin()">Entrar</button>
+  </div>
+</div>
+
+<div class="login-screen" id="trocaSenhaScreen" style="display:none">
+  <div class="login-box">
+    <h1>🔒 Troca de Senha Obrigatória</h1>
+    <p style="color:#dc2626;font-weight:600;margin-bottom:16px">Por segurança, você precisa trocar a senha padrão antes de continuar.</p>
+    <div class="form-group"><label>Senha atual</label><input type="password" id="trocaSenhaAtual" placeholder="Senha atual"></div>
+    <div class="form-group"><label>Nova senha</label><input type="password" id="trocaSenhaNova" placeholder="Mínimo 8 caracteres"></div>
+    <div class="form-group"><label>Confirme a nova senha</label><input type="password" id="trocaSenhaConfirmacao" placeholder="Repita a nova senha"></div>
+    <button class="btn btn-primary" onclick="confirmarTrocaSenhaObrigatoria()">Trocar Senha e Continuar</button>
   </div>
 </div>
 
@@ -338,12 +349,45 @@ async function fazerLogin(){
     const res=await fetch(`${API}/api/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,senha})});
     const data=await res.json();
     if(!res.ok)throw new Error(data.erro||'Erro no login');
-    token=data.token;resetInatividadeTimer();initApp();
+    token=data.token;resetInatividadeTimer();
+    if(data.deve_trocar_senha){
+      abrirTrocaSenhaObrigatoria();
+    }else{
+      initApp();
+    }
+  }catch(err){showToast(err.message,'error')}
+}
+
+function abrirTrocaSenhaObrigatoria(){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').style.display='none';
+  document.getElementById('trocaSenhaScreen').style.display='flex';
+}
+
+async function confirmarTrocaSenhaObrigatoria(){
+  const senhaAtual=document.getElementById('trocaSenhaAtual').value;
+  const novaSenha=document.getElementById('trocaSenhaNova').value;
+  const confirmacao=document.getElementById('trocaSenhaConfirmacao').value;
+  if(!senhaAtual||!novaSenha||!confirmacao){showToast('Preencha todos os campos','error');return}
+  if(novaSenha!==confirmacao){showToast('As senhas não coincidem','error');return}
+  if(novaSenha.length<8){showToast('A nova senha precisa ter pelo menos 8 caracteres','error');return}
+  try{
+    const res=await fetch(`${API}/api/admin/trocar-senha`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({senha_atual:senhaAtual,nova_senha:novaSenha})
+    });
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.erro||'Erro ao trocar senha');
+    showToast('✅ Senha alterada com sucesso!','success');
+    document.getElementById('trocaSenhaScreen').style.display='none';
+    initApp();
   }catch(err){showToast(err.message,'error')}
 }
 
 function initApp(){
   document.getElementById('loginScreen').style.display='none';
+  document.getElementById('trocaSenhaScreen').style.display='none';
   document.getElementById('app').style.display='block';
   const p=JSON.parse(atob(token.split('.')[1]));
   document.getElementById('adminName').textContent=p.email;
